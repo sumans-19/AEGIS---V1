@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+/* ─── CSS VARIABLES ─── */
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #080c1a;
+  --bg-panel: #0d1117;
+  --bg-card: #111827;
+  --cyan: #00e5ff;
+  --cyan-dim: #00e5ff40;
+  --cyan-glow: 0 0 8px #00e5ff40;
+  --cyan-glow-strong: 0 0 16px #00e5ff60, 0 0 32px #00e5ff20;
+  --orange: #ff6b2b;
+  --red: #ff2929;
+  --green: #00ff88;
+  --amber: #ffb300;
+  --blue: #0066ff;
+  --purple: #a855f7;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-dim: #475569;
+  --border-color: #1e293b;
+  --font-display: 'Rajdhani', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --scene-bg: #080c1a;
+  --bg-gradient: radial-gradient(ellipse at center, rgba(10,10,15,0.6) 0%, rgba(10,10,15,0.9) 70%, #0a0a0f 100%);
+}
+
+[data-theme='light'] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-panel: #ffffff;
+  --bg-card: #ffffff;
+  --cyan: #0891b2;
+  --cyan-dim: #0891b220;
+  --cyan-glow: 0 0 8px #0891b220;
+  --cyan-glow-strong: 0 0 16px #0891b240;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-dim: #94a3b8;
+  --border-color: #e2e8f0;
+  --scene-bg: #f8fafc;
+  --grid-color: #0891b2;
+  --bg-gradient: radial-gradient(ellipse at center, rgba(248,250,252,0.4) 0%, rgba(248,250,252,0.8) 70%, #f8fafc 100%);
+}
+
+/* ─── BASE STYLES ─── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── SCANLINE OVERLAY ─── */
+#root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 229, 255, 0.015) 2px,
+    rgba(0, 229, 255, 0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ─── NOISE TEXTURE ─── */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--cyan-dim);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cyan);
+}
+
+/* ─── CORNER BRACKET DECORATION ─── */
+.corner-brackets {
+  position: relative;
+}
+.corner-brackets::before,
+.corner-brackets::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+.corner-brackets::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--cyan);
+  border-left: 1px solid var(--cyan);
+}
+.corner-brackets::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid var(--cyan);
+  border-right: 1px solid var(--cyan);
+}
+
+/* Accent color variants */
+.corner-brackets-orange::before {
+  border-top-color: var(--orange);
+  border-left-color: var(--orange);
+}
+.corner-brackets-orange::after {
+  border-bottom-color: var(--orange);
+  border-right-color: var(--orange);
+}
+
+.corner-brackets-red::before {
+  border-top-color: var(--red);
+  border-left-color: var(--red);
+}
+.corner-brackets-red::after {
+  border-bottom-color: var(--red);
+  border-right-color: var(--red);
+}
+
+.corner-brackets-green::before {
+  border-top-color: var(--green);
+  border-left-color: var(--green);
+}
+.corner-brackets-green::after {
+  border-bottom-color: var(--green);
+  border-right-color: var(--green);
+}
+
+/* ─── GLOW EFFECTS ─── */
+.glow-border {
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  box-shadow: var(--cyan-glow);
+}
+
+.glow-border-hover:hover {
+  border-color: rgba(0, 229, 255, 0.5);
+  box-shadow: var(--cyan-glow-strong);
+}
+
+/* ─── PULSING DOT ─── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+.pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* ─── BLINKING CURSOR ─── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* ─── BLINKING REC ─── */
+@keyframes blink-rec {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.blink-rec {
+  animation: blink-rec 1.2s ease-in-out infinite;
+}
+
+/* ─── SCAN LINE ANIMATION ─── */
+@keyframes scanline-move {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+.scan-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.3;
+  animation: scanline-move 3s linear infinite;
+  pointer-events: none;
+}
+
+/* ─── STATUS BADGE COLORS ─── */
+.status-scanning { color: var(--cyan); }
+.status-returning { color: var(--orange); }
+.status-searching { color: var(--amber); }
+.status-charging { color: var(--green); }
+
+/* ─── TYPOGRAPHY ─── */
+.font-display { font-family: var(--font-display); }
+.font-mono { font-family: var(--font-mono); }
+
+/* ─── COUNTER ANIMATION ─── */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── HUD CORNERS ─── */
+.hud-corners {
+  position: relative;
+}
+.hud-corners::before {
+  content: '';
+  position: absolute;
+  top: 8px; left: 8px; right: 8px; bottom: 8px;
+  border: 1px solid rgba(0, 255, 136, 0.4);
+  pointer-events: none;
+  z-index: 10;
+  clip-path: polygon(
+    0 0, 15% 0, 15% 1px, 1px 1px, 1px 15%, 0 15%,
+    0 85%, 1px 85%, 1px calc(100% - 1px), 15% calc(100% - 1px), 15% 100%, 0 100%,
+    100% 100%, 85% 100%, 85% calc(100% - 1px), calc(100% - 1px) calc(100% - 1px), calc(100% - 1px) 85%, 100% 85%,
+    100% 15%, calc(100% - 1px) 15%, calc(100% - 1px) 1px, 85% 1px, 85% 0, 100% 0
+  );
+}
+
+/* ─── THERMAL GRADIENT ─── */
+.thermal-gradient {
+  background: linear-gradient(to top, #0000ff, #00ff00, #ffff00, #ff8800, #ff0000);
+}
