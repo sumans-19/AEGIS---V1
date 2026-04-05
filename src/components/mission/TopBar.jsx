@@ -1,12 +1,14 @@
 import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Play, Pause, FastForward, Settings, UserPlus, 
   Map, Download, ShieldCheck, Database, LayoutPanelTop,
-  Menu, Maximize, PanelLeftClose, PanelLeftOpen
+  Menu, Maximize, PanelLeftClose, PanelLeftOpen, ArrowLeft, GitBranch
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
 import ExportPanel from './ExportPanel'
+import CoordinationPanel from './CoordinationPanel'
 
 const toolBtnStyle = {
    display: 'flex',
@@ -20,14 +22,15 @@ const toolBtnStyle = {
 }
 
 export default function TopBar() {
+  const navigate = useNavigate()
   const [showExport, setShowExport] = useState(false)
+  const [showCoord, setShowCoord] = useState(false)
   const simulationRunning = useSimStore(s => s.simulationRunning)
   const simulationSpeed = useSimStore(s => s.simulationSpeed || 1)
   const toggleSim = useSimStore(s => s.toggleSimulation)
   const scenario = useSimStore(s => s.scenario)
   const backendConnected = useSimStore(s => s.backendConnected)
   const latency = useSimStore(s => s.latency || 0)
-  
   const leftPanelCollapsed = useSimStore(s => s.leftPanelCollapsed)
   const setLeftPanelCollapsed = useSimStore(s => s.setLeftPanelCollapsed)
   const fullMapMode = useSimStore(s => s.fullMapMode)
@@ -35,6 +38,7 @@ export default function TopBar() {
   const seedModeActive = useSimStore(s => s.seedModeActive)
   const setSeedModeActive = useSimStore(s => s.setSeedModeActive)
   const setSimulationSpeed = useSimStore(s => s.setSimulationSpeed)
+  const waterLevel = useSimStore(s => s.waterLevel || 0)
 
   return (
     <div style={{
@@ -50,7 +54,36 @@ export default function TopBar() {
       zIndex: 1000,
     }}>
       {/* 1. Left Section: Sidebar Toggle & Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={() => navigate('/')}
+          style={{
+            background: 'none',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-dim)',
+            cursor: 'pointer',
+            padding: '6px',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: '0.2s',
+          }}
+          title="Return to Landing"
+          onMouseOver={e => {
+             e.currentTarget.style.borderColor = 'var(--cyan)'
+             e.currentTarget.style.color = 'var(--cyan)'
+          }}
+          onMouseOut={e => {
+             e.currentTarget.style.borderColor = 'var(--border-color)'
+             e.currentTarget.style.color = 'var(--text-dim)'
+          }}
+        >
+          <ArrowLeft size={18} />
+        </button>
+
+        <div style={{ width: '1px', height: '20px', background: 'var(--border-color)', margin: '0 4px' }} />
+
         <button
           onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
           style={{
@@ -65,8 +98,6 @@ export default function TopBar() {
             justifyContent: 'center',
             transition: '0.2s',
           }}
-          onMouseOver={e => e.currentTarget.style.borderColor = 'var(--cyan)'}
-          onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
         >
           {leftPanelCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
@@ -152,6 +183,42 @@ export default function TopBar() {
              {fullMapMode ? 'RESTORE_UI' : 'FULL_MAP'}
           </span>
         </button>
+
+        {scenario === 'tsunami' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '4px 14px',
+            background: 'rgba(0,102,255,0.1)',
+            border: '1px solid rgba(0,102,255,0.3)',
+            borderRadius: '4px',
+          }}>
+            <div style={{
+              width: '8px',
+              height: '16px',
+              background: '#0066ff',
+              borderRadius: '2px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+               <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: `${Math.min(100, (waterLevel / 15) * 100)}%`,
+                  background: '#00e5ff',
+               }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '8px', color: '#64748b', fontFamily: 'JetBrains Mono' }}>WATER_LEVEL</span>
+              <span style={{ fontSize: '12px', color: '#00e5ff', fontFamily: 'JetBrains Mono', fontWeight: 700 }}>
+                 {waterLevel.toFixed(1)}m
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 3. Right Section: Tools & Status */}
@@ -167,6 +234,24 @@ export default function TopBar() {
         >
            <UserPlus size={16} />
            <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono' }}>SEED_SURVIVOR</span>
+        </button>
+
+        <button
+          onClick={() => setShowCoord(true)}
+          style={{
+            ...toolBtnStyle,
+            borderColor: 'rgba(255,107,0,0.3)',
+            color: '#ff6b00',
+            background: 'rgba(255,107,0,0.06)',
+            fontSize: '11px',
+            fontFamily: 'JetBrains Mono',
+            letterSpacing: '1px',
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,107,0,0.12)'; e.currentTarget.style.borderColor = '#ff6b00' }}
+          onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,107,0,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,107,0,0.3)' }}
+        >
+          <GitBranch size={14} />
+          COORD
         </button>
 
         <SimulationBtn 
@@ -192,6 +277,7 @@ export default function TopBar() {
 
       <AnimatePresence>
         {showExport && <ExportPanel onClose={() => setShowExport(false)} />}
+        {showCoord && <CoordinationPanel onClose={() => setShowCoord(false)} />}
       </AnimatePresence>
     </div>
   )

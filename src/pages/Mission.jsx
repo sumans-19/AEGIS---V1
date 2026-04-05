@@ -60,8 +60,8 @@ export default function Mission() {
       }}>
         {!leftPanelCollapsed && !fullMapMode && (
           <div style={{ 
-            width: '260px', 
-            minWidth: '260px',
+            width: '320px', 
+            minWidth: '320px',
             flexShrink: 0,
             height: '100%', 
             borderRight: '1px solid #1e293b' 
