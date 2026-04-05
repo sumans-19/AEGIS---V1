@@ -109,6 +109,20 @@ def handle_scenario_events():
                 ix, iy = random.randint(0, 19), random.randint(0, 19)
                 world.terrain_grid[ix, iy] = min(1.0, world.terrain_grid[ix, iy] + 0.3)
     
+    elif world.scenario == "tsunami":
+        # Water level rise logic
+        if world.sim_time < 300: # Rise for first 5 mins
+            world.water_level = min(15.0, world.water_level + 0.005 * world.speed)
+            if world.tick % 400 == 0:
+                world.event_log.append(LogEntry(world.sim_time, None, "warning", f"COASTAL WATER LEVEL RISING: {world.water_level:.1f}m"))
+    
+    elif world.scenario == "flood":
+        # Water level rise logic for flood
+        if world.sim_time < 450: 
+            world.water_level = min(12.0, world.water_level + 0.0035 * world.speed)
+            if world.tick % 500 == 0:
+                world.event_log.append(LogEntry(world.sim_time, None, "warning", f"FLOOD LEVEL INCREASING: {world.water_level:.1f}m. EMERGENCY EVACUATION ACTIVE."))
+    
     elif world.scenario == "wildfire":
         # Fire spread every 30s
         if world.tick % 600 == 0: # 30s at 20Hz

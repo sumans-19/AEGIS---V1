@@ -546,9 +546,340 @@ function EarthquakeTerrain() {
   )
 }
 
+// ── Tsunami components ──
+function Water({ level = 0 }) {
+  const waterRef = useRef()
+  useFrame((state) => {
+    if (waterRef.current) {
+      const t = state.clock.elapsedTime
+      waterRef.current.position.y = level + Math.sin(t * 0.5) * 0.2
+      // Simple wave offset animation
+      waterRef.current.rotation.x = -Math.PI / 2 + Math.sin(t * 0.3) * 0.01
+      waterRef.current.rotation.y = Math.cos(t * 0.2) * 0.01
+    }
+  })
+
+  return (
+    <mesh ref={waterRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, level, 0]} receiveShadow>
+      <planeGeometry args={[1000, 1000, 32, 32]} />
+      <meshStandardMaterial
+        color="#0c2c4d" // Deep Oceanic Navy
+        transparent
+        opacity={0.7}
+        roughness={0.05}
+        metalness={0.2}
+      />
+    </mesh>
+
+  )
+}
+
+function FloatingDebris({ position, scale = 1, seed = 0 }) {
+  const meshRef = useRef()
+  useFrame((state) => {
+    if (meshRef.current) {
+      const t = state.clock.elapsedTime
+      meshRef.current.position.y += Math.sin(t * 1.2 + seed) * 0.005
+      meshRef.current.rotation.x += Math.sin(t * 0.5 + seed) * 0.002
+      meshRef.current.rotation.z += Math.cos(t * 0.7 + seed) * 0.002
+    }
+  })
+
+  return (
+    <mesh ref={meshRef} position={position} castShadow>
+      <boxGeometry args={[2 * scale, 0.5 * scale, 1 * scale]} />
+      <meshStandardMaterial color="#3d2b1f" roughness={0.9} />
+    </mesh>
+  )
+}
+
+function TsunamiTerrain() {
+  const theme = useSimStore(s => s.theme)
+  const waterLevel = useSimStore(s => s.waterLevel) || 2 
+
+  const { buildings, debris, nature } = useMemo(() => {
+    const buildings = []
+    const debris = []
+    const nature = []
+    const gridSize = 16
+    const spacing = 18
+    const offset = (gridSize * spacing) / 2
+
+    for (let gx = 0; gx < gridSize; gx++) {
+      for (let gz = 0; gz < gridSize; gz++) {
+        const seed = gx * 100 + gz
+        const rand = seededRandom(seed)
+        const x = gx * spacing - offset + (seededRandom(seed + 1) - 0.5) * 6
+        const z = gz * spacing - offset + (seededRandom(seed + 2) - 0.5) * 6
+
+        const typeRand = seededRandom(seed + 10)
+
+        if (typeRand < 0.15) {
+          // Floating debris
+          debris.push({
+            position: [x, waterLevel + 0.2, z],
+            scale: 0.8 + seededRandom(seed) * 2,
+            seed: seed
+          })
+        } else if (typeRand < 0.85) {
+          // Urban area
+          const height = (gx < 4) ? (5 + rand * 10) : (15 + rand * 35) // Shorter buildings near coast
+          const w = 7 + rand * 5
+          const d = 7 + rand * 5
+          const isOcean = gx < 5
+
+          buildings.push({
+            position: [x, height / 2 - (isOcean ? 8 : 0), z],
+            scale: [w, height, d],
+            color: gx < 7 ? '#4a5568' : '#718096',
+            roofColor: '#2d3748',
+            height: height
+          })
+        }
+      }
+    }
+    return { buildings, debris, nature }
+  }, [waterLevel])
+
+  const isDark = theme === 'dark'
+
+  return (
+    <group>
+      {/* Seabed */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[1000, 1000]} />
+        <meshStandardMaterial
+          color={isDark ? '#050a14' : '#14213d'}
+          roughness={1}
+        />
+      </mesh>
+
+      {/* Layered Water Effect */}
+      <Water level={waterLevel} />
+      <Water level={waterLevel - 0.5} />
+      
+      {/* Underwater "ground" haze patches */}
+      {Array.from({ length: 20 }).map((_, i) => (
+         <mesh key={`uw-${i}`} rotation={[-Math.PI/2, 0, 0]} position={[(seededRandom(i)-0.5)*400, 0.1, (seededRandom(i+1)-0.5)*400]}>
+            <circleGeometry args={[20 + seededRandom(i+2)*20, 16]} />
+            <meshStandardMaterial color="#003366" transparent opacity={0.4} />
+         </mesh>
+      ))}
+
+      {/* Coastal Buildings */}
+      {buildings.map((b, i) => (
+        <group key={`tb-${i}`} position={b.position}>
+          <mesh castShadow receiveShadow>
+            <boxGeometry args={b.scale} />
+            <meshStandardMaterial 
+               color={b.color} 
+               roughness={0.7}
+               metalness={0.2}
+            />
+          </mesh>
+          {/* Submersion Mark line */}
+          <mesh position={[0, -b.scale[1]/2 + waterLevel, 0]}>
+             <boxGeometry args={[b.scale[0]+0.1, 0.1, b.scale[2]+0.1]} />
+             <meshStandardMaterial color="#00e5ff" emissive="#00e5ff" emissiveIntensity={2} transparent opacity={0.5} />
+          </mesh>
+          
+          {/* Windows */}
+          {b.height > 12 && (
+             <mesh position={[0, b.height/6, b.scale[2]/2 + 0.1]}>
+                <planeGeometry args={[b.scale[0]*0.7, b.height*0.5]} />
+                <meshStandardMaterial color="#000" transparent opacity={0.4} />
+             </mesh>
+          )}
+        </group>
+      ))}
+
+      {/* Floating Debris */}
+      {debris.map((d, i) => (
+        <FloatingDebris key={`d-${i}`} position={d.position} scale={d.scale} seed={d.seed} />
+      ))}
+    </group>
+  )
+}
+
+function MuddyWater({ level = 0 }) {
+  const waterRef = useRef()
+  useFrame((state) => {
+    if (waterRef.current) {
+      const t = state.clock.elapsedTime
+      waterRef.current.position.y = level + Math.sin(t * 0.4) * 0.15
+      waterRef.current.rotation.x = -Math.PI / 2 + Math.sin(t * 0.2) * 0.005
+    }
+  })
+
+  return (
+    <mesh ref={waterRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, level, 0]} receiveShadow>
+      <planeGeometry args={[1000, 1000, 32, 32]} />
+      <meshStandardMaterial
+        color="#4a3f35" // Muted silt/mud
+        transparent
+        opacity={0.88}
+        roughness={0.9}
+        metalness={0.0}
+      />
+
+    </mesh>
+  )
+}
+
+function SandbagWall({ position, rotation = [0, 0, 0] }) {
+  return (
+    <group position={position} rotation={rotation}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <mesh key={i} position={[0, i * 0.4 + 0.2, 0]} castShadow>
+          <boxGeometry args={[4, 0.4, 1]} />
+          <meshStandardMaterial color="#8b7d6b" roughness={1} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function FloatingVehicle({ position, seed = 0 }) {
+  const meshRef = useRef()
+  useFrame((state) => {
+    if (meshRef.current) {
+      const t = state.clock.elapsedTime
+      meshRef.current.position.y += Math.sin(t * 1.5 + seed) * 0.01
+      meshRef.current.rotation.z += Math.sin(t * 0.8 + seed) * 0.005
+      meshRef.current.rotation.y += 0.001
+    }
+  })
+  return (
+    <group ref={meshRef} position={position}>
+      {/* Body */}
+      <mesh castShadow>
+        <boxGeometry args={[4, 1.5, 2]} />
+        <meshStandardMaterial color={seededRandom(seed) > 0.5 ? "#550000" : "#223344"} />
+      </mesh>
+      {/* Windows */}
+      <mesh position={[0, 0.5, 0]}>
+        <boxGeometry args={[3.8, 0.8, 1.8]} />
+        <meshStandardMaterial color="#000" transparent opacity={0.6} />
+      </mesh>
+    </group>
+  )
+}
+
+function FloodTerrain() {
+  const theme = useSimStore(s => s.theme)
+  const waterLevel = useSimStore(s => s.waterLevel) || 4.2 
+
+  const { buildings, junk, nature, sandbags } = useMemo(() => {
+    const buildings = []
+    const junk = []
+    const nature = []
+    const sandbags = []
+    const gridSize = 12
+    const spacing = 32
+    const offset = (gridSize * spacing) / 2
+
+    for (let gx = 0; gx < gridSize; gx++) {
+      for (let gz = 0; gz < gridSize; gz++) {
+        const seed = gx * 100 + gz
+        const rand = seededRandom(seed)
+        const x = gx * spacing - offset + (seededRandom(seed + 1) - 0.5) * 12
+        const z = gz * spacing - offset + (seededRandom(seed + 2) - 0.5) * 12
+
+        const typeRand = seededRandom(seed + 10)
+
+        // Only moderate amount of buildings
+        if (typeRand < 0.25) {
+          const height = (rand < 0.3) ? 4 : (rand < 0.8 ? 12 : 30) // Mix of small houses and taller ones
+          const w = 8 + rand * 6
+          const d = 8 + rand * 6
+
+          buildings.push({
+            position: [x, height / 2, z],
+            scale: [w, height, d],
+            color: rand > 0.5 ? '#94a3b8' : '#64748b',
+          })
+          
+          if (height > 10 && seededRandom(seed + 5) > 0.6) {
+             sandbags.push({ position: [x + w/2 + 2, 0, z], rotation: [0, Math.PI/2, 0] })
+          }
+        } else if (typeRand < 0.4) {
+          // Floating vehicles / junk
+          junk.push({ 
+            type: 'vehicle', 
+            position: [x, waterLevel + 0.3, z], 
+            seed: seed 
+          })
+        } else if (typeRand < 0.6) {
+           // Submerged trees
+           nature.push({
+              position: [x, 0, z],
+              seed: seed
+           })
+        }
+      }
+    }
+    return { buildings, junk, nature, sandbags }
+  }, [waterLevel])
+
+  const isDark = theme === 'dark'
+
+  return (
+    <group>
+      {/* Ground (Mud) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[1000, 1000]} />
+        <meshStandardMaterial
+          color={isDark ? '#1a1410' : '#2d241c'}
+          roughness={1}
+        />
+      </mesh>
+
+      {/* Flood Water */}
+      <MuddyWater level={waterLevel} />
+      <MuddyWater level={waterLevel - 0.2} />
+
+      {/* Buildings */}
+      {buildings.map((b, i) => (
+        <mesh key={`fb-${i}`} position={b.position} castShadow receiveShadow>
+           <boxGeometry args={b.scale} />
+           <meshStandardMaterial color={b.color} roughness={0.8} />
+        </mesh>
+      ))}
+
+      {/* Trees */}
+      {nature.map((n, i) => (
+         <group key={`ft-${i}`} position={n.position}>
+            <mesh position={[0, 4, 0]} castShadow>
+               <cylinderGeometry args={[0.4, 0.4, 8]} />
+               <meshStandardMaterial color="#3d2b1f" />
+            </mesh>
+            <mesh position={[0, 9, 0]} castShadow>
+               <sphereGeometry args={[4]} />
+               <meshStandardMaterial color="#1a2e1a" />
+            </mesh>
+         </group>
+      ))}
+
+      {/* Junk / Vehicles */}
+      {junk.map((j, i) => (
+        <FloatingVehicle key={`j-${i}`} position={j.position} seed={j.seed} />
+      ))}
+
+      {/* Sandbags */}
+      {sandbags.map((s, i) => (
+         <SandbagWall key={`sb-${i}`} position={s.position} rotation={s.rotation} />
+      ))}
+    </group>
+  )
+}
+
 export default function Terrain({ scenario }) {
   switch (scenario) {
     case 'earthquake': return <EarthquakeTerrain />
+    case 'tsunami': return <TsunamiTerrain />
+    case 'flood': return <FloodTerrain />
     default: return <EarthquakeTerrain />
   }
 }
+
+
