@@ -43,11 +43,11 @@ function Fire({ position, intensity = 1, spread = null }) {
     const numFlames = 15 + Math.floor(Math.random() * 8)
     // create a primary cluster
     for (let i = 0; i < numFlames; i++) {
-       flames.push({
-         ox: (Math.random() - 0.5) * w * 0.7,
-         oz: (Math.random() - 0.5) * d * 0.7,
-         s: 0.45 + Math.random() * 0.75  // Increased scale
-       })
+      flames.push({
+        ox: (Math.random() - 0.5) * w * 0.7,
+        oz: (Math.random() - 0.5) * d * 0.7,
+        s: 0.45 + Math.random() * 0.75  // Increased scale
+      })
     }
     return flames
   }, [spread])
@@ -56,8 +56,8 @@ function Fire({ position, intensity = 1, spread = null }) {
     const t = state.clock.elapsedTime
     if (fireRef.current) {
       fireRef.current.children.forEach((flame, i) => {
-        flame.scale.y = 1 + Math.sin(t * (6 + i%3) + i * 2) * 0.4
-        flame.scale.x = 1 + Math.sin(t * (4 + i%2) + i * 3) * 0.25
+        flame.scale.y = 1 + Math.sin(t * (6 + i % 3) + i * 2) * 0.4
+        flame.scale.x = 1 + Math.sin(t * (4 + i % 2) + i * 3) * 0.25
         flame.scale.z = 1 + Math.cos(t * 5 + i * 4) * 0.25
       })
     }
@@ -384,19 +384,19 @@ function EarthquakeTerrain() {
               isBroken: false,
               damageLevel: 0,
             })
-            
+
             // Major Skyscraper Rooftop Fires
             if (topFiresPlaced < 3 && height > 20) {
-               fires.push({
-                  position: [x, height + 1, z],
-                  intensity: 2.2, // Stronger for impact
-                  spread: [w, d]  
-               })
-               smokes.push({
-                  position: [x, height + 4, z],
-                  scale: 3.5 // Massive smoke plume
-               })
-               topFiresPlaced++
+              fires.push({
+                position: [x, height + 1, z],
+                intensity: 2.2, // Stronger for impact
+                spread: [w, d]
+              })
+              smokes.push({
+                position: [x, height + 4, z],
+                scale: 3.5 // Massive smoke plume
+              })
+              topFiresPlaced++
             }
 
             // Small cracks on some intact buildings — nearby rubble
@@ -595,7 +595,7 @@ function FloatingDebris({ position, scale = 1, seed = 0 }) {
 
 function TsunamiTerrain() {
   const theme = useSimStore(s => s.theme)
-  const waterLevel = useSimStore(s => s.waterLevel) || 2 
+  const waterLevel = useSimStore(s => s.waterLevel) || 2
 
   const { buildings, debris, nature } = useMemo(() => {
     const buildings = []
@@ -657,13 +657,13 @@ function TsunamiTerrain() {
       {/* Layered Water Effect */}
       <Water level={waterLevel} />
       <Water level={waterLevel - 0.5} />
-      
+
       {/* Underwater "ground" haze patches */}
       {Array.from({ length: 20 }).map((_, i) => (
-         <mesh key={`uw-${i}`} rotation={[-Math.PI/2, 0, 0]} position={[(seededRandom(i)-0.5)*400, 0.1, (seededRandom(i+1)-0.5)*400]}>
-            <circleGeometry args={[20 + seededRandom(i+2)*20, 16]} />
-            <meshStandardMaterial color="#003366" transparent opacity={0.4} />
-         </mesh>
+        <mesh key={`uw-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[(seededRandom(i) - 0.5) * 400, 0.1, (seededRandom(i + 1) - 0.5) * 400]}>
+          <circleGeometry args={[20 + seededRandom(i + 2) * 20, 16]} />
+          <meshStandardMaterial color="#003366" transparent opacity={0.4} />
+        </mesh>
       ))}
 
       {/* Coastal Buildings */}
@@ -671,24 +671,24 @@ function TsunamiTerrain() {
         <group key={`tb-${i}`} position={b.position}>
           <mesh castShadow receiveShadow>
             <boxGeometry args={b.scale} />
-            <meshStandardMaterial 
-               color={b.color} 
-               roughness={0.7}
-               metalness={0.2}
+            <meshStandardMaterial
+              color={b.color}
+              roughness={0.7}
+              metalness={0.2}
             />
           </mesh>
           {/* Submersion Mark line */}
-          <mesh position={[0, -b.scale[1]/2 + waterLevel, 0]}>
-             <boxGeometry args={[b.scale[0]+0.1, 0.1, b.scale[2]+0.1]} />
-             <meshStandardMaterial color="#00e5ff" emissive="#00e5ff" emissiveIntensity={2} transparent opacity={0.5} />
+          <mesh position={[0, -b.scale[1] / 2 + waterLevel, 0]}>
+            <boxGeometry args={[b.scale[0] + 0.1, 0.1, b.scale[2] + 0.1]} />
+            <meshStandardMaterial color="#00e5ff" emissive="#00e5ff" emissiveIntensity={2} transparent opacity={0.5} />
           </mesh>
-          
+
           {/* Windows */}
           {b.height > 12 && (
-             <mesh position={[0, b.height/6, b.scale[2]/2 + 0.1]}>
-                <planeGeometry args={[b.scale[0]*0.7, b.height*0.5]} />
-                <meshStandardMaterial color="#000" transparent opacity={0.4} />
-             </mesh>
+            <mesh position={[0, b.height / 6, b.scale[2] / 2 + 0.1]}>
+              <planeGeometry args={[b.scale[0] * 0.7, b.height * 0.5]} />
+              <meshStandardMaterial color="#000" transparent opacity={0.4} />
+            </mesh>
           )}
         </group>
       ))}
@@ -767,7 +767,7 @@ function FloatingVehicle({ position, seed = 0 }) {
 
 function FloodTerrain() {
   const theme = useSimStore(s => s.theme)
-  const waterLevel = useSimStore(s => s.waterLevel) || 4.2 
+  const waterLevel = useSimStore(s => s.waterLevel) || 4.2
 
   const { buildings, junk, nature, sandbags } = useMemo(() => {
     const buildings = []
@@ -798,23 +798,23 @@ function FloodTerrain() {
             scale: [w, height, d],
             color: rand > 0.5 ? '#94a3b8' : '#64748b',
           })
-          
+
           if (height > 10 && seededRandom(seed + 5) > 0.6) {
-             sandbags.push({ position: [x + w/2 + 2, 0, z], rotation: [0, Math.PI/2, 0] })
+            sandbags.push({ position: [x + w / 2 + 2, 0, z], rotation: [0, Math.PI / 2, 0] })
           }
         } else if (typeRand < 0.4) {
           // Floating vehicles / junk
-          junk.push({ 
-            type: 'vehicle', 
-            position: [x, waterLevel + 0.3, z], 
-            seed: seed 
+          junk.push({
+            type: 'vehicle',
+            position: [x, waterLevel + 0.3, z],
+            seed: seed
           })
         } else if (typeRand < 0.6) {
-           // Submerged trees
-           nature.push({
-              position: [x, 0, z],
-              seed: seed
-           })
+          // Submerged trees
+          nature.push({
+            position: [x, 0, z],
+            seed: seed
+          })
         }
       }
     }
@@ -841,23 +841,23 @@ function FloodTerrain() {
       {/* Buildings */}
       {buildings.map((b, i) => (
         <mesh key={`fb-${i}`} position={b.position} castShadow receiveShadow>
-           <boxGeometry args={b.scale} />
-           <meshStandardMaterial color={b.color} roughness={0.8} />
+          <boxGeometry args={b.scale} />
+          <meshStandardMaterial color={b.color} roughness={0.8} />
         </mesh>
       ))}
 
       {/* Trees */}
       {nature.map((n, i) => (
-         <group key={`ft-${i}`} position={n.position}>
-            <mesh position={[0, 4, 0]} castShadow>
-               <cylinderGeometry args={[0.4, 0.4, 8]} />
-               <meshStandardMaterial color="#3d2b1f" />
-            </mesh>
-            <mesh position={[0, 9, 0]} castShadow>
-               <sphereGeometry args={[4]} />
-               <meshStandardMaterial color="#1a2e1a" />
-            </mesh>
-         </group>
+        <group key={`ft-${i}`} position={n.position}>
+          <mesh position={[0, 4, 0]} castShadow>
+            <cylinderGeometry args={[0.4, 0.4, 8]} />
+            <meshStandardMaterial color="#3d2b1f" />
+          </mesh>
+          <mesh position={[0, 9, 0]} castShadow>
+            <sphereGeometry args={[4]} />
+            <meshStandardMaterial color="#1a2e1a" />
+          </mesh>
+        </group>
       ))}
 
       {/* Junk / Vehicles */}
@@ -867,7 +867,7 @@ function FloodTerrain() {
 
       {/* Sandbags */}
       {sandbags.map((s, i) => (
-         <SandbagWall key={`sb-${i}`} position={s.position} rotation={s.rotation} />
+        <SandbagWall key={`sb-${i}`} position={s.position} rotation={s.rotation} />
       ))}
     </group>
   )
@@ -881,5 +881,3 @@ export default function Terrain({ scenario }) {
     default: return <EarthquakeTerrain />
   }
 }
-
-

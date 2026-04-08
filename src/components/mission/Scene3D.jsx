@@ -1,14 +1,15 @@
-import { useRef, useMemo, useState, useEffect } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, Stars, Sky, PerspectiveCamera, Points, PointMaterial } from '@react-three/drei'
+import { useRef } from 'react'
+import { Canvas, useThree } from '@react-three/fiber'
+import { OrbitControls, Stars, Sky, PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
 import { useSimStore } from '../../store/useSimStore'
 import Terrain from './Terrain'
 import DroneModel from './DroneModel'
-import { Maximize2, Minimize2, PanelRightClose, PanelRightOpen, Target } from 'lucide-react'
+import { PanelRightClose, PanelRightOpen, Target } from 'lucide-react'
+import { useEdgeCaseScript } from '../../hooks/useEdgeCaseScript'
 
 function SeedMode({ onSeed }) {
-  const { raycaster, mouse, camera } = useThree()
+  const { mouse, camera } = useThree()
   
   return (
     <mesh 
@@ -52,7 +53,9 @@ function SurvivorFigure({ pos, status, confidence, alive }) {
 
 export default function Scene3D() {
   const controlsRef = useRef()
-  const drones = useSimStore(s => s.drones)
+  const rawDrones = useSimStore(s => s.drones)
+  const displayDrones = useEdgeCaseScript(rawDrones)
+  
   const survivors = useSimStore(s => s.survivors)
   const seedSurvivor = useSimStore(s => s.seedSurvivor)
   const scenario = useSimStore(s => s.scenario)
@@ -97,9 +100,10 @@ export default function Scene3D() {
         {/* Scene Entities */}
         <Terrain scenario={scenario} />
         
-        {drones.map((drone, index) => (
+        {displayDrones.map((drone, index) => (
           <DroneModel key={drone.id} drone={drone} index={index} />
         ))}
+
         
         {survivors.map(survivor => (
           <SurvivorFigure 

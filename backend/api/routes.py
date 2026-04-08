@@ -233,6 +233,50 @@ async def get_trajectory(id: int):
             "geometry": {"type": "LineString", "coordinates": coords},
             "properties": {"drone": drone.callsign}
         }
+@router.post("/api/simulation/edge-case")
+async def trigger_edge_case(data: dict):
+    from backend.simulation.world_state import LogEntry
+    scenario = data.get("scenario")
+    import random
+    
+    if scenario == "battery_critical":
+        drone = next((d for d in world.drones if d.callsign == "FALCON"), world.drones[0])
+        drone.battery = 8.0
+        drone.status = "RETURNING"
+        world.event_log.append(LogEntry(world.sim_time, drone.id, "critical", f"CRITICAL BATTERY FAILURE ON {drone.callsign} -> FORCED RTB"))
+    
+    elif scenario == "imminent_collision":
+        if len(world.drones) >= 3:
+            d1 = world.drones[1] # Hawk
+            d2 = world.drones[2] # Osprey
+            # Force them onto a collision course rapidly
+            import numpy as np
+            midpoint = (d1.pos + d2.pos) / 2
+            d1.vel = (midpoint - d1.pos) * 0.5
+            d2.vel = (midpoint - d2.pos) * 0.5
+            # place them close together
+            d1.pos = midpoint + np.array([-3., 0., 0.])
+            d2.pos = midpoint + np.array([3., 0., 0.])
+            world.event_log.append(LogEntry(world.sim_time, "system", "warning", f"COLLISION IMMINENT: {d1.callsign} & {d2.callsign}. INJECTED!"))
+            
+    elif scenario == "wind_disturbance":
+        for drone in world.drones:
+            import numpy as np
+            wind = np.array([15.0, 0, -15.0]) # huge crosswind
+            drone.vel += wind
+        world.event_log.append(LogEntry(world.sim_time, "system", "warning", "HEAVY WIND SHEAR DETECTED. APPLYING CROSSWIND VECTORS."))
+            
+    elif scenario == "comms_loss":
+        drone = next((d for d in world.drones if d.callsign == "MERLIN"), world.drones[-1])
+        drone.status = "HOVER"
+        drone.battery -= 5.0 # penalty
+        # Stop its velocity so it visually hovers
+        import numpy as np
+        drone.vel = np.array([0., 0., 0.])
+        world.event_log.append(LogEntry(world.sim_time, drone.id, "critical", f"COMMS LOSS ON {drone.callsign}. ENTERING AUTONOMOUS LOITER."))
+        
+    return {"status": "injected", "scenario": scenario}
+
 @router.post("/api/drone/command")
 async def drone_command(data: dict):
     drone_id = data.get("drone_id")

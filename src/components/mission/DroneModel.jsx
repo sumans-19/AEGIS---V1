@@ -66,7 +66,11 @@ export default function DroneModel({ drone, index }) {
   useFrame((state) => {
     if (!groupRef.current) return
     const time = simulationRunning ? state.clock.elapsedTime : simulationTime
-    const pos = getDronePosition(drone, time)
+    
+    let pos = getDronePosition(drone, time)
+    if (drone.isScriptOverride && drone.pos) {
+       pos = { x: drone.pos[0], y: drone.pos[1], z: drone.pos[2] }
+    }
     
     // Guard against NaN values to ensure drone never vanishes
     if (isNaN(pos.x) || isNaN(pos.y) || isNaN(pos.z)) return
@@ -74,7 +78,10 @@ export default function DroneModel({ drone, index }) {
     groupRef.current.position.set(pos.x, pos.y, pos.z)
 
     // Smooth banking rotation
-    const nextPos = getDronePosition(drone, time + 0.1)
+    let nextPos = getDronePosition(drone, time + 0.1)
+    if (drone.isScriptOverride && drone.nextPos) {
+       nextPos = { x: drone.nextPos[0], y: drone.nextPos[1], z: drone.nextPos[2] }
+    }
     const mv = new THREE.Vector3().subVectors(nextPos, pos)
     if (mv.lengthSq() > 0.001) {
       const dir = mv.normalize()
@@ -84,11 +91,13 @@ export default function DroneModel({ drone, index }) {
     }
 
     // Store updates
-    useSimStore.getState().updateDrone(drone.id, {
-      altitude: getDroneAltitude(pos) || 0,
-      speed: getDroneSpeed(drone, time) || 0,
-      pos: [pos.x, pos.y, pos.z]
-    })
+    if (!drone.isScriptOverride) {
+      useSimStore.getState().updateDrone(drone.id, {
+        altitude: getDroneAltitude(pos) || 0,
+        speed: getDroneSpeed(drone, time) || 0,
+        pos: [pos.x, pos.y, pos.z]
+      })
+    }
 
     // Rotor animation
     rotorRefs.current.forEach(r => r && (r.rotation.y += 1.5))

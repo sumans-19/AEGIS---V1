@@ -7,6 +7,7 @@ import LeftPanel from '../components/mission/LeftPanel'
 import Scene3D from '../components/mission/Scene3D'
 import RightPanel from '../components/mission/RightPanel'
 import BottomBar from '../components/mission/BottomBar'
+import EdgeCaseOverlay from '../components/mission/EdgeCaseOverlay'
 
 export default function Mission() {
   const [searchParams] = useSearchParams()
@@ -16,6 +17,7 @@ export default function Mission() {
   const rightPanelExpanded = useSimStore(s => s.rightPanelExpanded)
 
   const fullMapMode = useSimStore(s => s.fullMapMode)
+  const scriptId = searchParams.get('script')
 
   useSimulation()
 
@@ -58,7 +60,7 @@ export default function Mission() {
         overflow: 'hidden',
         position: 'relative'
       }}>
-        {!leftPanelCollapsed && !fullMapMode && (
+        {!leftPanelCollapsed && !fullMapMode && !scriptId && (
           <div style={{ 
             width: '320px', 
             minWidth: '320px',
@@ -77,9 +79,10 @@ export default function Mission() {
           overflow: 'hidden'
         }}>
           <Scene3D />
+          {scriptId && <EdgeCaseOverlay scriptId={scriptId} />}
         </div>
 
-        {showRight && (
+        {showRight && !scriptId && (
           <div style={{ 
             width: '360px', 
             minWidth: '360px',
@@ -92,7 +95,7 @@ export default function Mission() {
         )}
       </div>
 
-      {!fullMapMode && (
+      {!fullMapMode && !scriptId && (
         <div style={{ 
           height: '140px', 
           width: '100%', 

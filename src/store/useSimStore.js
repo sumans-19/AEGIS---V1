@@ -177,6 +177,12 @@ export const useSimStore = create(
       // Theme
       theme: 'dark',
       toggleTheme: () => set(s => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+      
+      // Playback State
+      playbackProgress: 0,
+      setPlaybackProgress: (p) => set({ playbackProgress: typeof p === 'function' ? p(get().playbackProgress) : p }),
+      isPlayingScript: false,
+      setIsPlayingScript: (b) => set({ isPlayingScript: b }),
     }),
     {
       name: 'aegis-storage',

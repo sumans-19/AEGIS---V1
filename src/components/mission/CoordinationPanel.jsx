@@ -76,58 +76,27 @@ function SwarmCanvas({ drones, selectedId, survivors }) {
         ctx.textAlign = 'center'
         ctx.fillText(`ZONE ${ZONE_NAMES[i]}`, x1 + w / 2, Math.max(40, height * 0.15))
       }
-      // ── Drone Active Bounds ──
+      // ── Selected Drone Column Highlight ──
       liveDrones.forEach((d, i) => {
-        // Find the drone's zone boundaries map space to canvas space
-        const [x1, y1, x2, y2] = d.assigned_zone || [0, 0, 4, 20]
-        const wx1 = x1 * 5 - WORLD, wz1 = y1 * 5 - WORLD
-        const wx2 = x2 * 5 - WORLD, wz2 = y2 * 5 - WORLD
-        const p1 = toCanvas(wx1, wz1), p2 = toCanvas(wx2, wz2)
-        
         const color = DRONE_COLORS[d.callsign] || '#94a3b8'
-        const w = p2.x - p1.x
-        const h = p2.y - p1.y
-
         if (d.id === selectedId) {
           // Highlight entire column for selected drone
           const colW = width / 5
           const colX = i * colW
-          ctx.fillStyle = color + '0a' // very subtle tint for the whole active column
+          ctx.fillStyle = color + '0f' // subtle tint for the active column
           ctx.fillRect(colX, 0, colW, height)
           
-          // Draw the precise boundary box with bright corners
-          ctx.strokeStyle = color + '80'
+          // Draw subtle outline around the active column
+          ctx.strokeStyle = color + '50'
           ctx.lineWidth = 1.5
-          ctx.strokeRect(p1.x, p1.y, w, h)
+          ctx.strokeRect(colX, 0, colW, height)
           
-          // Add corner brackets for tactical look
-          const clen = 10
-          ctx.strokeStyle = color
-          ctx.lineWidth = 2
-          ctx.beginPath()
-          // Top Left
-          ctx.moveTo(p1.x, p1.y + clen); ctx.lineTo(p1.x, p1.y); ctx.lineTo(p1.x + clen, p1.y)
-          // Top Right
-          ctx.moveTo(p2.x - clen, p1.y); ctx.lineTo(p2.x, p1.y); ctx.lineTo(p2.x, p1.y + clen)
-          // Bottom Left
-          ctx.moveTo(p1.x, p2.y - clen); ctx.lineTo(p1.x, p2.y); ctx.lineTo(p1.x + clen, p2.y)
-          // Bottom Right
-          ctx.moveTo(p2.x - clen, p2.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p2.x, p2.y - clen)
-          ctx.stroke()
-        } else {
-          // Inactive boundaries just get dashed outlines
-          ctx.strokeStyle = color + '30'
-          ctx.lineWidth = 1
-          ctx.setLineDash([4, 4])
-          ctx.strokeRect(p1.x, p1.y, w, h)
-          ctx.setLineDash([])
+          // Active label for the column
+          ctx.fillStyle = color
+          ctx.font = 'bold 12px JetBrains Mono'
+          ctx.textAlign = 'left'
+          ctx.fillText(`SECTOR ${d.callsign} ACTIVE`, colX + 10, 20)
         }
-        
-        // Active label for the box
-        ctx.fillStyle = color + (d.id === selectedId ? 'cc' : '60')
-        ctx.font = `bold ${d.id === selectedId ? 11 : 9}px JetBrains Mono`
-        ctx.textAlign = 'left'
-        ctx.fillText(`SECTOR ${d.callsign}`, p1.x + 4, p1.y + (d.id === selectedId ? 14 : 12))
       })
 
       // ── Drone-to-drone comms links ──

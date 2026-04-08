@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import Hero from '../components/landing/Hero'
 import About from '../components/landing/About'
 import ScenarioGrid from '../components/landing/ScenarioGrid'
+import EdgeCasesGrid from '../components/landing/EdgeCasesGrid'
 import Footer from '../components/landing/Footer'
 import ThemeToggle from '../components/ThemeToggle'
 
@@ -50,7 +51,7 @@ export default function Landing() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-          {['System', 'Scenarios', 'About'].map(link => (
+          {['System', 'Scenarios', 'Edgecases', 'About'].map(link => (
             <a key={link} href={`#${link.toLowerCase()}`} style={{
               color: 'var(--text-secondary)',
               textDecoration: 'none',
@@ -63,7 +64,7 @@ export default function Landing() {
             onMouseOver={e => e.target.style.color = 'var(--cyan)'}
             onMouseOut={e => e.target.style.color = 'var(--text-secondary)'}
             >
-              {link}
+              {link.replace('Edgecases', 'Edge Cases')}
             </a>
           ))}
           <a href="/mission" style={{
@@ -99,6 +100,7 @@ export default function Landing() {
       <Hero />
       <About />
       <ScenarioGrid />
+      <EdgeCasesGrid />
       <Footer />
     </motion.div>
   )

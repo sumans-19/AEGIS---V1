@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Play, Pause, FastForward, Settings, UserPlus, 
   Map, Download, ShieldCheck, Database, LayoutPanelTop,
-  Menu, Maximize, PanelLeftClose, PanelLeftOpen, ArrowLeft, GitBranch
+  Menu, Maximize, PanelLeftClose, PanelLeftOpen, ArrowLeft, GitBranch, PlayCircle
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
 import ExportPanel from './ExportPanel'
 import CoordinationPanel from './CoordinationPanel'
+import ReplayPanel from './ReplayPanel'
 
 const toolBtnStyle = {
    display: 'flex',
@@ -25,6 +26,7 @@ export default function TopBar() {
   const navigate = useNavigate()
   const [showExport, setShowExport] = useState(false)
   const [showCoord, setShowCoord] = useState(false)
+  const [showReplay, setShowReplay] = useState(false)
   const simulationRunning = useSimStore(s => s.simulationRunning)
   const simulationSpeed = useSimStore(s => s.simulationSpeed || 1)
   const toggleSim = useSimStore(s => s.toggleSimulation)
@@ -254,6 +256,24 @@ export default function TopBar() {
           COORD
         </button>
 
+        <button
+          onClick={() => setShowReplay(true)}
+          style={{
+            ...toolBtnStyle,
+            borderColor: 'rgba(168, 85, 247, 0.3)',
+            color: '#a855f7',
+            background: 'rgba(168, 85, 247, 0.06)',
+            fontSize: '11px',
+            fontFamily: 'JetBrains Mono',
+            letterSpacing: '1px',
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = 'rgba(168, 85, 247, 0.12)'; e.currentTarget.style.borderColor = '#a855f7' }}
+          onMouseOut={e => { e.currentTarget.style.background = 'rgba(168, 85, 247, 0.06)'; e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)' }}
+        >
+          <PlayCircle size={14} />
+          REPLAY
+        </button>
+
         <SimulationBtn 
            onClick={() => setShowExport(true)} 
            icon={Database} 
@@ -278,6 +298,7 @@ export default function TopBar() {
       <AnimatePresence>
         {showExport && <ExportPanel onClose={() => setShowExport(false)} />}
         {showCoord && <CoordinationPanel onClose={() => setShowCoord(false)} />}
+        {showReplay && <ReplayPanel onClose={() => setShowReplay(false)} />}
       </AnimatePresence>
     </div>
   )
