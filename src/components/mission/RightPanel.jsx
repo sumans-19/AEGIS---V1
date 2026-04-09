@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import SidebarTabs from './SidebarTabs'
 import DroneView from './DroneView'
 import ThermalView from './ThermalView'
+import RadarView from './RadarView'
 import AreaMap from './AreaMap'
 import SurvivorsLog from './SurvivorsLog'
 import PathfindingView from './PathfindingView'
@@ -19,6 +20,7 @@ export default function RightPanel() {
   const tabContent = {
     droneview: DroneView,
     thermal: ThermalView,
+    radar: RadarView,
     areamap: AreaMap,
     survivors: SurvivorsLog,
     pathfinding: PathfindingView,

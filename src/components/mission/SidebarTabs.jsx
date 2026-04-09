@@ -1,9 +1,10 @@
 import { useSimStore } from '../../store/useSimStore'
-import { Camera, Thermometer, Map, Users, Network } from 'lucide-react'
+import { Camera, Thermometer, Map, Users, Network, Radio } from 'lucide-react'
 
 const TABS = [
   { id: 'droneview', label: 'CAM', icon: Camera },
   { id: 'thermal', label: 'THERM', icon: Thermometer },
+  { id: 'radar', label: 'RADAR', icon: Radio },
   { id: 'areamap', label: 'MAP', icon: Map },
   { id: 'survivors', label: 'LOG', icon: Users },
   { id: 'pathfinding', label: 'A*', icon: Network },

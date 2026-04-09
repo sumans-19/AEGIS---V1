@@ -282,23 +282,46 @@ export default function ThermalView() {
         })
       })
 
-      // ── 3e. RADAR SWEEP ───────────────────────────────
-      const sweepAngle = (t * 0.5) % (Math.PI * 2)
-      const radarGrad = ctx.createConicalGradient
-        ? ctx.createConicalGradient(0, 0, sweepAngle)
-        : null
-      // Fallback: simple line sweep
+      // ── 3e. RADAR SWEEP OVERLAY ────────────────────────
+      const sweepAngle = (t * 0.8) % (Math.PI * 2)
       ctx.save()
       ctx.translate(pos[0] * 15, pos[2] * 15) // center on drone
+      
+      // Radar Rings
+      ctx.strokeStyle = 'rgba(0, 229, 255, 0.1)'
+      ctx.setLineDash([5, 15])
+      for (let r = 1; r <= 3; r++) {
+        ctx.beginPath()
+        ctx.arc(0, 0, (S * 0.8 / 3) * r, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+      ctx.setLineDash([])
+
+      // Sweep Trail
       ctx.beginPath()
       ctx.moveTo(0, 0)
-      ctx.arc(0, 0, S * 0.8, sweepAngle - 0.5, sweepAngle)
-      ctx.closePath()
-      const sweepFill = ctx.createLinearGradient(0, 0, Math.cos(sweepAngle) * S * 0.8, Math.sin(sweepAngle) * S * 0.8)
-      sweepFill.addColorStop(0, 'rgba(0, 229, 255, 0.07)')
-      sweepFill.addColorStop(1, 'transparent')
-      ctx.fillStyle = sweepFill
+      ctx.arc(0, 0, S * 0.8, sweepAngle - 0.6, sweepAngle)
+      ctx.lineTo(0, 0)
+      const sweepGrad = ctx.createRadialGradient(0, 0, S * 0.2, 0, 0, S * 0.8)
+      sweepGrad.addColorStop(0, 'rgba(0, 225, 255, 0.08)')
+      sweepGrad.addColorStop(1, 'transparent')
+      ctx.fillStyle = sweepGrad
       ctx.fill()
+
+      // Active Sweep Line
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(Math.cos(sweepAngle) * S * 0.8, Math.sin(sweepAngle) * S * 0.8)
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)'
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+      
+      // Glint on sweep
+      ctx.beginPath()
+      ctx.arc(Math.cos(sweepAngle) * S * 0.8, Math.sin(sweepAngle) * S * 0.8, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#00e5ff';
+      ctx.fill();
+
       ctx.restore()
 
       ctx.restore()
