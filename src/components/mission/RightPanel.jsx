@@ -4,9 +4,9 @@ import { X } from 'lucide-react'
 import SidebarTabs from './SidebarTabs'
 import DroneView from './DroneView'
 import ThermalView from './ThermalView'
-import TrajectoryMap from './TrajectoryMap'
 import AreaMap from './AreaMap'
 import SurvivorsLog from './SurvivorsLog'
+import PathfindingView from './PathfindingView'
 
 export default function RightPanel() {
   const selectedDrone = useSimStore(s => s.selectedDrone)
@@ -19,9 +19,9 @@ export default function RightPanel() {
   const tabContent = {
     droneview: DroneView,
     thermal: ThermalView,
-    trajectory: TrajectoryMap,
     areamap: AreaMap,
     survivors: SurvivorsLog,
+    pathfinding: PathfindingView,
   }
 
   const ActiveTab = tabContent[activeSidebarTab] || DroneView
