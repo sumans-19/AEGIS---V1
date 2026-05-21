@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, Navigation, Zap, AlertTriangle, Radio,
   Target, RotateCcw, Shield, Activity, MapPin,
-  ChevronRight, Wifi, Battery, ArrowUpRight, Clock
+  ChevronRight, Wifi, Battery, ArrowUpRight, Clock, ArrowLeft
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
 
@@ -205,6 +205,15 @@ export default function CoordinationPanel({ onClose }) {
   const [activeCmd, setActiveCmd] = useState(null)
   const [cmdLog, setCmdLog] = useState([])
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [onClose])
+
   // Poll backend
   useEffect(() => {
     const poll = async () => {
@@ -222,7 +231,16 @@ export default function CoordinationPanel({ onClose }) {
   const droneColor = DRONE_COLORS[drone?.callsign] || '#00e5ff'
   const droneIdx = drones.findIndex(d => d.id === drone?.id)
   const zoneLabel = ZONE_NAMES[droneIdx] ?? 'A'
-  const zonePct = coordData?.zone_pcts?.[droneIdx] ?? ((simulationTime / 600) * 100 * 0.9)
+  
+  // Safe zone calculation: fallback if backend data is missing or malformed
+  const getZonePct = () => {
+    if (coordData?.zone_pcts && coordData.zone_pcts[droneIdx] !== undefined) {
+      return coordData.zone_pcts[droneIdx]
+    }
+    // Static fallback based on simulation time if backend is offline/500ing
+    return Math.min(100, (simulationTime / 600) * 100 * 0.9)
+  }
+  const zonePct = getZonePct()
 
   // All separation pairs involving this drone
   const myPairs = (coordData?.current_separations || drones.flatMap((d1, i) =>
@@ -283,7 +301,7 @@ export default function CoordinationPanel({ onClose }) {
         fontFamily: 'JetBrains Mono, monospace',
       }}
     >
-      {/* ═══════ HEADER ══════════════════════════════════════════════════════ */}
+      {/* ── HEADER ────────────────────────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: '20px',
         padding: '16px 28px',
@@ -292,7 +310,32 @@ export default function CoordinationPanel({ onClose }) {
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
-          <div style={{ width: 3, height: 28, background: droneColor, borderRadius: 2 }} />
+          <button 
+            onClick={onClose}
+            style={{
+              background: 'rgba(0, 229, 255, 0.15)',
+              border: '1px solid #00e5ff60',
+              color: '#00e5ff',
+              cursor: 'pointer',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontFamily: 'JetBrains Mono',
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '1px',
+              transition: '0.2s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(0, 229, 255, 0.3)'; e.currentTarget.style.borderColor = '#00e5ff' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(0, 229, 255, 0.15)'; e.currentTarget.style.borderColor = '#00e5ff60' }}
+          >
+            <ArrowLeft size={14} /> EXIT DASHBOARD
+          </button>
+          
+          <div style={{ width: 1, height: 20, background: 'rgba(0,229,255,0.2)' }} />
+
           <div>
             <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', letterSpacing: '2px', fontFamily: 'Rajdhani' }}>
               SWARM COORDINATION · {drone?.callsign || '—'}
@@ -323,12 +366,12 @@ export default function CoordinationPanel({ onClose }) {
         </div>
 
         <button onClick={onClose} style={{
-          background: 'none', border: '1px solid rgba(71,85,105,0.4)',
-          color: '#475569', cursor: 'pointer', padding: '8px', borderRadius: '4px',
-          display: 'flex', transition: '0.2s',
+          background: 'none', border: '1px solid rgba(255,69,0,0.4)',
+          color: '#ff4500', cursor: 'pointer', padding: '8px', borderRadius: '4px',
+          display: 'flex', transition: '0.2s', alignSelf: 'center'
         }}
-          onMouseOver={e => { e.currentTarget.style.borderColor = '#ff4500'; e.currentTarget.style.color = '#ff4500' }}
-          onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(71,85,105,0.4)'; e.currentTarget.style.color = '#475569' }}
+          onMouseOver={e => { e.currentTarget.style.borderColor = '#ff4500'; e.currentTarget.style.background = 'rgba(255,69,0,0.1)' }}
+          onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,69,0,0.4)'; e.currentTarget.style.background = 'none' }}
         ><X size={18} /></button>
       </div>
 

@@ -1,11 +1,18 @@
 import { useSimStore } from '../../store/useSimStore'
 
 const STATUS_COLORS = {
+  IDLE: '#64748b',
   SCANNING: '#00e5ff',
+  DEPLOYING: '#a855f7',
   RETURNING: '#ff6b2b',
   SEARCHING: '#ffb300',
   CHARGING: '#00ff88',
+  HOVER: '#94a3b8',
 }
+
+const DRONE_COLORS = [
+  '#00e5ff', '#ff6b2b', '#00ff88', '#a855f7', '#ffb300',
+]
 
 export default function DroneCard({ drone }) {
   const selectedDrone = useSimStore(s => s.selectedDrone)
@@ -13,6 +20,7 @@ export default function DroneCard({ drone }) {
   const isSelected = selectedDrone === drone.id
 
   const statusColor = STATUS_COLORS[drone.status] || 'var(--text-dim)'
+  const droneColor = DRONE_COLORS[(drone.id - 1) % DRONE_COLORS.length]
   const batteryColor = drone.battery < 20 ? 'var(--red)' : drone.battery < 50 ? 'var(--orange)' : 'var(--green)'
 
   return (
@@ -58,7 +66,13 @@ export default function DroneCard({ drone }) {
             fontSize: '10px',
             color: 'var(--text-dim)',
             marginLeft: '8px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px'
           }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%', background: droneColor, boxShadow: `0 0 6px ${droneColor}`
+            }} />
             {drone.callsign}
           </span>
         </div>

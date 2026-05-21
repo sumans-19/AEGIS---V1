@@ -67,7 +67,7 @@ export default function Landing() {
               {link.replace('Edgecases', 'Edge Cases')}
             </a>
           ))}
-          <a href="/mission" style={{
+          <a href="/disasters" style={{
             color: 'var(--cyan)',
             textDecoration: 'none',
             fontFamily: 'Rajdhani, sans-serif',
@@ -91,7 +91,7 @@ export default function Landing() {
             e.target.style.boxShadow = 'none'
           }}
           >
-            Launch Mission
+            Mission Registry
           </a>
           <ThemeToggle />
         </div>

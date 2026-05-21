@@ -27,21 +27,9 @@
 }
 
 [data-theme='light'] {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
-  --bg-panel: #ffffff;
-  --bg-card: #ffffff;
-  --cyan: #0891b2;
-  --cyan-dim: #0891b220;
-  --cyan-glow: 0 0 8px #0891b220;
-  --cyan-glow-strong: 0 0 16px #0891b240;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-dim: #94a3b8;
-  --border-color: #e2e8f0;
-  --scene-bg: #f8fafc;
+  /* Apply light mode ONLY to the 3D Scene / Map */
+  --scene-bg: #e2e8f0;
   --grid-color: #0891b2;
-  --bg-gradient: radial-gradient(ellipse at center, rgba(248,250,252,0.4) 0%, rgba(248,250,252,0.8) 70%, #f8fafc 100%);
 }
 
 /* ─── BASE STYLES ─── */

@@ -5,6 +5,7 @@ import { useSimStore } from './store/useSimStore'
 import { useBackend } from './hooks/useBackend'
 import Landing from './pages/Landing'
 import Mission from './pages/Mission'
+import Disasters from './pages/Disasters'
 
 export default function App() {
   const theme = useSimStore(s => s.theme)
@@ -19,6 +20,7 @@ export default function App() {
       <AnimatePresence mode="wait">
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/disasters" element={<Disasters />} />
           <Route path="/mission" element={<Mission />} />
         </Routes>
       </AnimatePresence>

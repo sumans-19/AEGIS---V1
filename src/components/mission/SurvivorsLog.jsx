@@ -57,60 +57,77 @@ export default function SurvivorsLog() {
                  transition={{ delay: idx * 0.05 }}
                  className="corner-brackets"
                  style={{
-                   padding: '16px',
+                   padding: '14px',
                    background: isRescued ? 'rgba(0, 255, 136, 0.05)' : 'rgba(0, 229, 255, 0.05)',
                    border: `1px solid ${isRescued ? 'rgba(0, 255, 136, 0.2)' : 'rgba(0, 229, 255, 0.2)'}`,
-                   display: 'grid',
-                   gridTemplateColumns: '1fr auto',
-                   gap: '12px',
+                   display: 'flex',
+                   flexDirection: 'column',
+                   gap: '10px',
                  }}
                >
-                 <div>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{ fontFamily: 'JetBrains Mono', fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>SURVIVOR_#{s.id}</span>
-                      <span style={{ 
-                        fontSize: '9px', 
-                        padding: '2px 6px', 
-                        borderRadius: '2px', 
-                        background: isRescued ? '#00ff8820' : '#00e5ff20',
-                        color: isRescued ? '#00ff88' : '#00e5ff',
-                        fontFamily: 'JetBrains Mono',
-                        letterSpacing: '1px'
-                      }}>
-                        {isRescued ? 'RESCUE_CONFIRMED' : 'THERMAL_ID'}
-                      </span>
-                   </div>
-                   
-                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                      <DataPair label="TEMP" value={`${s.body_temp?.toFixed(1)}°C`} icon={Heart} />
-                      <DataPair label="CONFID" value={`${s.confidence > 1 ? s.confidence.toFixed(0) : (s.confidence * 100).toFixed(0)}%`} icon={Target} />
-                      <DataPair label="SENSE" value={drone?.callsign || 'UAV'} icon={MapPin} />
-                      <DataPair label="LATLON" value={`${s.real_coords?.[0]?.toFixed(3)}, ${s.real_coords?.[1]?.toFixed(3)}`} icon={MapPin} />
-                   </div>
+                 {/* Top Row: Title & Badge */}
+                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <span style={{ 
+                       fontFamily: 'JetBrains Mono', 
+                       fontSize: '12px', 
+                       fontWeight: 700, 
+                       color: '#e2e8f0',
+                       whiteSpace: 'nowrap',
+                       overflow: 'hidden',
+                       textOverflow: 'ellipsis',
+                       maxWidth: '150px'
+                    }}>
+                      SURV_#{String(s.id).replace('SURV-', '').slice(-8)}
+                    </span>
+                    <span style={{ 
+                      fontSize: '9px', 
+                      padding: '3px 6px', 
+                      borderRadius: '2px', 
+                      background: isRescued ? '#00ff8820' : '#00e5ff20',
+                      color: isRescued ? '#00ff88' : '#00e5ff',
+                      fontFamily: 'JetBrains Mono',
+                      letterSpacing: '1px'
+                    }}>
+                      {isRescued ? 'RESCUE_CONFIRMED' : 'THERMAL_ID'}
+                    </span>
+                 </div>
+                 
+                 {/* Data Grid */}
+                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '4px 0' }}>
+                    <DataPair label="TEMP" value={`${s.body_temp?.toFixed(1) || 37.0}°C`} icon={Heart} />
+                    <DataPair label="CONFID" value={`${s.confidence > 1 ? s.confidence?.toFixed(0) : ((s.confidence || 0) * 100).toFixed(0)}%`} icon={Target} />
+                    <DataPair label="SENSE" value={drone?.callsign || 'UAV'} icon={MapPin} />
+                    <DataPair label="COORD" value={`${(s.real_coords?.[0] ?? s.pos?.[0] ?? 0).toFixed(1)}, ${(s.real_coords?.[1] ?? s.pos?.[2] ?? 0).toFixed(1)}`} icon={MapPin} />
                  </div>
 
-                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                   {!isRescued && (
-                      <button 
-                         onClick={() => markAsRescued(s.id)}
-                         style={{
-                            background: '#00ff88',
-                            color: '#0a0a0f',
-                            border: 'none',
-                            padding: '10px 14px',
-                            fontFamily: 'Rajdhani',
-                            fontWeight: 700,
-                            fontSize: '11px',
-                            cursor: 'pointer',
-                            letterSpacing: '1px',
-                            boxShadow: '0 0 10px #00ff8840'
-                         }}
-                      >
-                         DISPATCH_RESCUE
-                      </button>
-                   )}
-                   {isRescued && <UserCheck size={24} color="#00ff88" />}
-                 </div>
+                 {/* Action Button */}
+                 {!isRescued ? (
+                    <button 
+                       onClick={() => markAsRescued(s.id)}
+                       style={{
+                          width: '100%',
+                          background: '#00ff88',
+                          color: '#0a0a0f',
+                          border: 'none',
+                          padding: '8px 0',
+                          fontFamily: 'Rajdhani',
+                          fontWeight: 700,
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          letterSpacing: '2px',
+                          boxShadow: '0 0 10px #00ff8840',
+                          transition: 'opacity 0.2s'
+                       }}
+                       onMouseOver={e => e.currentTarget.style.opacity = 0.8}
+                       onMouseOut={e => e.currentTarget.style.opacity = 1}
+                    >
+                       DISPATCH_RESCUE
+                    </button>
+                 ) : (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '6px' }}>
+                       <UserCheck size={20} color="#00ff88" />
+                    </div>
+                 )}
                </motion.div>
              )
           })}
