@@ -49,6 +49,34 @@ npm run dev
 - [x] Refine "Treasure Map" Aesthetic for Field Surveyor Mode
 - [ ] Implement Swarm Collision Avoidance (V1.1)
 - [ ] Expand Thermal Imaging Overlay (V1.2)
+- [ ] Add Research References & Hardware Constraints (V1.1)
+- [ ] Implement Dynamic Multi-Drone Task Allocation (V1.2)
+
+---
+
+## 🔬 ACADEMIC FOUNDATION
+
+### Core Algorithms (Baseline Hardware: DJI Matrice 300 RTK)
+
+**Swarm Coordination & Control:**
+- Beard, R. W., et al. (2006). *Cooperative Control of Multi-Agent Systems*. Handbook of Unmanned Aerial Vehicles, Springer.
+- Olfati-Saber, R., et al. (2007). *Consensus and Cooperation in Networked Multi-Agent Systems*. Proceedings of IEEE.
+
+**Path Planning & Collision Avoidance:**
+- Karaman, S. & Frazzoli, E. (2011). *Sampling-based Algorithms for Optimal Motion Planning*. The International Journal of Robotics Research, 30(7), 846-894.
+- Van den Berg, J., et al. (2008). *Reciprocal Collision Avoidance for Multiple Robots*. Proceedings of IEEE ICRA 2008.
+
+**SLAM & Computer Vision:**
+- Thrun, S. (2002). *Robotic SLAM: Known Unknowns*. MIT Press.
+- Redmon, J., et al. (2016). *You Only Look Once: Unified, Real-Time Object Detection*. Proceedings of CVPR 2016.
+- ORB-SLAM2: Murillo-Rubio, J. M., et al. (2017). https://github.com/UZ-SLAMLab/ORB_SLAM2
+
+**Energy Management for UAVs:**
+- Beard, R. W. & McLain, T. W. (2012). *Small Unmanned Aircraft: Theory and Practice*. Princeton University Press.
+
+### Documentation Files
+- **[IMPROVEMENT_AREAS.md](IMPROVEMENT_AREAS.md)** - Detailed analysis of feedback & recommended enhancements
+- **[HARDWARE_CONSTRAINTS.md](HARDWARE_CONSTRAINTS.md)** - DJI Matrice 300 RTK specs & power models
 
 ---
 
