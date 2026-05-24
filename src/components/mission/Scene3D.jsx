@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react'
+import { useRef, useState, useMemo, useEffect } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { OrbitControls, Stars, Sky, PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
@@ -8,6 +8,31 @@ import DroneModel from './DroneModel'
 import { PanelRightClose, PanelRightOpen, Target } from 'lucide-react'
 import { useEdgeCaseScript } from '../../hooks/useEdgeCaseScript'
 import { DRONE_BASE } from '../../hooks/useDroneMovement'
+
+// ═══════════════════════════════════
+// ATMOSPHERE CONFIG
+// ═══════════════════════════════════
+const SKY_CONFIG = {
+  earthquake: { sunPosition: [30, 8, -50], turbidity: 20, rayleigh: 0.5 },
+  tsunami: { sunPosition: [100, 40, 50], turbidity: 8, rayleigh: 2 },
+  flood: { sunPosition: [50, 5, 30], turbidity: 18, rayleigh: 0.3 },
+}
+
+const FOG_CONFIG = {
+  earthquake: { color: '#1a1814', density: 0.0022 },
+  tsunami: { color: '#0c1a2e', density: 0.0018 },
+  flood: { color: '#1a1410', density: 0.0028 },
+}
+
+function SceneFog({ scenario }) {
+  const { scene } = useThree()
+  useEffect(() => {
+    const config = FOG_CONFIG[scenario] || FOG_CONFIG.earthquake
+    scene.fog = new THREE.FogExp2(config.color, config.density)
+    return () => { scene.fog = null }
+  }, [scene, scenario])
+  return null
+}
 
 // ═══════════════════════════════════
 // DRONE BASE PLATFORM (helipad)
@@ -376,15 +401,37 @@ export default function Scene3D() {
         )}
         <CameraController />
 
-        {/* Environment */}
-        <Sky sunPosition={[100, 20, 100]} />
-        <Stars radius={150} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-        <ambientLight intensity={theme === 'dark' ? 0.3 : 0.8} />
+        {/* Atmosphere */}
+        <SceneFog scenario={scenario} />
+
+        {/* Enhanced Sky */}
+        <Sky
+          sunPosition={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).sunPosition}
+          turbidity={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).turbidity}
+          rayleigh={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).rayleigh}
+        />
+        <Stars radius={200} depth={80} count={8000} factor={4} saturation={0} fade speed={0.5} />
+
+        {/* Natural lighting */}
+        <hemisphereLight
+          args={[
+            scenario === 'tsunami' ? '#87CEEB' : scenario === 'flood' ? '#8B7355' : '#C4A882',
+            '#362a1a',
+            theme === 'dark' ? 0.35 : 0.6
+          ]}
+        />
+        <ambientLight intensity={theme === 'dark' ? 0.15 : 0.5} />
         <directionalLight
-          position={[10, 20, 10]}
-          intensity={theme === 'dark' ? 0.6 : 1.5}
+          position={[50, 80, 30]}
+          intensity={theme === 'dark' ? 0.8 : 1.8}
           castShadow
-          shadow-mapSize={[2048, 2048]}
+          shadow-mapSize={[4096, 4096]}
+          shadow-camera-left={-250}
+          shadow-camera-right={250}
+          shadow-camera-top={250}
+          shadow-camera-bottom={-250}
+          shadow-camera-near={0.5}
+          shadow-camera-far={500}
         />
 
         {/* Terrain */}

@@ -74,6 +74,7 @@ export const useSimStore = create(
       seedModeActive: false,
       fullMapMode: false,
       coordinationPanelOpen: false,
+      bottomPanelCollapsed: false,
 
       // ══════════════════════════════════════
       // ACTIONS
@@ -186,6 +187,7 @@ export const useSimStore = create(
       setSeedModeActive: (val) => set({ seedModeActive: val }),
       setFullMapMode: (val) => set({ fullMapMode: val }),
       setPovMode: (val) => set({ povMode: val }),
+      setBottomPanelCollapsed: (val) => set({ bottomPanelCollapsed: val }),
 
       toggleSimulation: () => {
         const currentlyRunning = get().simulationRunning
