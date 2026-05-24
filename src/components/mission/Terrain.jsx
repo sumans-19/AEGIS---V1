@@ -1,7 +1,57 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { Sparkles } from '@react-three/drei'
 import { useSimStore } from '../../store/useSimStore'
+
+// ── Shared Building Window Texture ──
+const buildingTex = (() => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256; canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, 256, 256)
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      ctx.fillStyle = Math.random() > 0.4 ? '#1a1a1a' : '#000000'
+      ctx.fillRect(c * 32 + 4, r * 32 + 6, 24, 20)
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.RepeatWrapping
+  return tex
+})()
+
+// ── Broken/Abandoned Car ──
+function BrokenCar({ position, rotation, color, type }) {
+  // type 0: standard car, 1: SUV, 2: flipped
+  const isFlipped = type === 2
+  const yOff = isFlipped ? 0.8 : 0.3
+  const rot = isFlipped ? [rotation[0], rotation[1], Math.PI - 0.2] : rotation
+
+  return (
+    <group position={[position[0], position[1] + yOff, position[2]]} rotation={rot}>
+      {/* Chassis */}
+      <mesh castShadow>
+        <boxGeometry args={type === 1 ? [2.2, 0.8, 4.5] : [2.0, 0.6, 4.2]} />
+        <meshStandardMaterial color={color} roughness={0.6} metalness={0.4} />
+      </mesh>
+      {/* Cabin */}
+      <mesh position={[0, type === 1 ? 0.7 : 0.5, -0.2]} castShadow>
+        <boxGeometry args={type === 1 ? [1.8, 0.7, 2.5] : [1.6, 0.5, 2.0]} />
+        <meshStandardMaterial color="#111" roughness={0.1} metalness={0.8} />
+      </mesh>
+      {/* Wheels */}
+      {[[-1, -0.3, -1.5], [1, -0.3, -1.5], [-1, -0.3, 1.5], [1, -0.3, 1.5]].map((pos, i) => (
+        <mesh key={i} position={pos} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.35, 0.35, 0.2, 16]} />
+          <meshStandardMaterial color="#0A0A0A" roughness={0.9} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
 
 function seededRandom(seed) {
   let x = Math.sin(seed) * 10000
@@ -40,7 +90,7 @@ function Fire({ position, intensity = 1, spread = null }) {
     if (!spread) return [{ ox: 0, oz: 0, s: 1 }]
     const flames = []
     const [w, d] = spread
-    const numFlames = 15 + Math.floor(Math.random() * 8)
+    const numFlames = 5 + Math.floor(Math.random() * 4)
     // create a primary cluster
     for (let i = 0; i < numFlames; i++) {
       flames.push({
@@ -69,6 +119,11 @@ function Fire({ position, intensity = 1, spread = null }) {
   return (
     <group position={position}>
       <group ref={fireRef}>
+        <mesh position={[0, 1.5, 0]}>
+          <sphereGeometry args={[1.5 * intensity, 16, 16]} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+        <Sparkles count={spread ? 40 : 15} scale={spread ? spread[0] * 1.5 : 4} size={6} speed={2.5} opacity={1} color="#ffaa00" position={[0, 3, 0]} />
         {subFlames.map((flm, i) => (
           <group key={i} position={[flm.ox, 0, flm.oz]}>
             {/* Outer Flame Core */}
@@ -198,7 +253,7 @@ function EarthquakeTerrain() {
     '#353535', // very dark
   ]
 
-  const { buildings, rubble, nature, roads, fires, smokes, cracks } = useMemo(() => {
+  const { buildings, rubble, nature, roads, fires, smokes, cracks, cars } = useMemo(() => {
     const buildings = []
     const rubble = []
     const nature = []
@@ -206,6 +261,7 @@ function EarthquakeTerrain() {
     const fires = []
     const smokes = []
     const cracks = []
+    const cars = []
     const gridSize = 18
     const spacing = 30
     const offset = (gridSize * spacing) / 2   // 270
@@ -269,9 +325,19 @@ function EarthquakeTerrain() {
           const wallColor = WALL_SHADES[colorIdx]
           const roofColor = ROOF_SHADES[roofIdx]
 
+          // Add a car near the road occasionally
+          if (seededRandom(seed + 80) > 0.6) {
+            cars.push({
+              position: [x + (seededRandom(seed + 81) - 0.5) * 20, 0, z + (seededRandom(seed + 82) - 0.5) * 20],
+              rotation: [0, seededRandom(seed + 83) * Math.PI * 2, 0],
+              color: ['#1E3A8A', '#991B1B', '#374151', '#F59E0B', '#10B981'][Math.floor(seededRandom(seed + 84) * 5)],
+              type: Math.floor(seededRandom(seed + 85) * 3) // 0: car, 1: suv, 2: flipped
+            })
+          }
+
           if (damageLevel < 0.35) {
             // FULLY COLLAPSED — rubble pile
-            const chunks = 4 + Math.floor(rand * 5)
+            const chunks = 2 + Math.floor(rand * 3)
             for (let c = 0; c < chunks; c++) {
               const cw = 2 + rand * 5
               const ch = 0.8 + rand * 3
@@ -292,7 +358,7 @@ function EarthquakeTerrain() {
               })
             }
             // Scattered small debris
-            for (let r = 0; r < 12; r++) {
+            for (let r = 0; r < 3; r++) {
               rubble.push({
                 position: [
                   x + (seededRandom(seed + r * 5) - 0.5) * 12,
@@ -410,7 +476,7 @@ function EarthquakeTerrain() {
           }
         } else {
           // Empty lot with scattered debris
-          for (let r = 0; r < 3; r++) {
+          for (let r = 0; r < 1; r++) {
             rubble.push({
               position: [
                 x + (seededRandom(seed + r * 20) - 0.5) * 10,
@@ -424,7 +490,7 @@ function EarthquakeTerrain() {
         }
       }
     }
-    return { buildings, rubble, nature, roads, fires, smokes, cracks }
+    return { buildings, rubble, nature, roads, fires, smokes, cracks, cars }
   }, [])
 
   const isDark = theme === 'dark'
@@ -478,36 +544,30 @@ function EarthquakeTerrain() {
               color={b.color}
               roughness={0.85}
               metalness={0.05}
+              map={(!b.isBroken && b.scale[1] > 8) ? buildingTex : undefined}
             />
           </mesh>
 
-          {/* Roof slab */}
+          {/* Roof slab & details */}
           {!b.isBroken && (
-            <mesh position={[0, b.scale[1] / 2 + 0.2, 0]} castShadow>
-              <boxGeometry args={[b.scale[0] + 0.4, 0.4, b.scale[2] + 0.4]} />
-              <meshStandardMaterial color={b.roofColor} roughness={0.9} />
-            </mesh>
-          )}
-
-          {/* Window rows - only for standing buildings */}
-          {!b.isBroken && b.scale[1] > 8 && (
-            <>
-              {[0.2, 0.4, 0.6, 0.8].map(h => (
-                <mesh
-                  key={h}
-                  position={[0, b.scale[1] * (h - 0.5), b.scale[2] / 2 + 0.06]}
-                >
-                  <planeGeometry args={[b.scale[0] * 0.7, b.scale[1] * 0.06]} />
-                  <meshStandardMaterial
-                    color="#1A1A1A"
-                    emissive={isDark ? '#3A3520' : '#000'}
-                    emissiveIntensity={isDark ? 0.15 : 0}
-                    transparent
-                    opacity={0.8}
-                  />
+            <group position={[0, b.scale[1] / 2 + 0.2, 0]}>
+              <mesh castShadow>
+                <boxGeometry args={[b.scale[0] + 0.4, 0.4, b.scale[2] + 0.4]} />
+                <meshStandardMaterial color={b.roofColor} roughness={0.9} />
+              </mesh>
+              {/* HVAC Unit */}
+              <mesh position={[b.scale[0] * 0.2, 0.6, -b.scale[2] * 0.2]} castShadow>
+                <boxGeometry args={[b.scale[0] * 0.3, 0.8, b.scale[2] * 0.3]} />
+                <meshStandardMaterial color="#2a2a2a" roughness={0.7} metalness={0.5} />
+              </mesh>
+              {/* Antenna */}
+              {b.scale[1] > 25 && (
+                <mesh position={[-b.scale[0] * 0.3, 1.5, b.scale[2] * 0.3]}>
+                  <cylinderGeometry args={[0.05, 0.05, 3]} />
+                  <meshStandardMaterial color="#111" />
                 </mesh>
-              ))}
-            </>
+              )}
+            </group>
           )}
 
           {/* Damage marks on partially broken buildings */}
@@ -527,7 +587,7 @@ function EarthquakeTerrain() {
 
       {/* Rubble / debris */}
       {rubble.map((r, i) => (
-        <mesh key={`r-${i}`} position={r.position} rotation={r.rotation} castShadow>
+        <mesh key={`r-${i}`} position={r.position} rotation={r.rotation}>
           <boxGeometry args={[r.scale, r.scale * 0.5, r.scale * 0.8]} />
           <meshStandardMaterial color="#505050" roughness={0.95} />
         </mesh>
@@ -536,6 +596,11 @@ function EarthquakeTerrain() {
       {/* Dead/damaged trees */}
       {nature.map((n, i) => (
         <DeadTree key={`t-${i}`} position={n.position} seed={n.seed} />
+      ))}
+
+      {/* Broken Cars */}
+      {cars.map((c, i) => (
+        <BrokenCar key={`car-${i}`} position={c.position} rotation={c.rotation} color={c.color} type={c.type} />
       ))}
 
       {/* Fires */}

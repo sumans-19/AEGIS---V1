@@ -8,6 +8,7 @@ import RadarView from './RadarView'
 import AreaMap from './AreaMap'
 import SurvivorsLog from './SurvivorsLog'
 import PathfindingView from './PathfindingView'
+import ObstacleLogPanel from './ObstacleLogPanel'
 
 export default function RightPanel() {
   const selectedDrone = useSimStore(s => s.selectedDrone)
@@ -24,6 +25,7 @@ export default function RightPanel() {
     areamap: AreaMap,
     survivors: SurvivorsLog,
     pathfinding: PathfindingView,
+    obstaclelog: ObstacleLogPanel,
   }
 
   const ActiveTab = tabContent[activeSidebarTab] || DroneView

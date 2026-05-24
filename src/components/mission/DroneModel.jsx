@@ -11,13 +11,13 @@ const DRONE_COLORS = [
 ]
 
 // Detection config
-const LOOKAHEAD_M       = 22   // metres ahead to probe for buildings
-const DETECT_XZ_RADIUS  = 8    // metres from building XZ edge to trigger detection
-const TALL_THRESHOLD    = 40   // only buildings taller than this trigger detection
-const STALL_SECS        = 0.32 // seconds drone holds position on obstacle detect
-const POPUP_SECS        = 2.6  // seconds popup stays visible
-const AVOID_SECS        = 4.0  // seconds avoidance offset active
-const COOLDOWN_SECS     = 8.0  // min seconds between detections per drone
+const LOOKAHEAD_M       = 35   // metres ahead to probe for buildings (increased)
+const DETECT_XZ_RADIUS  = 14   // metres from building XZ edge to trigger detection (wider)
+const TALL_THRESHOLD    = 30   // only buildings taller than this trigger detection
+const STALL_SECS        = 0.25 // seconds drone holds position on obstacle detect
+const POPUP_SECS        = 2.5  // seconds popup stays visible then auto-hides
+const AVOID_SECS        = 5.5  // seconds avoidance offset active (longer to fully clear)
+const COOLDOWN_SECS     = 10.0 // min seconds between detections per drone
 
 export default function DroneModel({ drone, index }) {
   const groupRef      = useRef()
@@ -32,6 +32,7 @@ export default function DroneModel({ drone, index }) {
   const selectedDrone = useSimStore(s => s.selectedDrone)
   const missionPhase  = useSimStore(s => s.missionPhase)
   const isSelected    = selectedDrone === drone.id
+  const addObstacleLog = useSimStore(s => s.addObstacleLog)
 
   const trailPositions = useRef([])
   const scanColor      = DRONE_COLORS[(drone.id - 1) % DRONE_COLORS.length]
@@ -47,6 +48,8 @@ export default function DroneModel({ drone, index }) {
   const stallEndTime         = useRef(0)
   const detectionCooldown    = useRef(0)         // don't detect before this time
   const lastStablePos        = useRef(new THREE.Vector3())
+  const lastFrameTime        = useRef(0)         // for real delta-time popup timer
+  const detectedBuilding     = useRef(null)      // store which building triggered
 
   // ── Trail / scan geometry ─────────────────────────────────────────────────
   const { trailGeometry, trailLine } = useMemo(() => {
@@ -80,7 +83,9 @@ export default function DroneModel({ drone, index }) {
     if (isNaN(pos.x) || isNaN(pos.y) || isNaN(pos.z)) return
 
     const now = state.clock.elapsedTime
-    const dt  = 1 / 60
+    // Real delta-time for accurate popup timer
+    const realDt = lastFrameTime.current > 0 ? Math.min(now - lastFrameTime.current, 0.1) : 1/60
+    lastFrameTime.current = now
 
     const isActivelyFlying = ['DEPLOYING', 'SEARCHING'].includes(missionPhase)
 
@@ -88,53 +93,77 @@ export default function DroneModel({ drone, index }) {
     if (isActivelyFlying) {
 
       // Compute heading direction for look-ahead
-      const nextPos = getDronePosition(drone, 0.05)
+      const nextPos = getDronePosition(drone, 0.08)
       const hdx = nextPos.x - pos.x
       const hdz = nextPos.z - pos.z
       const hdlen = Math.sqrt(hdx * hdx + hdz * hdz)
       const dirX  = hdlen > 0.001 ? hdx / hdlen : 0
       const dirZ  = hdlen > 0.001 ? hdz / hdlen : 0
 
-      // Point LOOKAHEAD_M metres ahead in XZ
-      const lax = pos.x + dirX * LOOKAHEAD_M
-      const laz = pos.z + dirZ * LOOKAHEAD_M
+      // Sample MULTIPLE look-ahead points to catch buildings sooner
+      const probePoints = [
+        { x: pos.x + dirX * LOOKAHEAD_M * 0.4, z: pos.z + dirZ * LOOKAHEAD_M * 0.4 },
+        { x: pos.x + dirX * LOOKAHEAD_M * 0.7, z: pos.z + dirZ * LOOKAHEAD_M * 0.7 },
+        { x: pos.x + dirX * LOOKAHEAD_M,       z: pos.z + dirZ * LOOKAHEAD_M       },
+      ]
 
       // Check look-ahead against real building bounding boxes
       if (!obstacleActive.current && now > detectionCooldown.current) {
-        for (const b of BUILDING_OBSTACLES) {
-          if (b.height < TALL_THRESHOLD) continue   // only significant buildings
-          const ex = Math.max(0, Math.abs(lax - b.cx) - b.hw)
-          const ez = Math.max(0, Math.abs(laz - b.cz) - b.hd)
-          if (Math.sqrt(ex * ex + ez * ez) < DETECT_XZ_RADIUS) {
-            // ── Building detected ahead! ─────────────────────────────────
-            obstacleActive.current       = true
-            obstaclePopupVisible.current = true
-            obstaclePopupTimer.current   = 0
+        outerLoop:
+        for (const probe of probePoints) {
+          for (const b of BUILDING_OBSTACLES) {
+            if (b.height < TALL_THRESHOLD) continue   // only significant buildings
+            // Check if drone altitude would intersect the building vertically
+            if (pos.y > b.height + 4) continue        // flying well above, skip
+            const ex = Math.max(0, Math.abs(probe.x - b.cx) - b.hw)
+            const ez = Math.max(0, Math.abs(probe.z - b.cz) - b.hd)
+            if (Math.sqrt(ex * ex + ez * ez) < DETECT_XZ_RADIUS) {
+              // ── Building detected ahead! ─────────────────────────────────
+              obstacleActive.current       = true
+              obstaclePopupVisible.current = true
+              obstaclePopupTimer.current   = 0
+              detectedBuilding.current     = b
 
-            // Brief stall: hold position for STALL_SECS
-            isStalling.current  = true
-            stallEndTime.current = now + STALL_SECS
+              // Brief stall: hold position for STALL_SECS
+              isStalling.current  = true
+              stallEndTime.current = now + STALL_SECS
 
-            // Perpendicular lateral avoidance (each drone alternates side)
-            const side = (Math.sin(drone.id * 7.3 + now) > 0) ? 1 : -1
-            const mag  = 14 + Math.sin(now * 0.3 + drone.id * 2) * 7
-            avoidTarget.current = {
-              x: -dirZ * mag * side,
-              z:  dirX * mag * side,
+              // Perpendicular lateral avoidance — larger magnitude to fully clear building
+              const side = (Math.sin(drone.id * 7.3 + now * 0.1) > 0) ? 1 : -1
+              const mag  = Math.max(b.hw, b.hd) * 2.2 + 12  // scaled to building size
+              avoidTarget.current = {
+                x: -dirZ * mag * side,
+                z:  dirX * mag * side,
+              }
+
+              // Emit to obstacle log store
+              const simTime = Math.floor(useSimStore.getState().simulationTime)
+              useSimStore.getState().addObstacleLog(drone.id, {
+                id: Date.now() + drone.id,
+                time: simTime,
+                timestamp: now,
+                message: `Obstacle detected — height ${Math.round(b.height)}m. Rerouting ${side > 0 ? 'RIGHT' : 'LEFT'} (+${Math.round(mag)}m offset).`,
+                pos: [Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)],
+                severity: b.height > 50 ? 'HIGH' : 'MED',
+              })
+
+              break outerLoop
             }
-            break
           }
         }
       }
 
-      // Advance obstacle popup/avoidance timers
+      // Advance obstacle popup/avoidance timers using REAL delta time
       if (obstacleActive.current) {
-        obstaclePopupTimer.current += dt
-        if (obstaclePopupTimer.current > POPUP_SECS)  obstaclePopupVisible.current = false
+        obstaclePopupTimer.current += realDt
+        // Hide popup after POPUP_SECS
+        if (obstaclePopupTimer.current > POPUP_SECS) obstaclePopupVisible.current = false
+        // Clear avoidance after AVOID_SECS
         if (obstaclePopupTimer.current > AVOID_SECS) {
           obstacleActive.current  = false
           avoidTarget.current     = { x: 0, z: 0 }
           detectionCooldown.current = now + COOLDOWN_SECS   // prevent rapid re-triggering
+          detectedBuilding.current  = null
         }
       }
 
@@ -147,9 +176,9 @@ export default function DroneModel({ drone, index }) {
         // Normal: set computed path position then apply lateral offset
         groupRef.current.position.set(pos.x, pos.y, pos.z)
 
-        // Smoothly lerp avoidOffset toward its current target
-        avoidOffset.current.x += (avoidTarget.current.x - avoidOffset.current.x) * 0.045
-        avoidOffset.current.z += (avoidTarget.current.z - avoidOffset.current.z) * 0.045
+        // Smoothly lerp avoidOffset toward its current target (faster response to clear buildings)
+        avoidOffset.current.x += (avoidTarget.current.x - avoidOffset.current.x) * 0.09
+        avoidOffset.current.z += (avoidTarget.current.z - avoidOffset.current.z) * 0.09
         groupRef.current.position.x += avoidOffset.current.x
         groupRef.current.position.z += avoidOffset.current.z
 

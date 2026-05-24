@@ -292,9 +292,9 @@ export function computeSearchPaths(searchRegion, deployPaths = {}) {
 
 // ═════════════════════════════════════════════════════════════════════════
 // RETURN PATHS: Current position → own pad (unique path per drone)
-// Each drone takes a different intermediate exit waypoint before heading home.
+// Only drones that were ACTIVE (deployed) should return; inactive ones stay put.
 // ═════════════════════════════════════════════════════════════════════════
-export function computeReturnPaths(currentPositions) {
+export function computeReturnPaths(currentPositions, activeCount = 5) {
   const result = {}
 
   // Give each drone a unique exit corner so they spread out and don't convoy
@@ -308,8 +308,15 @@ export function computeReturnPaths(currentPositions) {
 
   for (let i = 0; i < 5; i++) {
     const id  = i + 1
-    const pos = currentPositions[id] || { x: 0, z: 0 }
     const pad = BASE_PADS[i]
+
+    // Drones beyond the active count never left base — keep them stationary
+    if (i >= activeCount) {
+      result[id] = [{ x: pad.x, z: pad.z }]   // trivial 1-point path = stay put
+      continue
+    }
+
+    const pos = currentPositions[id] || { x: 0, z: 0 }
 
     // Intermediate waypoint: move toward edge of city before heading home
     const exitMag = CITY_OFFSET * 0.85
@@ -388,9 +395,16 @@ export function getDronePosition(drone, timeOffset = 0) {
 
     case 'RETURNING': {
       const path = returnPaths[drone.id]
-      if (!path || !returnStartTime) {
-        return { x: drone.pos?.[0] || 0, y: drone.pos?.[1] || CRUISE_ALT, z: drone.pos?.[2] || 0 }
+      const pad  = BASE_PADS[(drone.id - 1) % 5]
+
+      // Trivial/stay-put path (length <= 1) means this drone never deployed — lock at pad
+      if (!path || path.length <= 1) {
+        return { x: pad.x, y: pad.y, z: pad.z }
       }
+      if (!returnStartTime) {
+        return { x: drone.pos?.[0] || pad.x, y: drone.pos?.[1] || pad.y, z: drone.pos?.[2] || pad.z }
+      }
+
       const delay   = (drone.id - 1) * 1.8   // stagger takeoff so they don't convoy
       const elapsed = Math.max(0, now - returnStartTime - delay)
       if (elapsed <= 0) return { x: drone.pos?.[0] || 0, y: drone.pos?.[1] || CRUISE_ALT, z: drone.pos?.[2] || 0 }

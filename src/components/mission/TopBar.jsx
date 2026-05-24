@@ -4,7 +4,7 @@ import {
   MapPin, Rocket, RotateCcw, Maximize, RefreshCw, Sun, Moon, CheckCircle2
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
-import { computeDeployPaths, computeReturnPaths, DRONE_BASE } from '../../hooks/useDroneMovement'
+import { computeDeployPaths, computeReturnPaths, getActiveDronesCount } from '../../hooks/useDroneMovement'
 
 const PHASE_LABELS = {
   IDLE: 'STANDBY',
@@ -76,16 +76,22 @@ export default function TopBar() {
   }
 
   const handleEndTask = () => {
-    // Compute return paths from current drone positions
+    // Only return the drones that actually deployed on this mission
+    const activeCount = searchRegion ? getActiveDronesCount(searchRegion) : drones.length
+
+    // Compute return paths — inactive drones get a trivial stay-at-pad path
     const positions = {}
     drones.forEach(d => {
       positions[d.id] = { x: d.pos?.[0] || 0, z: d.pos?.[2] || 0 }
     })
-    const paths = computeReturnPaths(positions)
+    const paths = computeReturnPaths(positions, activeCount)
     startReturn(paths)
-    addNotification('Return to base initiated. All drones recalling.', 'system')
+    addNotification(`Return to base initiated. ${activeCount} drone(s) recalling.`, 'system')
+
+    // Only set RETURNING on drones that actually flew; leave others IDLE
     drones.forEach(d => {
-      useSimStore.getState().updateDrone(d.id, { status: 'RETURNING' })
+      const wasDeployed = d.id <= activeCount
+      useSimStore.getState().updateDrone(d.id, { status: wasDeployed ? 'RETURNING' : 'IDLE' })
     })
   }
 

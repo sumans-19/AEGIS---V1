@@ -60,6 +60,9 @@ export const useSimStore = create(
       searchStartTime: null,
       returnStartTime: null,
 
+      // ── Obstacle Detection Logs (per drone) ──
+      droneObstacleLogs: {}, // { [droneId]: [{time, message, pos}] }
+
       // ── Notifications ──
       notifications: [
         { id: 1, message: 'System initialized. Drones stationed at base.', type: 'system', timestamp: Date.now() },
@@ -174,6 +177,21 @@ export const useSimStore = create(
         }
         set(s => ({ survivors: [...s.survivors, newS] }))
       },
+
+      // ── Obstacle Log ──
+      addObstacleLog: (droneId, entry) => set(state => {
+        const prev = state.droneObstacleLogs[droneId] || []
+        return {
+          droneObstacleLogs: {
+            ...state.droneObstacleLogs,
+            [droneId]: [...prev, entry].slice(-60),
+          }
+        }
+      }),
+
+      clearObstacleLogs: (droneId) => set(state => ({
+        droneObstacleLogs: { ...state.droneObstacleLogs, [droneId]: [] }
+      })),
 
       // ── UI Actions ──
       setCoordinationPanelOpen: (val) => set({ coordinationPanelOpen: val }),
