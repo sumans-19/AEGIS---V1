@@ -62,11 +62,6 @@ export default function TopBar() {
     addNotification('Click two points on the terrain to define the search area.', 'guide')
   }
 
-  const handleStartSeeding = () => {
-    setMissionPhase('READY_TO_DEPLOY')
-    addNotification('Seeding complete. Drones are ready for deployment.', 'success')
-  }
-
   const handleStartMission = () => {
     if (!searchRegion) return
     const paths = computeDeployPaths(searchRegion)
@@ -76,6 +71,11 @@ export default function TopBar() {
     drones.forEach(d => {
       useSimStore.getState().updateDrone(d.id, { status: 'DEPLOYING' })
     })
+  }
+
+  const handleFinishSeedingAndDeploy = () => {
+    setMissionPhase('READY_TO_DEPLOY')
+    handleStartMission()
   }
 
   const handleEndTask = () => {
@@ -253,16 +253,7 @@ export default function TopBar() {
 
         {missionPhase === 'SEED_SURVIVORS' && seededSurvivors.length > 0 && (
           <ActionButton
-            onClick={handleStartSeeding}
-            icon={CheckCircle2}
-            label="START SEEDING"
-            color="#ffb300"
-          />
-        )}
-
-        {missionPhase === 'READY_TO_DEPLOY' && (
-          <ActionButton
-            onClick={handleStartMission}
+            onClick={handleFinishSeedingAndDeploy}
             icon={Rocket}
             label="DEPLOY DRONES"
             color="#00ff88"

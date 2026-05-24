@@ -70,8 +70,8 @@ export function getBuildingTexture(width = 512, height = 512, isDark = false) {
   canvas.height = height
   const ctx = canvas.getContext('2d')
 
-  // Base concrete color
-  ctx.fillStyle = isDark ? '#2a2a2a' : '#555555'
+  // Base concrete color (light enough to be tinted by mesh color)
+  ctx.fillStyle = '#cccccc'
   ctx.fillRect(0, 0, width, height)
 
   // Draw windows
@@ -138,10 +138,8 @@ export function getParticleTexture(type = 'fire') {
     gradient.addColorStop(0.5, 'rgba(255, 50, 0, 0.6)')
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
   } else if (type === 'smoke') {
-    gradient.addColorStop(0, 'rgba(150, 150, 150, 0.5)')
-  } else if (type === 'smoke') {
-    gradient.addColorStop(0, 'rgba(150, 150, 150, 0.5)')
-    gradient.addColorStop(0.5, 'rgba(100, 100, 100, 0.1)')
+    gradient.addColorStop(0, 'rgba(150, 150, 150, 0.3)')
+    gradient.addColorStop(0.5, 'rgba(100, 100, 100, 0.05)')
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
   } else if (type === 'leaf') {
     // A blotchy green texture for tree canopies
@@ -204,12 +202,12 @@ function RealisticTree({ position, scale = 1, seed = 0 }) {
 
 function StreetLight({ position, rotation = [0, 0, 0], seed = 0 }) {
   const isWorking = seededRandom(seed) > 0.6
-  const lightRef = useRef()
+  const materialRef = useRef()
   useFrame((state) => {
-    if (isWorking && lightRef.current) {
+    if (isWorking && materialRef.current) {
       // Flickering effect for broken lights
       const flicker = seededRandom(seed + 1) > 0.5 ? (Math.random() > 0.95 ? 0 : 1) : 1
-      lightRef.current.intensity = 1.5 * flicker
+      materialRef.current.emissiveIntensity = 2 * flicker
     }
   })
   return (
@@ -232,9 +230,8 @@ function StreetLight({ position, rotation = [0, 0, 0], seed = 0 }) {
       {/* Emissive Bulb */}
       <mesh position={[1.6, 7.94, 0]}>
         <planeGeometry args={[0.3, 0.15]} />
-        <meshStandardMaterial color="#fff" emissive={isWorking ? "#ffddaa" : "#000"} emissiveIntensity={2} />
+        <meshStandardMaterial ref={materialRef} color="#fff" emissive={isWorking ? "#ffddaa" : "#000"} emissiveIntensity={2} />
       </mesh>
-      {isWorking && <pointLight ref={lightRef} position={[1.6, 7.8, 0]} color="#ffddaa" distance={20} />}
     </group>
   )
 }
@@ -357,7 +354,7 @@ function Fire({ position, intensity = 1, spread = null }) {
 // ── Billboard Smoke ──
 function Smoke({ position, scale = 1 }) {
   const meshRef = useRef()
-  const particleCount = 15
+  const particleCount = 10
   
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const particles = useMemo(() => {
@@ -843,6 +840,7 @@ function EarthquakeTerrain() {
           <mesh castShadow receiveShadow>
             <boxGeometry args={b.scale} />
             <meshStandardMaterial
+              color={b.color}
               map={getBuildingTexture(512, 512, isDark)}
               roughness={0.9}
               metalness={0.05}
@@ -1044,6 +1042,7 @@ function TsunamiTerrain() {
           <mesh castShadow receiveShadow>
             <boxGeometry args={b.scale} />
             <meshStandardMaterial
+              color={b.color}
               map={getBuildingTexture(512, 512, isDark)}
               roughness={0.7}
               metalness={0.2}
@@ -1274,6 +1273,7 @@ function FloodTerrain() {
         <mesh key={`fb-${i}`} position={b.position} castShadow receiveShadow>
           <boxGeometry args={b.scale} />
           <meshStandardMaterial 
+            color={b.color}
             map={getBuildingTexture(512, 512, isDark)}
             roughness={0.8} 
             bumpMap={getProceduralTexture('bump')}
