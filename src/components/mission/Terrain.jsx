@@ -206,22 +206,22 @@ function EarthquakeTerrain() {
     const fires = []
     const smokes = []
     const cracks = []
-    const gridSize = 12
-    const spacing = 22
-    const offset = (gridSize * spacing) / 2
+    const gridSize = 18
+    const spacing = 30
+    const offset = (gridSize * spacing) / 2   // 270
 
     // Road grid
     for (let i = 0; i <= gridSize; i++) {
       const pos = i * spacing - offset
-      roads.push({ start: [pos, -offset - 15], end: [pos, offset + 15] })
-      roads.push({ start: [-offset - 15, pos], end: [offset + 15, pos] })
+      roads.push({ start: [pos, -offset - 20], end: [pos, offset + 20] })
+      roads.push({ start: [-offset - 20, pos], end: [offset + 20, pos] })
     }
 
-    // Ground cracks (seismic fissures)
-    for (let c = 0; c < 25; c++) {
-      const sx = (seededRandom(c * 77) - 0.5) * 200
-      const sz = (seededRandom(c * 88) - 0.5) * 200
-      const len = 15 + seededRandom(c * 99) * 40
+    // Ground cracks (seismic fissures) — scaled to new city size
+    for (let c = 0; c < 40; c++) {
+      const sx = (seededRandom(c * 77) - 0.5) * 420
+      const sz = (seededRandom(c * 88) - 0.5) * 420
+      const len = 20 + seededRandom(c * 99) * 60
       const ang = seededRandom(c * 111) * Math.PI
       cracks.push({
         start: [sx, sz],
@@ -321,9 +321,9 @@ function EarthquakeTerrain() {
             }
           } else if (damageLevel < 0.6) {
             // PARTIALLY COLLAPSED — leaning/broken building
-            const height = 8 + rand * 15
-            const w = 7 + rand * 5
-            const d = 7 + rand * 5
+            const height = 16 + rand * 30
+            const w = 9 + rand * 8
+            const d = 9 + rand * 8
             const lean = (seededRandom(seed + 7) - 0.5) * 0.3
 
             buildings.push({
@@ -371,9 +371,9 @@ function EarthquakeTerrain() {
             }
           } else {
             // INTACT building (damaged but standing)
-            const height = 10 + rand * 25
-            const w = 7 + rand * 6
-            const d = 7 + rand * 6
+            const height = 20 + rand * 55
+            const w = 9 + rand * 8
+            const d = 9 + rand * 8
 
             buildings.push({
               position: [x, height / 2, z],
@@ -433,7 +433,7 @@ function EarthquakeTerrain() {
     <group>
       {/* Ground — dusty/cracked earth */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[500, 500]} />
+        <planeGeometry args={[1200, 1200]} />
         <meshStandardMaterial
           color={isDark ? '#1C1C1A' : '#6B6B60'}
           roughness={1}
@@ -441,10 +441,10 @@ function EarthquakeTerrain() {
       </mesh>
 
       {/* Dust/dirt patches on ground */}
-      {Array.from({ length: 30 }, (_, i) => {
-        const px = (seededRandom(i * 200) - 0.5) * 300
-        const pz = (seededRandom(i * 201) - 0.5) * 300
-        const r = 8 + seededRandom(i * 202) * 15
+      {Array.from({ length: 60 }, (_, i) => {
+        const px = (seededRandom(i * 200) - 0.5) * 800
+        const pz = (seededRandom(i * 201) - 0.5) * 800
+        const r = 10 + seededRandom(i * 202) * 20
         return (
           <mesh key={`dust-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[px, 0.03, pz]}>
             <circleGeometry args={[r, 12]} />

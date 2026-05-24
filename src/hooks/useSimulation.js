@@ -38,8 +38,8 @@ export function useSimulation() {
         if (isDeployComplete()) {
           deployChecked.current = true
 
-          // Compute search paths & transition
-          const sPaths = computeSearchPaths(store.searchRegion)
+          // Pass deployPaths so each drone's search starts from its deploy endpoint (no teleport)
+          const sPaths = computeSearchPaths(store.searchRegion, store.deployPaths)
           useSimStore.getState().startSearch(sPaths)
           useSimStore.getState().addNotification('All drones arrived. Search operation commencing.', 'success')
           useSimStore.getState().addEvent({
@@ -47,6 +47,7 @@ export function useSimulation() {
             message: 'All drones deployed to search region. Initiating sweep pattern.',
             type: 'system',
           })
+
 
           // Update drone statuses
           store.drones.forEach(d => {
