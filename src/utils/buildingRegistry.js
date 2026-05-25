@@ -23,8 +23,8 @@ export const BUILDING_OBSTACLES = (() => {
     for (let gz = 0; gz < REG_GRID_SIZE; gz++) {
       const seed = gx * 100 + gz
       const rand = seededRandom(seed)
-      const cx = gx * REG_SPACING - OFFSET + REG_SPACING / 2 + (seededRandom(seed + 1) - 0.5) * 4
-      const cz = gz * REG_SPACING - OFFSET + REG_SPACING / 2 + (seededRandom(seed + 2) - 0.5) * 4
+      const cx = gx * REG_SPACING - OFFSET + REG_SPACING / 2 + (seededRandom(seed + 1) - 0.5) * 3
+      const cz = gz * REG_SPACING - OFFSET + REG_SPACING / 2 + (seededRandom(seed + 2) - 0.5) * 3
       const typeRand = seededRandom(seed + 10)
 
       if (typeRand < 0.12 || typeRand >= 0.92) continue   // vegetation / empty
@@ -37,7 +37,7 @@ export const BUILDING_OBSTACLES = (() => {
         ? 16 + rand * 30   // partially collapsed
         : 20 + rand * 55   // intact
 
-      obs.push({ cx, cz, hw: w / 2, hd: d / 2, height })
+      obs.push({ cx, cz, hw: w / 2 + 1.5, hd: d / 2 + 1.5, height })
     }
   }
   return obs

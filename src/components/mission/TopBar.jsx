@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, LayoutPanelTop, PanelLeftClose, PanelLeftOpen,
+  PanelBottomClose, PanelBottomOpen,
   MapPin, Rocket, RotateCcw, Maximize, RefreshCw, Sun, Moon, CheckCircle2
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
@@ -37,6 +38,8 @@ export default function TopBar() {
   const backendConnected = useSimStore(s => s.backendConnected)
   const leftPanelCollapsed = useSimStore(s => s.leftPanelCollapsed)
   const setLeftPanelCollapsed = useSimStore(s => s.setLeftPanelCollapsed)
+  const bottomPanelCollapsed = useSimStore(s => s.bottomPanelCollapsed)
+  const setBottomPanelCollapsed = useSimStore(s => s.setBottomPanelCollapsed)
   const fullMapMode = useSimStore(s => s.fullMapMode)
   const setFullMapMode = useSimStore(s => s.setFullMapMode)
   const theme = useSimStore(s => s.theme)
@@ -59,11 +62,6 @@ export default function TopBar() {
     addNotification('Click two points on the terrain to define the search area.', 'guide')
   }
 
-  const handleStartSeeding = () => {
-    setMissionPhase('READY_TO_DEPLOY')
-    addNotification('Seeding complete. Drones are ready for deployment.', 'success')
-  }
-
   const handleStartMission = () => {
     if (!searchRegion) return
     const paths = computeDeployPaths(searchRegion)
@@ -73,6 +71,11 @@ export default function TopBar() {
     drones.forEach(d => {
       useSimStore.getState().updateDrone(d.id, { status: 'DEPLOYING' })
     })
+  }
+
+  const handleFinishSeedingAndDeploy = () => {
+    setMissionPhase('READY_TO_DEPLOY')
+    handleStartMission()
   }
 
   const handleEndTask = () => {
@@ -154,6 +157,14 @@ export default function TopBar() {
           title={leftPanelCollapsed ? "Open Left Panel" : "Close Left Panel"}
         >
           {leftPanelCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
+
+        <button
+          onClick={() => setBottomPanelCollapsed(!bottomPanelCollapsed)}
+          style={{ ...navBtnStyle, color: '#00e5ff' }}
+          title={bottomPanelCollapsed ? "Show Bottom Panel" : "Hide Bottom Panel"}
+        >
+          {bottomPanelCollapsed ? <PanelBottomOpen size={18} /> : <PanelBottomClose size={18} />}
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -248,16 +259,7 @@ export default function TopBar() {
 
         {missionPhase === 'SEED_SURVIVORS' && seededSurvivors.length > 0 && (
           <ActionButton
-            onClick={handleStartSeeding}
-            icon={CheckCircle2}
-            label="START SEEDING"
-            color="#ffb300"
-          />
-        )}
-
-        {missionPhase === 'READY_TO_DEPLOY' && (
-          <ActionButton
-            onClick={handleStartMission}
+            onClick={handleFinishSeedingAndDeploy}
             icon={Rocket}
             label="DEPLOY DRONES"
             color="#00ff88"

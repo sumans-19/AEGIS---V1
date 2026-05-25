@@ -11,13 +11,12 @@ const DRONE_COLORS = [
 ]
 
 // Detection config
-const LOOKAHEAD_M       = 35   // metres ahead to probe for buildings (increased)
-const DETECT_XZ_RADIUS  = 14   // metres from building XZ edge to trigger detection (wider)
-const TALL_THRESHOLD    = 30   // only buildings taller than this trigger detection
-const STALL_SECS        = 0.25 // seconds drone holds position on obstacle detect
-const POPUP_SECS        = 2.5  // seconds popup stays visible then auto-hides
-const AVOID_SECS        = 5.5  // seconds avoidance offset active (longer to fully clear)
-const COOLDOWN_SECS     = 10.0 // min seconds between detections per drone
+const POPUP_SECS        = 2.5   // seconds warning icon stays visible
+const COOLDOWN_SECS     = 4.0   // min seconds between log entries (not avoidance)
+const REPULSE_MARGIN    = 5     // metres of clearance around each building XZ edge
+const REPULSE_STRENGTH  = 0.85  // how hard the repulsion pushes per frame
+const MAX_REPULSE       = 22    // cap on repulsion offset per axis (metres)
+const ABOVE_MARGIN      = 4     // metres above building height where repulsion stops
 
 export default function DroneModel({ drone, index }) {
   const groupRef      = useRef()
@@ -38,18 +37,13 @@ export default function DroneModel({ drone, index }) {
   const scanColor      = DRONE_COLORS[(drone.id - 1) % DRONE_COLORS.length]
 
   // ── Obstacle avoidance state (all in refs — zero re-render cost) ──────────
-  const obstacleActive       = useRef(false)
   const obstaclePopupVisible = useRef(false)
   const obstaclePopupTimer   = useRef(0)
-  const avoidOffset          = useRef({ x: 0, z: 0 })
-  const avoidTarget          = useRef({ x: 0, z: 0 })
   const popupEl              = useRef(null)
-  const isStalling           = useRef(false)
-  const stallEndTime         = useRef(0)
-  const detectionCooldown    = useRef(0)         // don't detect before this time
-  const lastStablePos        = useRef(new THREE.Vector3())
-  const lastFrameTime        = useRef(0)         // for real delta-time popup timer
-  const detectedBuilding     = useRef(null)      // store which building triggered
+  const lastFrameTime        = useRef(0)
+  const detectionCooldown    = useRef(0)   // throttle log entries only
+  // Persistent repulsion offset applied every frame
+  const repulseOffset        = useRef({ x: 0, z: 0 })
 
   // ── Trail / scan geometry ─────────────────────────────────────────────────
   const { trailGeometry, trailLine } = useMemo(() => {
@@ -89,121 +83,84 @@ export default function DroneModel({ drone, index }) {
 
     const isActivelyFlying = ['DEPLOYING', 'SEARCHING'].includes(missionPhase)
 
-    // ── Obstacle Detection & Avoidance ─────────────────────────────────────
-    if (isActivelyFlying) {
+    // ── Continuous per-frame building repulsion ───────────────────────────
+    // This runs every frame — it CANNOT be throttled or skipped.
+    // It permanently steers the rendered position away from all buildings.
+    let repX = 0, repZ = 0
+    let hitAny = false
 
-      // Compute heading direction for look-ahead
-      const nextPos = getDronePosition(drone, 0.08)
-      const hdx = nextPos.x - pos.x
-      const hdz = nextPos.z - pos.z
-      const hdlen = Math.sqrt(hdx * hdx + hdz * hdz)
-      const dirX  = hdlen > 0.001 ? hdx / hdlen : 0
-      const dirZ  = hdlen > 0.001 ? hdz / hdlen : 0
+    for (const b of BUILDING_OBSTACLES) {
+      // Only repel if drone altitude is below building top + margin
+      if (pos.y > b.height + ABOVE_MARGIN) continue
 
-      // Sample MULTIPLE look-ahead points to catch buildings sooner
-      const probePoints = [
-        { x: pos.x + dirX * LOOKAHEAD_M * 0.4, z: pos.z + dirZ * LOOKAHEAD_M * 0.4 },
-        { x: pos.x + dirX * LOOKAHEAD_M * 0.7, z: pos.z + dirZ * LOOKAHEAD_M * 0.7 },
-        { x: pos.x + dirX * LOOKAHEAD_M,       z: pos.z + dirZ * LOOKAHEAD_M       },
-      ]
+      // Signed penetration depth into each axis of the expanded AABB
+      const marginHW = b.hw + REPULSE_MARGIN
+      const marginHD = b.hd + REPULSE_MARGIN
+      const dx = pos.x - b.cx
+      const dz = pos.z - b.cz
+      const overlapX = marginHW - Math.abs(dx)
+      const overlapZ = marginHD - Math.abs(dz)
 
-      // Check look-ahead against real building bounding boxes
-      if (!obstacleActive.current && now > detectionCooldown.current) {
-        outerLoop:
-        for (const probe of probePoints) {
-          for (const b of BUILDING_OBSTACLES) {
-            if (b.height < TALL_THRESHOLD) continue   // only significant buildings
-            // Check if drone altitude would intersect the building vertically
-            if (pos.y > b.height + 4) continue        // flying well above, skip
-            const ex = Math.max(0, Math.abs(probe.x - b.cx) - b.hw)
-            const ez = Math.max(0, Math.abs(probe.z - b.cz) - b.hd)
-            if (Math.sqrt(ex * ex + ez * ez) < DETECT_XZ_RADIUS) {
-              // ── Building detected ahead! ─────────────────────────────────
-              obstacleActive.current       = true
-              obstaclePopupVisible.current = true
-              obstaclePopupTimer.current   = 0
-              detectedBuilding.current     = b
+      if (overlapX <= 0 || overlapZ <= 0) continue  // drone is outside safe zone
 
-              // Brief stall: hold position for STALL_SECS
-              isStalling.current  = true
-              stallEndTime.current = now + STALL_SECS
+      hitAny = true
 
-              // Perpendicular lateral avoidance — larger magnitude to fully clear building
-              const side = (Math.sin(drone.id * 7.3 + now * 0.1) > 0) ? 1 : -1
-              const mag  = Math.max(b.hw, b.hd) * 2.2 + 12  // scaled to building size
-              avoidTarget.current = {
-                x: -dirZ * mag * side,
-                z:  dirX * mag * side,
-              }
-
-              // Emit to obstacle log store
-              const simTime = Math.floor(useSimStore.getState().simulationTime)
-              useSimStore.getState().addObstacleLog(drone.id, {
-                id: Date.now() + drone.id,
-                time: simTime,
-                timestamp: now,
-                message: `Obstacle detected — height ${Math.round(b.height)}m. Rerouting ${side > 0 ? 'RIGHT' : 'LEFT'} (+${Math.round(mag)}m offset).`,
-                pos: [Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)],
-                severity: b.height > 50 ? 'HIGH' : 'MED',
-              })
-
-              break outerLoop
-            }
-          }
-        }
-      }
-
-      // Advance obstacle popup/avoidance timers using REAL delta time
-      if (obstacleActive.current) {
-        obstaclePopupTimer.current += realDt
-        // Hide popup after POPUP_SECS
-        if (obstaclePopupTimer.current > POPUP_SECS) obstaclePopupVisible.current = false
-        // Clear avoidance after AVOID_SECS
-        if (obstaclePopupTimer.current > AVOID_SECS) {
-          obstacleActive.current  = false
-          avoidTarget.current     = { x: 0, z: 0 }
-          detectionCooldown.current = now + COOLDOWN_SECS   // prevent rapid re-triggering
-          detectedBuilding.current  = null
-        }
-      }
-
-      // Stall: freeze rendered position while holdind
-      if (isStalling.current && now < stallEndTime.current) {
-        groupRef.current.position.copy(lastStablePos.current)
+      // Push along the axis with LESS penetration (shortest escape)
+      if (overlapX < overlapZ) {
+        repX += Math.sign(dx) * overlapX * REPULSE_STRENGTH
       } else {
-        if (isStalling.current) isStalling.current = false
-
-        // Normal: set computed path position then apply lateral offset
-        groupRef.current.position.set(pos.x, pos.y, pos.z)
-
-        // Smoothly lerp avoidOffset toward its current target (faster response to clear buildings)
-        avoidOffset.current.x += (avoidTarget.current.x - avoidOffset.current.x) * 0.09
-        avoidOffset.current.z += (avoidTarget.current.z - avoidOffset.current.z) * 0.09
-        groupRef.current.position.x += avoidOffset.current.x
-        groupRef.current.position.z += avoidOffset.current.z
-
-        lastStablePos.current.copy(groupRef.current.position)
+        repZ += Math.sign(dz) * overlapZ * REPULSE_STRENGTH
       }
-
-      // Update popup DOM element (no React re-render needed)
-      if (popupEl.current) {
-        popupEl.current.style.opacity   = obstaclePopupVisible.current ? '1' : '0'
-        popupEl.current.style.transform = obstaclePopupVisible.current
-          ? 'translateX(-50%) translateY(0px)'
-          : 'translateX(-50%) translateY(8px)'
-      }
-
-    } else {
-      // Not flying — reset all avoidance state
-      groupRef.current.position.set(pos.x, pos.y, pos.z)
-      avoidOffset.current          = { x: 0, z: 0 }
-      avoidTarget.current          = { x: 0, z: 0 }
-      obstacleActive.current       = false
-      obstaclePopupVisible.current = false
-      isStalling.current           = false
-      if (popupEl.current) popupEl.current.style.opacity = '0'
-      lastStablePos.current.set(pos.x, pos.y, pos.z)
     }
+
+    // Clamp repulsion to prevent runaway
+    repX = Math.max(-MAX_REPULSE, Math.min(MAX_REPULSE, repX))
+    repZ = Math.max(-MAX_REPULSE, Math.min(MAX_REPULSE, repZ))
+
+    // Smoothly integrate repulsion offset each frame
+    repulseOffset.current.x += (repX - repulseOffset.current.x) * 0.18
+    repulseOffset.current.z += (repZ - repulseOffset.current.z) * 0.18
+    // Decay toward zero when no buildings are near
+    if (!hitAny) {
+      repulseOffset.current.x *= 0.88
+      repulseOffset.current.z *= 0.88
+    }
+
+    // ── Warning icon: show while inside repulsion zone ────────────────────
+    if (hitAny) {
+      obstaclePopupVisible.current = true
+      obstaclePopupTimer.current   = 0
+
+      // Log (throttled)
+      if (isActivelyFlying && now > detectionCooldown.current) {
+        detectionCooldown.current = now + COOLDOWN_SECS
+        const simTime = Math.floor(useSimStore.getState().simulationTime)
+        useSimStore.getState().addObstacleLog(drone.id, {
+          id: Date.now() + drone.id,
+          time: simTime,
+          timestamp: now,
+          message: `Obstacle proximity — rerouting around structure.`,
+          pos: [Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)],
+          severity: 'MED',
+        })
+      }
+    } else {
+      obstaclePopupTimer.current += realDt
+      if (obstaclePopupTimer.current > POPUP_SECS) obstaclePopupVisible.current = false
+    }
+
+    // Update icon badge visibility
+    if (popupEl.current) {
+      popupEl.current.style.opacity   = obstaclePopupVisible.current ? '1' : '0'
+      popupEl.current.style.transform = obstaclePopupVisible.current ? 'scale(1)' : 'scale(0.6)'
+    }
+
+    // ── Apply path position + repulsion offset ────────────────────────────
+    groupRef.current.position.set(
+      pos.x + repulseOffset.current.x,
+      pos.y,
+      pos.z + repulseOffset.current.z
+    )
 
     // ── Banking / heading from movement direction ───────────────────────────
     const nextPos2 = getDronePosition(drone, 0.05)
@@ -393,40 +350,29 @@ export default function DroneModel({ drone, index }) {
           }} />
         </Html>
 
-        {/* ── Obstacle Detection Popup ─────────────────────────────────────── */}
-        {/* Always mounted; shown/hidden via ref→DOM style (no re-render) */}
-        <Html position={[0, 7.5, 0]} center zIndexRange={[200, 0]} style={{ pointerEvents: 'none' }}>
+        {/* ── Obstacle Detection Icon Badge ─────────────────────────────────── */}
+        {/* y=5: sits clearly above the drone body (droneScale=2.8, body ~2u tall) */}
+        <Html position={[0, 5, 0]} center zIndexRange={[200, 0]} style={{ pointerEvents: 'none' }}>
           <div
             ref={popupEl}
             style={{
               opacity: 0,
-              transform: 'translateX(-50%) translateY(8px)',
-              transition: 'opacity 0.22s ease, transform 0.22s ease',
-              background: 'rgba(8, 2, 1, 0.94)',
-              border: '1px solid #ff4500',
-              borderRadius: '7px',
-              padding: '7px 14px',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 0 22px rgba(255,69,0,0.65), inset 0 0 10px rgba(255,69,0,0.06)',
-              fontFamily: 'JetBrains Mono, monospace',
+              transform: 'scale(0.6)',
+              transition: 'opacity 0.18s ease, transform 0.18s ease',
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              background: 'rgba(10, 4, 2, 0.85)',
+              border: '1.5px solid #ff4500',
+              boxShadow: '0 0 10px rgba(255,69,0,0.8), 0 0 20px rgba(255,69,0,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: 'aegisObstaclePulse 0.45s ease-in-out infinite alternate',
               userSelect: 'none',
             }}
           >
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '7px',
-              fontSize: '10px', fontWeight: 700, color: '#ff6b2b',
-              letterSpacing: '1.5px',
-              animation: 'aegisObstaclePulse 0.5s ease-in-out infinite alternate',
-            }}>
-              <span style={{ fontSize: '13px' }}>⚠</span>
-              OBSTACLE DETECTED
-            </div>
-            <div style={{
-              fontSize: '8px', color: '#ffb300', letterSpacing: '1px',
-              marginTop: '4px', textAlign: 'center',
-            }}>
-              REROUTING...
-            </div>
+            <span style={{ fontSize: 14, lineHeight: 1, marginTop: 1 }}>⚠</span>
           </div>
         </Html>
 
