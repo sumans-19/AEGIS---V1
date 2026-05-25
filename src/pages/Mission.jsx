@@ -25,6 +25,7 @@ export default function Mission() {
   const bottomPanelCollapsed = useSimStore(s => s.bottomPanelCollapsed)
   const setBottomPanelCollapsed = useSimStore(s => s.setBottomPanelCollapsed)
   const proximityEncounter = useSimStore(s => s.proximityEncounter)
+  const proximityPanelOpen = useSimStore(s => s.proximityPanelOpen)
   const encounterViewMode = useSimStore(s => s.encounterViewMode)
   const scriptId = searchParams.get('script')
 
@@ -164,7 +165,7 @@ export default function Mission() {
           </div>
 
           {/* Right Panel — sits above bottom, not full height */}
-          {showRight && !scriptId && !proximityEncounter && (
+          {showRight && !scriptId && (!proximityEncounter || !proximityPanelOpen) && (
             <div style={{
               width: '360px',
               minWidth: '360px',
@@ -178,7 +179,7 @@ export default function Mission() {
           )}
 
           {/* Inline Proximity Encounter Panel */}
-          {proximityEncounter && encounterViewMode === 'side' && (
+          {proximityEncounter && proximityPanelOpen && encounterViewMode === 'side' && (
             <div style={{
               width: '50%',
               minWidth: '700px',
@@ -268,7 +269,7 @@ export default function Mission() {
       )}
 
       {/* Proximity Encounter Premium UI Overlay */}
-      {proximityEncounter && encounterViewMode === 'full' && (
+      {proximityEncounter && proximityPanelOpen && encounterViewMode === 'full' && (
         <ProximityEncounterPanel isInline={false} />
       )}
     </div>

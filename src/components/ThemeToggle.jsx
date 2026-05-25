@@ -2,7 +2,8 @@ import { Sun, Moon } from 'lucide-react'
 import { useSimStore } from '../store/useSimStore'
 
 export default function ThemeToggle() {
-  const { theme, toggleTheme } = useSimStore()
+  const theme = useSimStore(s => s.theme)
+  const toggleTheme = useSimStore(s => s.toggleTheme)
 
   return (
     <button

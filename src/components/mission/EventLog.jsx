@@ -5,6 +5,7 @@ const TYPE_COLORS = {
   info: '#94a3b8',
   drone: '#00e5ff',
   survivor: '#00ff88',
+  relay: '#a855f7',
   warning: '#ff6b2b',
   critical: '#ff2929',
 }

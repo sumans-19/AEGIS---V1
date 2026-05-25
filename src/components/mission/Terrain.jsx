@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import React, { useMemo, useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useSimStore } from '../../store/useSimStore'
@@ -774,9 +774,37 @@ function EarthquakeTerrain() {
 
   const isDark = theme === 'dark'
 
+  // ── Export obstacle bounding data so drones can avoid buildings & trees ──
+  useEffect(() => {
+    const bObstacles = buildings.map((b, index) => ({
+      id: `building-${index}-${Math.round(b.position[0])}-${Math.round(b.position[2])}`,
+      type: 'building',
+      x: b.position[0],
+      z: b.position[2],
+      halfX: b.scale[0] / 2,
+      halfZ: b.scale[2] / 2,
+      radius: Math.sqrt(b.scale[0] ** 2 + b.scale[2] ** 2) / 2 + 2
+    }))
+    const tObstacles = nature.map((n, index) => ({
+      id: `tree-${index}-${Math.round(n.position[0])}-${Math.round(n.position[2])}`,
+      type: 'tree',
+      x: n.position[0],
+      z: n.position[2],
+      radius: 2.0 * n.scale
+    }))
+    const vObstacles = vehicles.map((v, index) => ({
+      id: `vehicle-${index}-${Math.round(v.position[0])}-${Math.round(v.position[2])}`,
+      type: 'vehicle',
+      x: v.position[0],
+      z: v.position[2],
+      radius: 3
+    }))
+    useSimStore.getState().setObstacles([...bObstacles, ...tObstacles, ...vObstacles])
+  }, [buildings, nature, vehicles])
+
   return (
     <group>
-      <DustParticles count={300} area={[300, 30, 300]} />
+      <DustParticles count={180} area={[300, 30, 300]} />
       
       {/* Ground — dusty/cracked earth */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -1009,6 +1037,26 @@ function TsunamiTerrain() {
   }, [waterLevel])
 
   const isDark = theme === 'dark'
+
+  useEffect(() => {
+    const bObstacles = buildings.map((b, index) => ({
+      id: `building-${index}-${Math.round(b.position[0])}-${Math.round(b.position[2])}`,
+      type: 'building',
+      x: b.position[0],
+      z: b.position[2],
+      halfX: b.scale[0] / 2,
+      halfZ: b.scale[2] / 2,
+      radius: Math.sqrt(b.scale[0] ** 2 + b.scale[2] ** 2) / 2 + 2,
+    }))
+    const dObstacles = debris.map((d, index) => ({
+      id: `debris-${index}-${Math.round(d.position[0])}-${Math.round(d.position[2])}`,
+      type: 'debris',
+      x: d.position[0],
+      z: d.position[2],
+      radius: 2 + (d.scale || 1),
+    }))
+    useSimStore.getState().setObstacles([...bObstacles, ...dObstacles])
+  }, [buildings, debris])
 
   return (
     <group>
@@ -1249,9 +1297,36 @@ function FloodTerrain() {
 
   const isDark = theme === 'dark'
 
+  useEffect(() => {
+    const bObstacles = buildings.map((b, index) => ({
+      id: `building-${index}-${Math.round(b.position[0])}-${Math.round(b.position[2])}`,
+      type: 'building',
+      x: b.position[0],
+      z: b.position[2],
+      halfX: b.scale[0] / 2,
+      halfZ: b.scale[2] / 2,
+      radius: Math.sqrt(b.scale[0] ** 2 + b.scale[2] ** 2) / 2 + 2,
+    }))
+    const jObstacles = junk.map((j, index) => ({
+      id: `vehicle-${index}-${Math.round(j.position[0])}-${Math.round(j.position[2])}`,
+      type: j.type || 'debris',
+      x: j.position[0],
+      z: j.position[2],
+      radius: 4,
+    }))
+    const tObstacles = nature.map((n, index) => ({
+      id: `tree-${index}-${Math.round(n.position[0])}-${Math.round(n.position[2])}`,
+      type: 'tree',
+      x: n.position[0],
+      z: n.position[2],
+      radius: 4,
+    }))
+    useSimStore.getState().setObstacles([...bObstacles, ...jObstacles, ...tObstacles])
+  }, [buildings, junk, nature])
+
   return (
     <group>
-      <RainSystem count={3000} area={[400, 150, 400]} />
+      <RainSystem count={1600} area={[400, 150, 400]} />
       {/* Ground (Mud) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[1000, 1000]} />
@@ -1309,11 +1384,11 @@ function FloodTerrain() {
   )
 }
 
-export default function Terrain({ scenario }) {
+export default React.memo(function Terrain({ scenario }) {
   switch (scenario) {
     case 'earthquake': return <EarthquakeTerrain />
     case 'tsunami': return <TsunamiTerrain />
     case 'flood': return <FloodTerrain />
     default: return <EarthquakeTerrain />
   }
-}
+})

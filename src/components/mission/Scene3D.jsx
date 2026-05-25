@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useEffect } from 'react'
+import { memo, useRef, useState, useMemo, useEffect } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { OrbitControls, Stars, Sky, PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
@@ -263,7 +263,7 @@ function SeedMode({ onSeed, searchRegion }) {
 // ═══════════════════════════════════
 // SURVIVOR FIGURE
 // ═══════════════════════════════════
-function SurvivorFigure({ pos, status, confidence, alive }) {
+const SurvivorFigure = memo(function SurvivorFigure({ pos, status, confidence, alive }) {
   const isDead = !alive
   const isRecovering = status === 'RESCUED'
   const isDetected = status === 'DETECTED'
@@ -296,11 +296,14 @@ function SurvivorFigure({ pos, status, confidence, alive }) {
       )}
       {/* SOS pulse for undetected */}
       {!isDetected && !isDead && (
-        <pointLight color="#ff6b2b" intensity={3} distance={8} position={[0, 2.5, 0]} />
+        <mesh position={[0, 2.5, 0]}>
+          <sphereGeometry args={[0.14, 12, 12]} />
+          <meshStandardMaterial color="#ff6b2b" emissive="#ff6b2b" emissiveIntensity={2.2} />
+        </mesh>
       )}
     </group>
   )
-}
+})
 
 // ═══════════════════════════════════
 // CAMERA CONTROLLER (POV Mode)
@@ -374,15 +377,178 @@ function ProximityEvasionLines({ encounter }) {
   )
 }
 
+// TAKEOVER PATH VISUALIZATION
+// Shows green lines for replacement drone entry paths
+// and red pulsing rings for failed drone positions
+// ═══════════════════════════════════
+function TakeoverPath({ override, drone }) {
+  const entryLineRef = useRef()
+  const opLineRef    = useRef()
+  const ringRef      = useRef()
+
+  const { entryLineMesh, opLineMesh } = useMemo(() => {
+    // Entry path (base → intercept point) — bright green dashed
+    const entryGeom = new THREE.BufferGeometry()
+    const entryMat  = new THREE.LineDashedMaterial({
+      color: '#00ff88', transparent: true, opacity: 0.6,
+      dashSize: 3, gapSize: 2,
+    })
+    const entryLine = new THREE.Line(entryGeom, entryMat)
+
+    // Operation path (intercepted route) — amber dashed
+    const opGeom = new THREE.BufferGeometry()
+    const opMat  = new THREE.LineDashedMaterial({
+      color: '#ffb300', transparent: true, opacity: 0.4,
+      dashSize: 2, gapSize: 3,
+    })
+    const opLine = new THREE.Line(opGeom, opMat)
+
+    return { entryLineMesh: entryLine, opLineMesh: opLine }
+  }, [])
+
+  useEffect(() => {
+    // Build entry path geometry
+    const ep = override.entryPath || []
+    if (ep.length > 1) {
+      const pts = ep.map(p => new THREE.Vector3(p.x, 18, p.z))
+      entryLineMesh.geometry.setFromPoints(pts)
+      entryLineMesh.computeLineDistances()
+    }
+
+    // Build operation path geometry
+    const op = override.operationPath || []
+    if (op.length > 1) {
+      const pts = op.map(p => new THREE.Vector3(p.x, 15, p.z))
+      opLineMesh.geometry.setFromPoints(pts)
+      opLineMesh.computeLineDistances()
+    }
+  }, [override, entryLineMesh, opLineMesh])
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    if (entryLineMesh.material) entryLineMesh.material.opacity = 0.4 + Math.sin(t * 2) * 0.2
+    if (ringRef.current) {
+      ringRef.current.material.opacity = 0.3 + Math.sin(t * 4) * 0.3
+      ringRef.current.scale.setScalar(1 + Math.sin(t * 3) * 0.15)
+    }
+  })
+
+  const pos = drone?.pos || [0, 0, 0]
+
+  return (
+    <group>
+      {/* Entry path line */}
+      <primitive object={entryLineMesh} />
+      {/* Operation path line */}
+      <primitive object={opLineMesh} />
+      {/* Pulsing ring at replacement drone's target intercept point */}
+      {override.entryPath?.length > 0 && (() => {
+        const last = override.entryPath[override.entryPath.length - 1]
+        return (
+          <mesh ref={ringRef} position={[last.x, 0.3, last.z]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[4, 5, 32]} />
+            <meshBasicMaterial color="#00ff88" transparent side={THREE.DoubleSide} depthWrite={false} />
+          </mesh>
+        )
+      })()}
+    </group>
+  )
+}
+
+function FailedDroneMarker({ drone }) {
+  const ringRef  = useRef()
+  const ring2Ref = useRef()
+  const pos = drone?.pos || [0, 0, 0]
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    if (ringRef.current)  ringRef.current.material.opacity  = 0.2 + Math.sin(t * 5) * 0.4
+    if (ring2Ref.current) ring2Ref.current.material.opacity = 0.1 + Math.sin(t * 5 + 1) * 0.2
+  })
+
+  if (!pos || pos.length < 3) return null
+
+  return (
+    <group position={[pos[0], 0.2, pos[2]]}>
+      {/* Inner warning ring */}
+      <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[3, 4, 32]} />
+        <meshBasicMaterial color="#ff3030" transparent side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      {/* Outer warning ring */}
+      <mesh ref={ring2Ref} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[6, 7, 32]} />
+        <meshBasicMaterial color="#ff3030" transparent side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      {/* Vertical beacon line */}
+      <mesh position={[0, pos[1] / 2 + 1, 0]}>
+        <cylinderGeometry args={[0.08, 0.08, pos[1] + 2, 8]} />
+        <meshBasicMaterial color="#ff3030" transparent opacity={0.25} />
+      </mesh>
+    </group>
+  )
+}
+
+function TakeoverPathsLayer() {
+  const dronePathOverrides = useSimStore(s => s.dronePathOverrides)
+  const drones             = useSimStore(s => s.drones)
+
+  const takeoverOverrides = Object.entries(dronePathOverrides || {})
+    .filter(([, ov]) => ov?.mode === 'takeover')
+  const failedDrones = drones.filter(d => d.status === 'FAILED_RTB' && d.pos)
+
+  if (!takeoverOverrides.length && !failedDrones.length) return null
+
+  return (
+    <>
+      {takeoverOverrides.map(([droneId, override]) => {
+        const drone = drones.find(d => d.id === Number(droneId))
+        return (
+          <TakeoverPath key={droneId} override={override} drone={drone} />
+        )
+      })}
+      {failedDrones.map(drone => (
+        <FailedDroneMarker key={drone.id} drone={drone} />
+      ))}
+    </>
+  )
+}
+
+function DronesLayer() {
+  const rawDrones = useSimStore(s => s.drones)
+  const displayDrones = useEdgeCaseScript(rawDrones)
+  return (
+    <>
+      {displayDrones.map((drone, index) => (
+        <DroneModel key={drone.id} drone={drone} index={index} />
+      ))}
+    </>
+  )
+}
+
+function SurvivorsLayer() {
+  const survivors = useSimStore(s => s.survivors)
+  return (
+    <>
+      {survivors.map(survivor => (
+        <SurvivorFigure
+          key={survivor.id}
+          pos={survivor.pos}
+          status={survivor.status}
+          confidence={survivor.confidence || 1.0}
+          alive={survivor.body_temp > 35}
+        />
+      ))}
+    </>
+  )
+}
+
 // ═══════════════════════════════════
 // MAIN SCENE
 // ═══════════════════════════════════
 export default function Scene3D() {
   const controlsRef = useRef()
-  const rawDrones = useSimStore(s => s.drones)
-  const displayDrones = useEdgeCaseScript(rawDrones)
-
-  const survivors = useSimStore(s => s.survivors)
+  
   const seedSurvivor = useSimStore(s => s.seedSurvivor)
   const scenario = useSimStore(s => s.scenario)
   const theme = useSimStore(s => s.theme)
@@ -412,7 +578,6 @@ export default function Scene3D() {
 
   const handleSeed = (x, z) => {
     seedSurvivor(x, z)
-    addNotification(`Survivor placed at [${x.toFixed(0)}, ${z.toFixed(0)}].`, 'info')
   }
 
   const handleRecenter = () => {
@@ -422,8 +587,8 @@ export default function Scene3D() {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <Canvas shadows gl={{ antialias: true, logarithmicDepthBuffer: true }}>
-        <PerspectiveCamera makeDefault position={[-80, 100, -80]} fov={50} />
+      <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, powerPreference: 'high-performance' }}>
+        <PerspectiveCamera makeDefault position={[-80, 100, -80]} fov={50} near={0.5} far={2000} />
         {!povMode && (
           <OrbitControls
             ref={controlsRef}
@@ -446,7 +611,7 @@ export default function Scene3D() {
           turbidity={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).turbidity}
           rayleigh={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).rayleigh}
         />
-        <Stars radius={200} depth={80} count={8000} factor={4} saturation={0} fade speed={0.5} />
+        <Stars radius={200} depth={80} count={2500} factor={4} saturation={0} fade speed={0.35} />
 
         {/* Natural lighting */}
         <hemisphereLight
@@ -461,7 +626,7 @@ export default function Scene3D() {
           position={[50, 80, 30]}
           intensity={theme === 'dark' ? 0.8 : 1.8}
           castShadow
-          shadow-mapSize={[4096, 4096]}
+          shadow-mapSize={[2048, 2048]}
           shadow-camera-left={-250}
           shadow-camera-right={250}
           shadow-camera-top={250}
@@ -477,20 +642,13 @@ export default function Scene3D() {
         <DroneBasePlatform />
 
         {/* Drones */}
-        {displayDrones.map((drone, index) => (
-          <DroneModel key={drone.id} drone={drone} index={index} />
-        ))}
+        <DronesLayer />
+
+        {/* Takeover paths & failure markers */}
+        <TakeoverPathsLayer />
 
         {/* Survivors */}
-        {survivors.map(survivor => (
-          <SurvivorFigure
-            key={survivor.id}
-            pos={survivor.pos}
-            status={survivor.status}
-            confidence={survivor.confidence || 1.0}
-            alive={survivor.body_temp > 35}
-          />
-        ))}
+        <SurvivorsLayer />
 
         {/* Region selection mode */}
         {missionPhase === 'SELECT_REGION' && (

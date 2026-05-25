@@ -2,10 +2,10 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, LayoutPanelTop, PanelLeftClose, PanelLeftOpen,
   PanelBottomClose, PanelBottomOpen,
-  MapPin, Rocket, RotateCcw, Maximize, RefreshCw, Sun, Moon, CheckCircle2
+  MapPin, Rocket, RotateCcw, Maximize, RefreshCw, Sun, Moon, Route
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
-import { computeDeployPaths, computeReturnPaths, getDronePosition, DRONE_BASE } from '../../hooks/useDroneMovement'
+import { computeDeployPaths, computeReturnPaths, getDronePosition, DRONE_BASE, getPathDistance } from '../../hooks/useDroneMovement'
 
 const PHASE_LABELS = {
   IDLE: 'STANDBY',
@@ -47,6 +47,9 @@ export default function TopBar() {
   const searchRegion = useSimStore(s => s.searchRegion)
   const survivors = useSimStore(s => s.survivors)
   const drones = useSimStore(s => s.drones)
+  const proximityEncounter = useSimStore(s => s.proximityEncounter)
+  const proximityPanelOpen = useSimStore(s => s.proximityPanelOpen)
+  const setProximityPanelOpen = useSimStore(s => s.setProximityPanelOpen)
 
   const setMissionPhase = useSimStore(s => s.setMissionPhase)
   const startDeploy = useSimStore(s => s.startDeploy)
@@ -65,12 +68,17 @@ export default function TopBar() {
   const handleStartMission = () => {
     if (!searchRegion) return
     const paths = computeDeployPaths(searchRegion)
+    const activeDroneIds = new Set(Object.entries(paths)
+      .filter(([, path]) => getPathDistance(path) > 1)
+      .map(([id]) => Number(id)))
     startDeploy(paths)
     addNotification('Launch sequence initiated. Drones departing base.', 'system')
-    // Update drone statuses
-    drones.forEach(d => {
-      useSimStore.getState().updateDrone(d.id, { status: 'DEPLOYING' })
-    })
+    useSimStore.getState().updateDrones(Object.fromEntries(
+      drones.map(d => [
+        d.id,
+        { status: activeDroneIds.has(d.id) ? 'DEPLOYING' : 'STANDBY' },
+      ])
+    ))
   }
 
   const handleFinishSeedingAndDeploy = () => {
@@ -92,9 +100,12 @@ export default function TopBar() {
     const paths = computeReturnPaths(positions)
     startReturn(paths)
     addNotification('Return to base initiated. All drones recalling.', 'system')
-    drones.forEach(d => {
-      useSimStore.getState().updateDrone(d.id, { status: 'RETURNING' })
-    })
+    useSimStore.getState().updateDrones(Object.fromEntries(
+      drones.map(d => [
+        d.id,
+        { status: d.hardwareFailure ? d.status : 'RETURNING' },
+      ])
+    ))
   }
 
   const handleReset = () => {
@@ -105,9 +116,16 @@ export default function TopBar() {
       deployPaths: {},
       searchPaths: {},
       returnPaths: {},
+      hardwareFailures: {},
+      dronePathOverrides: {},
       eventLog: [],
+      detectedObjects: [],
       simulationRunning: false,
+      deployStartTime: null,
+      searchStartTime: null,
+      returnStartTime: null,
     })
+    useSimStore.getState().resetPathfindingState()
     
     const INITIAL_DRONES = useSimStore.getState().drones.map((d, i) => {
       const padOffset = [
@@ -117,7 +135,22 @@ export default function TopBar() {
         { x: -170, y: 2, z: -170 },
         { x: -180, y: 2, z: -180 },
       ][i]
-      return { ...d, status: 'IDLE', pos: [padOffset.x, padOffset.y, padOffset.z], battery: 100 }
+      return {
+        ...d,
+        status: 'IDLE',
+        pos: [padOffset.x, padOffset.y, padOffset.z],
+        battery: 100,
+        scan_radius: 15,
+        speed: 0,
+        trajectory: [],
+        hardwareFailure: undefined,
+        failureLabel: undefined,
+        failureSeverity: undefined,
+        replacementDroneId: undefined,
+        replacementFor: undefined,
+        linkStatus: undefined,
+        navStatus: undefined,
+      }
     })
     useSimStore.setState({ drones: INITIAL_DRONES })
     addNotification('System reset to standby.', 'info')
@@ -190,6 +223,31 @@ export default function TopBar() {
             </span>
           </div>
         </div>
+
+        {proximityEncounter && (
+          <button
+            onClick={() => setProximityPanelOpen(!proximityPanelOpen)}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '20px',
+              border: `1px solid ${proximityPanelOpen ? '#ff3200' : 'rgba(255, 50, 0, 0.4)'}`,
+              background: proximityPanelOpen ? 'rgba(255, 50, 0, 0.15)' : 'transparent',
+              color: '#ff3200',
+              fontFamily: 'JetBrains Mono',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              animation: !proximityPanelOpen ? 'pulse 2s infinite' : 'none',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Route size={14} />
+            {proximityPanelOpen ? 'CLOSE ENCOUNTER' : 'PROXIMITY ALERT'}
+          </button>
+        )}
       </div>
 
       {/* ── Center: Phase Badge ── */}
@@ -238,6 +296,9 @@ export default function TopBar() {
           </button>
           <button onClick={() => setFullMapMode(!fullMapMode)} style={iconBtnStyle} title="Toggle Full View">
             <Maximize size={16} color={fullMapMode ? "#00e5ff" : "currentColor"} />
+          </button>
+          <button onClick={() => navigate(`/drone-paths?scenario=${scenario}`)} style={iconBtnStyle} title="Open Drone Pathfinding Page">
+            <Route size={16} />
           </button>
           <button onClick={handleReset} style={iconBtnStyle} title="Reset Mission">
             <RefreshCw size={16} />

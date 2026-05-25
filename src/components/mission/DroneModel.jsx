@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import React, { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -9,7 +9,7 @@ const DRONE_COLORS = [
   '#00e5ff', '#ff6b2b', '#00ff88', '#a855f7', '#ffb300',
 ]
 
-export default function DroneModel({ drone, index }) {
+export default React.memo(function DroneModel({ drone, index }) {
   const groupRef = useRef()
   const rotorRefs = useRef([])
   const lightRef = useRef()
@@ -63,20 +63,57 @@ export default function DroneModel({ drone, index }) {
       groupRef.current.rotation.y = Math.atan2(dir.x, dir.z)
     }
 
-    // ── Store position back (throttled to every 6th frame ≈ 10 updates/sec) ──
-    // PERF FIX: Writing to zustand every frame caused 300 state updates/sec across
-    // 5 drones, triggering a re-render storm that froze the UI.
-    frameCounter.current++
-    if (frameCounter.current % 6 === 0) {
-      useSimStore.getState().updateDrone(drone.id, {
+    // ── Store position back (throttled to 200ms to avoid locking UI thread) ──
+    const nowMs = performance.now()
+    if (!groupRef.current.lastUpdateMs) {
+      groupRef.current.lastUpdateMs = 0
+    }
+    if (!groupRef.current.lastPhase) {
+      groupRef.current.lastPhase = missionPhase
+    }
+
+    const phaseChanged = groupRef.current.lastPhase !== missionPhase
+    if (phaseChanged) {
+      groupRef.current.lastPhase = missionPhase
+    }
+
+    const isRunning = useSimStore.getState().simulationRunning
+    const hasNoPos = !drone.pos || drone.pos.length === 0
+
+    if (phaseChanged || hasNoPos || (isRunning && nowMs - groupRef.current.lastUpdateMs > 350)) {
+      groupRef.current.lastUpdateMs = nowMs
+      useSimStore.getState().queueDroneTelemetry(drone.id, {
         altitude: getDroneAltitude(pos) || 0,
         speed: getDroneSpeed(drone) || 0,
         pos: [pos.x, pos.y, pos.z],
       })
     }
 
+
+    // ── Obstacle Detection Sensor (logging only — paths are pre-sanitised) ──
+    if (missionPhase === 'SEARCHING' && !drone.hardwareFailure) {
+      if (!groupRef.current._lastObsLog) groupRef.current._lastObsLog = 0
+      const nowSec = performance.now() / 1000
+      if (nowSec - groupRef.current._lastObsLog > 3) { // throttle to every 3s
+        const obstacles = useSimStore.getState().obstacles || []
+        for (const obs of obstacles) {
+          const dx = obs.x - pos.x
+          const dz = obs.z - pos.z
+          const distToObs = Math.sqrt(dx * dx + dz * dz)
+          const obsR = obs.radius || 5
+          if (distToObs < obsR + 22) {
+            useSimStore.getState().logObstacleDetection(drone.id, obs, { x: pos.x, z: pos.z })
+            groupRef.current._lastObsLog = nowSec
+            break
+          }
+        }
+      }
+    }
+
     // ── Rotor animation ──
-    const isFlying = ['DEPLOYING', 'SEARCHING', 'RETURNING', 'ALL_FOUND'].includes(missionPhase)
+    const isParked = ['IDLE', 'STANDBY', 'FAILED_DOCKED'].includes(drone.status)
+    const isOverrideFlight = ['FAILED_RTB', 'TAKEOVER'].includes(drone.status)
+    const isFlying = !isParked && (['DEPLOYING', 'SEARCHING', 'RETURNING', 'ALL_FOUND'].includes(missionPhase) || isOverrideFlight)
     const isIdle = ['IDLE', 'SELECT_REGION', 'SEED_SURVIVORS', 'COMPLETED'].includes(missionPhase)
     const rotorSpeed = isFlying ? 1.5 : (isIdle ? 0.05 : 0.3)
     rotorRefs.current.forEach(r => r && (r.rotation.y += rotorSpeed))
@@ -89,7 +126,8 @@ export default function DroneModel({ drone, index }) {
 
     // ── Scan effects (only when flying/searching) ──
     const scanR = (drone.scan_radius || 15) * 0.4
-    if (isFlying) {
+    const canScan = isFlying && !drone.hardwareFailure && !['STANDBY', 'FAILED_RTB', 'FAILED_DOCKED'].includes(drone.status)
+    if (canScan) {
       if (crosshairRef.current) {
         crosshairRef.current.position.set(pos.x, 0.2, pos.z)
         crosshairRef.current.scale.set(scanR, scanR, 1)
@@ -130,6 +168,19 @@ export default function DroneModel({ drone, index }) {
       if (crosshairRef.current) crosshairRef.current.position.set(0, -100, 0)
       if (scanRingRef.current) scanRingRef.current.position.set(0, -100, 0)
       dropRingsRef.current.forEach(r => r && r.position.set(0, -100, 0))
+    }
+
+    // ── Trail ──
+    if (isFlying && drone.status !== 'FAILED_DOCKED') {
+      trailPositions.current.push([pos.x, pos.y, pos.z])
+      if (trailPositions.current.length > 250) trailPositions.current.shift()
+
+      const arr = trailGeometry.attributes.position.array
+      trailPositions.current.forEach((p, i) => {
+        arr[i * 3] = p[0]; arr[i * 3 + 1] = p[1]; arr[i * 3 + 2] = p[2]
+      })
+      trailGeometry.attributes.position.needsUpdate = true
+      trailGeometry.setDrawRange(0, trailPositions.current.length)
     }
   })
 
@@ -275,4 +326,4 @@ export default function DroneModel({ drone, index }) {
       </group>
     </group>
   )
-}
+})

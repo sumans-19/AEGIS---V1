@@ -66,7 +66,8 @@ export default function ThermalView() {
       const alt = pos[1] || 50
       const scale = 40 / Math.max(alt, 8)
       const survivors = store.survivors || []
-      const detectedSurvivors = survivors.filter(s => s.pos && (s.detected || s.status === 'PENDING'))
+      const thermalSurvivors = survivors.filter(s => s.pos && (s.detected || s.status === 'PENDING'))
+      const detectedSurvivors = thermalSurvivors.slice(-60)
 
       // ── 1. DEEP SPACE BACKGROUND ──────────────────────
       ctx.fillStyle = '#030609'
@@ -392,7 +393,7 @@ export default function ThermalView() {
       ctx.fillText('CLD', barX + 3, barY + barH + 8)
 
       // Thermal sig badge
-      const sigCount = detectedSurvivors.length
+      const sigCount = thermalSurvivors.length
       if (sigCount > 0) {
         const bw = 84, bh = 18
         const bx2 = width - bw - 18, by2 = height - bh - 10

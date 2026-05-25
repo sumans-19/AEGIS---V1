@@ -155,7 +155,7 @@ export default function RadarView() {
       })
 
       // Survivors
-      const detectedSurvivors = store.survivors?.filter(s => s.pos && (s.detected || s.status === 'PENDING')) || []
+      const detectedSurvivors = (store.survivors?.filter(s => s.pos && (s.detected || s.status === 'PENDING')) || []).slice(-120)
       detectedSurvivors.forEach((s, idx) => {
         const dx = (s.pos[0] - pos[0])
         const dz = (s.pos[2] - pos[2])
