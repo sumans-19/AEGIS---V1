@@ -25,6 +25,7 @@ function getTypeColor(type) {
     case 'success': return '#00ff88'
     case 'detection': return '#ffb300'
     case 'warning': return '#ff6b2b'
+    case 'critical': return '#ff2929'
     case 'error': return '#ff2929'
     case 'guide': return '#00e5ff'
     case 'system': return '#a855f7'
@@ -37,6 +38,7 @@ function getTypeIcon(type) {
     case 'success': return <CheckCircle2 size={11} />
     case 'detection': return <Crosshair size={11} />
     case 'warning': return <AlertTriangle size={11} />
+    case 'critical': return <AlertTriangle size={11} />
     case 'guide': return <Sparkles size={11} />
     default: return <Info size={11} />
   }
@@ -53,7 +55,7 @@ export default function NotificationPanel() {
   const detectedCount = survivors.filter(s => String(s.id).startsWith('SURV-') && (s.detected || s.status === 'DETECTED')).length
 
   useEffect(() => {
-    if (!collapsed) logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (!collapsed) logEndRef.current?.scrollIntoView({ behavior: 'auto' })
   }, [notifications, collapsed])
 
   const currentIdx = PHASE_ORDER.indexOf(missionPhase)
@@ -108,7 +110,7 @@ export default function NotificationPanel() {
           paddingRight: '12px',
         }}>
           <AnimatePresence initial={false}>
-            {notifications.map((notif) => (
+            {visibleNotifications.map((notif) => (
               <motion.div
                 key={notif.id}
                 initial={{ opacity: 0, x: -10 }}

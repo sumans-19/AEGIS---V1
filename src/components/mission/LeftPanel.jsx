@@ -1,19 +1,23 @@
 import { useState } from 'react'
 import { useSimStore } from '../../store/useSimStore'
 import DroneCard from './DroneCard'
+import FailureModal from './FailureModal'
 import { ChevronDown, ChevronUp, MapPin } from 'lucide-react'
 import { getActiveDronesCount } from '../../hooks/useDroneMovement'
 
 const DRONE_COLORS = ['#00e5ff', '#ff6b2b', '#00ff88', '#a855f7', '#ffb300']
 
 export default function LeftPanel() {
-  const drones = useSimStore(s => s.drones)
-  const parametersOpen = useSimStore(s => s.parametersOpen)
-  const toggleParameters = useSimStore(s => s.toggleParameters)
-  const searchRegion = useSimStore(s => s.searchRegion)
+  const drones                 = useSimStore(s => s.drones)
+  const parametersOpen         = useSimStore(s => s.parametersOpen)
+  const toggleParameters       = useSimStore(s => s.toggleParameters)
+  const searchRegion           = useSimStore(s => s.searchRegion)
   const setCoordinationPanelOpen = useSimStore(s => s.setCoordinationPanelOpen)
-  
+
   const [showZones, setShowZones] = useState(false)
+  // Track which drone's failure modal is open (null = closed)
+  const [failureModalDroneId, setFailureModalDroneId] = useState(null)
+
   const activeCount = searchRegion ? getActiveDronesCount(searchRegion) : 0
 
   return (
@@ -24,6 +28,7 @@ export default function LeftPanel() {
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
+      position: 'relative',
     }}>
       {/* Title */}
       <div style={{
@@ -60,7 +65,11 @@ export default function LeftPanel() {
         gap: '8px',
       }}>
         {drones.map(drone => (
-          <DroneCard key={drone.id} drone={drone} />
+          <DroneCard
+            key={drone.id}
+            drone={drone}
+            onInjectFailure={(id) => setFailureModalDroneId(id)}
+          />
         ))}
       </div>
 
@@ -75,18 +84,18 @@ export default function LeftPanel() {
           <div style={{ color: 'var(--cyan)', fontSize: '10px', fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <MapPin size={12} /> SPATIAL ZONE TOPOLOGY
           </div>
-          
+
           {searchRegion ? (
             <>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                <span style={{ color: 'var(--text-dim)' }}>BOUNDS: </span> 
+                <span style={{ color: 'var(--text-dim)' }}>BOUNDS: </span>
                 [{Math.round(searchRegion.x1)}, {Math.round(searchRegion.z1)}] TO [{Math.round(searchRegion.x2)}, {Math.round(searchRegion.z2)}]
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--text-dim)' }}>ACTIVE UNITS: </span> 
+                <span style={{ color: 'var(--text-dim)' }}>ACTIVE UNITS: </span>
                 {activeCount} DRONES DEPLOYED
               </div>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {Array.from({ length: 5 }).map((_, i) => {
                   const isActive = i < activeCount
@@ -99,7 +108,7 @@ export default function LeftPanel() {
                       padding: '4px 6px',
                       background: isActive ? 'rgba(0,0,0,0.3)' : 'transparent',
                       borderLeft: isActive ? `2px solid ${DRONE_COLORS[i]}` : '2px solid transparent',
-                      color: isActive ? 'var(--text-secondary)' : 'var(--text-dim)'
+                      color: isActive ? 'var(--text-secondary)' : 'var(--text-dim)',
                     }}>
                       <span>ZONE {zoneChar}</span>
                       <span>{isActive ? `DRONE-0${i + 1}` : 'STANDBY'}</span>
@@ -150,10 +159,10 @@ export default function LeftPanel() {
             fontSize: '10px',
           }}>
             {[
-              { label: 'Zone radius', value: '5.2km' },
-              { label: 'Search pattern', value: 'Adaptive Swarm' },
+              { label: 'Zone radius',      value: '5.2km' },
+              { label: 'Search pattern',   value: 'Adaptive Swarm' },
               { label: 'Thermal threshold', value: '36.5°C' },
-              { label: 'Network link', value: 'L-BAND / AES-256' },
+              { label: 'Network link',     value: 'L-BAND / AES-256' },
             ].map(param => (
               <div key={param.label} style={{
                 display: 'flex',
@@ -194,7 +203,7 @@ export default function LeftPanel() {
             letterSpacing: '1px',
             display: 'flex',
             justifyContent: 'center',
-            transition: 'background 0.2s, color 0.2s'
+            transition: 'background 0.2s, color 0.2s',
           }}
           onMouseOver={e => {
             if (!showZones) e.currentTarget.style.background = 'rgba(0, 229, 255, 0.2)'
@@ -206,6 +215,14 @@ export default function LeftPanel() {
           OPEN MISSION DASHBOARD
         </button>
       </div>
+
+      {/* ── Hardware Failure Modal ── */}
+      {failureModalDroneId !== null && (
+        <FailureModal
+          droneId={failureModalDroneId}
+          onClose={() => setFailureModalDroneId(null)}
+        />
+      )}
     </div>
   )
 }

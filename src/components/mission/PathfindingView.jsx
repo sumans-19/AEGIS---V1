@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { useSimStore } from '../../store/useSimStore'
 import { Network, Info, ChevronDown, ChevronUp } from 'lucide-react'
+import { BASE_PADS, getMarkedAreaDestination } from '../../hooks/useDroneMovement'
 
 // Poll backend for live cost grid data
 function useBackendGrid() {
@@ -60,6 +61,8 @@ export default function PathfindingView() {
   const drones = useSimStore(s => s.drones)
   const selectedDroneId = useSimStore(s => s.selectedDrone)
   const scenario = useSimStore(s => s.scenario)
+  const searchRegion = useSimStore(s => s.searchRegion)
+  const missionPhase = useSimStore(s => s.missionPhase)
   const backendGrid = useBackendGrid() // live data from backend
 
   // Build a static cost grid (deterministic from scenario seed)
@@ -163,25 +166,42 @@ export default function PathfindingView() {
       ctx.fillStyle = '#080c10'
       ctx.fillRect(0, 0, width, height)
 
-      const selectedDrone = useSimStore.getState().drones.find(d => d.id === selectedDroneId)
-        || useSimStore.getState().drones[0]
+      const store = useSimStore.getState()
+      const selectedDrone = store.drones.find(d => d.id === selectedDroneId)
+        || store.drones[0]
       if (!selectedDrone) { animFrameRef.current = requestAnimationFrame(draw); return }
 
       // Convert drone world pos to grid cell
       const worldToGrid = (wx, wz) => {
-        const r = Math.min(GRID_ROWS - 1, Math.max(0, Math.floor((wx + 50) / 5)))
-        const c = Math.min(GRID_COLS - 1, Math.max(0, Math.floor((wz + 50) / 5)))
+        const worldMin = -150
+        const worldMax = 150
+        const span = worldMax - worldMin
+        const r = Math.min(GRID_ROWS - 1, Math.max(0, Math.floor(((wz - worldMin) / span) * GRID_ROWS)))
+        const c = Math.min(GRID_COLS - 1, Math.max(0, Math.floor(((wx - worldMin) / span) * GRID_COLS)))
         return [r, c]
       }
 
-      const droneWorld = selectedDrone.pos || [0, 0, 0]
-      const [startR, startC] = worldToGrid(droneWorld[0], droneWorld[2])
+      const pad = BASE_PADS[(selectedDrone.id - 1) % BASE_PADS.length]
+      const useLiveSource = ['SEARCHING', 'ALL_FOUND', 'RETURNING'].includes(store.missionPhase)
+      const sourceWorld = useLiveSource ? (selectedDrone.pos || [pad.x, 0, pad.z]) : [pad.x, 0, pad.z]
+      const [startR, startC] = worldToGrid(sourceWorld[0], sourceWorld[2])
 
-      // Goal: animated moving target (like real A* replanning)
-      const goalR = Math.min(GRID_ROWS - 1, Math.max(0, Math.floor(10 + Math.sin(t * 0.3) * 7)))
-      const goalC = Math.min(GRID_COLS - 1, Math.max(0, Math.floor(10 + Math.cos(t * 0.25) * 7)))
+      const destination = getMarkedAreaDestination(store.searchRegion)
+      let goalR = null
+      let goalC = null
+      let path = []
+      let closedSet = new Set()
+      let openNodes = new Set()
 
-      const { path, closedSet, openNodes } = runAStar(grid, startR, startC, goalR, goalC)
+      if (destination) {
+        const [nextGoalR, nextGoalC] = worldToGrid(destination.x, destination.z)
+        goalR = nextGoalR
+        goalC = nextGoalC
+        const result = runAStar(grid, startR, startC, goalR, goalC)
+        path = result.path
+        closedSet = result.closedSet
+        openNodes = result.openNodes
+      }
 
       const droneColor = DRONE_COLORS[selectedDroneId] || '#00e5ff'
 
@@ -238,17 +258,19 @@ export default function PathfindingView() {
       // --- Draw heuristic vectors (yellow-green lines from selected drone) ---
       const droneX = padL + startC * CELL + CELL / 2
       const droneY = padT + startR * CELL + CELL / 2
-      const goalX = padL + goalC * CELL + CELL / 2
-      const goalY = padT + goalR * CELL + CELL / 2
+      const goalX = destination ? padL + goalC * CELL + CELL / 2 : null
+      const goalY = destination ? padT + goalR * CELL + CELL / 2 : null
 
-      ctx.beginPath()
-      ctx.moveTo(droneX, droneY)
-      ctx.lineTo(goalX, goalY)
-      ctx.strokeStyle = 'rgba(180, 255, 60, 0.3)'
-      ctx.lineWidth = 1
-      ctx.setLineDash([3, 4])
-      ctx.stroke()
-      ctx.setLineDash([])
+      if (destination) {
+        ctx.beginPath()
+        ctx.moveTo(droneX, droneY)
+        ctx.lineTo(goalX, goalY)
+        ctx.strokeStyle = 'rgba(180, 255, 60, 0.3)'
+        ctx.lineWidth = 1
+        ctx.setLineDash([3, 4])
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
 
       // --- Draw A* Path as glowing tube ---
       if (path.length > 1) {
@@ -300,7 +322,7 @@ export default function PathfindingView() {
       }
 
       // --- All drones: show their path starts as small triangles ---
-      useSimStore.getState().drones.forEach(d => {
+      store.drones.forEach(d => {
         if (!d.pos) return
         const [dr, dc] = worldToGrid(d.pos[0], d.pos[2])
         const color = DRONE_COLORS[d.id] || '#94a3b8'
@@ -340,23 +362,26 @@ export default function PathfindingView() {
       ctx.shadowBlur = 0
       ctx.restore()
 
-      // --- Goal Marker: animated ring ---
-      ctx.beginPath()
-      ctx.arc(goalX, goalY, 4 + Math.sin(t * 4) * 1.5, 0, Math.PI * 2)
-      ctx.strokeStyle = '#ff4500'
-      ctx.lineWidth = 1.5
-      ctx.stroke()
-      ctx.beginPath()
-      ctx.arc(goalX, goalY, 2, 0, Math.PI * 2)
-      ctx.fillStyle = '#ff4500'
-      ctx.shadowBlur = 10; ctx.shadowColor = '#ff4500'
-      ctx.fill()
-      ctx.shadowBlur = 0
+      if (destination) {
+        // --- Goal Marker: animated ring ---
+        ctx.beginPath()
+        ctx.arc(goalX, goalY, 4 + Math.sin(t * 4) * 1.5, 0, Math.PI * 2)
+        ctx.strokeStyle = '#ff4500'
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+        ctx.beginPath()
+        ctx.arc(goalX, goalY, 2, 0, Math.PI * 2)
+        ctx.fillStyle = '#ff4500'
+        ctx.shadowBlur = 10; ctx.shadowColor = '#ff4500'
+        ctx.fill()
+        ctx.shadowBlur = 0
+      }
 
       // --- Stats overlay (top-right corner) ---
       const infoLines = [
         `ALGO: A* (8-dir)`,
         `DRONE: ${selectedDrone.callsign || 'N/A'}`,
+        `DEST: ${destination ? 'MARKED AREA' : 'PENDING'}`,
         `PATH: ${path.length} nodes`,
         `CLOSED: ${closedSet.size} cells`,
         `COST: ${grid[startR]?.[startC] ?? '?'}→${grid[goalR]?.[goalC] ?? '?'}`,
@@ -381,7 +406,7 @@ export default function PathfindingView() {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
     }
-  }, [selectedDroneId, scenario, buildCostGrid, runAStar, backendGrid])
+  }, [selectedDroneId, scenario, searchRegion, missionPhase, buildCostGrid, runAStar, backendGrid])
 
   const droneColor = DRONE_COLORS[selectedDroneId] || '#00e5ff'
   const selectedDrone = drones.find(d => d.id === selectedDroneId) || drones[0]

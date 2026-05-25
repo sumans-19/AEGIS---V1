@@ -6,6 +6,7 @@ import { useBackend } from './hooks/useBackend'
 import Landing from './pages/Landing'
 import Mission from './pages/Mission'
 import Disasters from './pages/Disasters'
+import DronePathfinding from './pages/DronePathfinding'
 
 export default function App() {
   const theme = useSimStore(s => s.theme)
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/disasters" element={<Disasters />} />
           <Route path="/mission" element={<Mission />} />
+          <Route path="/drone-paths" element={<DronePathfinding />} />
         </Routes>
       </AnimatePresence>
     </BrowserRouter>
