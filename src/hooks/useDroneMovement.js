@@ -8,18 +8,18 @@ import { useSimStore } from '../store/useSimStore'
 export const getLatestSliceMap = () => latestSliceMap
 
 // ── Constants matching Terrain.jsx building grid ──
-export const GRID_COUNT = 12
-export const SPACING = 22
-export const CITY_OFFSET = (GRID_COUNT * SPACING) / 2 // 132
+export const GRID_COUNT = 18
+export const SPACING = 30
+export const CITY_OFFSET = (GRID_COUNT * SPACING) / 2 // 270
 
 // ── Drone Base (outside city grid) ──
-export const DRONE_BASE = { x: -180, y: 0, z: -180 }
+export const DRONE_BASE = { x: -330, y: 0, z: -330 }
 export const BASE_PADS = [
-  { x: -190, y: 2, z: -190 },
-  { x: -170, y: 2, z: -190 },
-  { x: -190, y: 2, z: -170 },
-  { x: -170, y: 2, z: -170 },
-  { x: -180, y: 2, z: -180 },
+  { x: -340, y: 2, z: -340 },
+  { x: -320, y: 2, z: -340 },
+  { x: -340, y: 2, z: -320 },
+  { x: -320, y: 2, z: -320 },
+  { x: -330, y: 2, z: -330 },
 ]
 
 // ── Speeds (m/s) ──
