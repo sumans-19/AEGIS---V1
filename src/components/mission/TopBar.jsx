@@ -5,7 +5,7 @@ import {
   MapPin, Rocket, RotateCcw, Maximize, RefreshCw, Sun, Moon, Route
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
-import { computeDeployPaths, computeReturnPaths, getDronePosition, DRONE_BASE, getPathDistance, getActiveDronesCount } from \'../../hooks/useDroneMovement\'
+import { computeDeployPaths, computeReturnPaths, getDronePosition, DRONE_BASE, getPathDistance, getActiveDronesCount } from '../../hooks/useDroneMovement'
 
 const PHASE_LABELS = {
   IDLE: 'STANDBY',

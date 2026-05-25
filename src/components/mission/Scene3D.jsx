@@ -7,8 +7,8 @@ import Terrain from './Terrain'
 import DroneModel from './DroneModel'
 import { PanelRightClose, PanelRightOpen, Target } from 'lucide-react'
 import { useEdgeCaseScript } from '../../hooks/useEdgeCaseScript'
-import { DRONE_BASE, PROXIMITY_THRESHOLD } from \'../../hooks/useDroneMovement\'
-import { WebGLErrorBoundary } from \'../WebGLErrorBoundary\'
+import { DRONE_BASE, PROXIMITY_THRESHOLD } from '../../hooks/useDroneMovement'
+import { WebGLErrorBoundary } from '../WebGLErrorBoundary'
 
 // ═══════════════════════════════════
 // ATMOSPHERE CONFIG
@@ -639,7 +639,7 @@ export default function Scene3D() {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-<<<<<<< HEAD
+      <WebGLErrorBoundary>
       <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, powerPreference: 'high-performance' }}>
         <PerspectiveCamera makeDefault position={[-80, 100, -80]} fov={50} near={0.5} far={2000} />
         {!povMode && (
@@ -651,34 +651,10 @@ export default function Scene3D() {
             makeDefault
             enableRotate={!isSelectingOrSeeding}
             enablePan={!isSelectingOrSeeding}
-=======
-      <WebGLErrorBoundary>
-        <Canvas shadows gl={{ antialias: true, logarithmicDepthBuffer: true }}>
-          <PerspectiveCamera makeDefault position={[-80, 100, -80]} fov={50} />
-          {!povMode && (
-            <OrbitControls
-              ref={controlsRef}
-              maxPolarAngle={Math.PI / 2.1}
-              minDistance={10}
-              maxDistance={400}
-              makeDefault
-              enableRotate={!isSelectingOrSeeding}
-              enablePan={!isSelectingOrSeeding}
-            />
-          )}
-          <CameraController />
-
-          {/* Atmosphere */}
-          <SceneFog scenario={scenario} />
-
-          {/* Enhanced Sky */}
-          <Sky
-            sunPosition={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).sunPosition}
-            turbidity={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).turbidity}
-            rayleigh={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).rayleigh}
->>>>>>> c45a5caa079c143bcbfdda32868c3541beeddfd3
           />
-          <Stars radius={200} depth={80} count={8000} factor={4} saturation={0} fade speed={0.5} />
+        )}
+        <CameraController />
+        <Stars radius={200} depth={80} count={8000} factor={4} saturation={0} fade speed={0.5} />
 
         {/* Atmosphere */}
         <SceneFog scenario={scenario} />
@@ -740,11 +716,11 @@ export default function Scene3D() {
             z1={searchRegion.z1}
             x2={searchRegion.x2}
             z2={searchRegion.z2}
-
           />
+        )}
 
         {/* Seed mode */}
-        {missionPhase === \'SEED_SURVIVORS\' && (
+        {missionPhase === 'SEED_SURVIVORS' && (
           <SeedMode onSeed={handleSeed} searchRegion={searchRegion} />
         )}
 

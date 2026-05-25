@@ -28,14 +28,6 @@ export default React.memo(function DroneModel({ drone, index }) {
   const dropLinesRef = useRef()
   const frameCounter = useRef(0)
 
-export default function DroneModel({ drone, index }) {
-  const groupRef      = useRef()
-  const rotorRefs     = useRef([])
-  const lightRef      = useRef()
-  const scanRingRef   = useRef()
-  const crosshairRef  = useRef()
-  const dropRingsRef  = useRef([])
-  const dropLinesRef  = useRef()
 
   const theme        = useSimStore(s => s.theme)
   const selectedDrone = useSimStore(s => s.selectedDrone)
@@ -260,7 +252,10 @@ export default function DroneModel({ drone, index }) {
     const isOverrideFlight = ['FAILED_RTB', 'TAKEOVER'].includes(drone.status)
     const isFlying = !isParked && (['DEPLOYING', 'SEARCHING', 'RETURNING', 'ALL_FOUND'].includes(missionPhase) || isOverrideFlight)
     const isIdle = ['IDLE', 'SELECT_REGION', 'SEED_SURVIVORS', 'COMPLETED'].includes(missionPhase)
-    const rotorSpeed = isFlying ? 1.5 : (isIdle ? 0.05 : 0.3)
+    let rotorSpeed = isFlying ? 1.5 : (isIdle ? 0.05 : 0.3)
+    if (drone.status === 'FAILED' || drone.status === 'FAILED_SYNCING') rotorSpeed = Math.random() * 0.2 // sporadic
+    if (drone.status === 'OFFLINE') rotorSpeed = 0 // dead
+    if (drone.status === 'RECEIVING') rotorSpeed = 1.0 // hover
 
     // ── Store position back (use rendered position, not raw path position) ──
     const rp = groupRef.current.position
@@ -270,16 +265,6 @@ export default function DroneModel({ drone, index }) {
       pos:      [rp.x, rp.y, rp.z],
     })
 
-    // ── Rotor animation ─────────────────────────────────────────────────────
-    const isFlying = ['DEPLOYING', 'SEARCHING', 'RETURNING', 'ALL_FOUND'].includes(missionPhase)
-    const isIdle   = ['IDLE', 'SELECT_REGION', 'SEED_SURVIVORS', 'COMPLETED'].includes(missionPhase)
-    
-    // Rotor failure simulation
-    let rotorSpeed = isFlying ? 1.5 : (isIdle ? 0.05 : 0.3)
-    if (drone.status === 'FAILED' || drone.status === 'FAILED_SYNCING') rotorSpeed = Math.random() * 0.2 // sporadic
-    if (drone.status === 'OFFLINE') rotorSpeed = 0 // dead
-    if (drone.status === 'RECEIVING') rotorSpeed = 1.0 // hover
-    
     rotorRefs.current.forEach(r => r && (r.rotation.y += rotorSpeed))
 
     // ── Beacon blink ────────────────────────────────────────────────────────
