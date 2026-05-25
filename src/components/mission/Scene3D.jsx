@@ -1,13 +1,14 @@
 import { memo, useRef, useState, useMemo, useEffect } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
-import { OrbitControls, Stars, Sky, PerspectiveCamera } from '@react-three/drei'
+import { OrbitControls, Stars, Sky, PerspectiveCamera, QuadraticBezierLine } from '@react-three/drei'
 import * as THREE from 'three'
 import { useSimStore } from '../../store/useSimStore'
 import Terrain from './Terrain'
 import DroneModel from './DroneModel'
 import { PanelRightClose, PanelRightOpen, Target } from 'lucide-react'
 import { useEdgeCaseScript } from '../../hooks/useEdgeCaseScript'
-import { DRONE_BASE, PROXIMITY_THRESHOLD } from '../../hooks/useDroneMovement'
+import { DRONE_BASE, PROXIMITY_THRESHOLD } from \'../../hooks/useDroneMovement\'
+import { WebGLErrorBoundary } from \'../WebGLErrorBoundary\'
 
 // ═══════════════════════════════════
 // ATMOSPHERE CONFIG
@@ -229,6 +230,50 @@ function RegionRect({ x1, z1, x2, z2, opacity = 0.08 }) {
           <meshBasicMaterial color="#00e5ff" transparent opacity={0.4} />
         </mesh>
       ))}
+    </group>
+  )
+}
+
+// ═══════════════════════════════════
+// DATA TRANSFER VISUALIZATION
+// ═══════════════════════════════════
+function DataTransferLink({ drones }) {
+  const syncing = drones.find(d => d.status === 'FAILED_SYNCING')
+  const receiving = drones.find(d => d.status === 'RECEIVING')
+  const matRef = useRef()
+
+  useFrame((state) => {
+    if (matRef.current) {
+      matRef.current.dashOffset -= 0.05
+    }
+  })
+
+  if (!syncing || !receiving || !syncing.pos || !receiving.pos) return null
+
+  const p1 = new THREE.Vector3(...syncing.pos)
+  const p2 = new THREE.Vector3(...receiving.pos)
+  
+  // Arch the line up slightly for a nice bezier
+  const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5)
+  mid.y += 10
+
+  return (
+    <group>
+      <QuadraticBezierLine
+        start={p1}
+        end={p2}
+        mid={mid}
+        color="#f43f5e"
+        lineWidth={3}
+        dashed
+        dashScale={50}
+        dashSize={4}
+        gapSize={2}
+        ref={matRef}
+        transparent
+        opacity={0.8}
+      />
+      <pointLight position={mid} color="#f43f5e" intensity={5} distance={20} />
     </group>
   )
 }
@@ -557,6 +602,13 @@ export default function Scene3D() {
   const selectedDroneId = useSimStore(s => s.selectedDrone)
   const povMode = useSimStore(s => s.povMode)
   const setPovMode = useSimStore(s => s.setPovMode)
+  const edgeCaseStep = useSimStore(s => s.edgeCaseStep)
+
+  const params = new URLSearchParams(window.location.search)
+  const scriptId = params.get('script')
+
+  // Drone Failure edge case strictly uses 2 drones
+  const scenarioDrones = scriptId === 'drone_failure' ? displayDrones.slice(2, 4) : displayDrones
 
   const missionPhase = useSimStore(s => s.missionPhase)
   const searchRegion = useSimStore(s => s.searchRegion)
@@ -587,6 +639,7 @@ export default function Scene3D() {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+<<<<<<< HEAD
       <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, powerPreference: 'high-performance' }}>
         <PerspectiveCamera makeDefault position={[-80, 100, -80]} fov={50} near={0.5} far={2000} />
         {!povMode && (
@@ -598,9 +651,34 @@ export default function Scene3D() {
             makeDefault
             enableRotate={!isSelectingOrSeeding}
             enablePan={!isSelectingOrSeeding}
+=======
+      <WebGLErrorBoundary>
+        <Canvas shadows gl={{ antialias: true, logarithmicDepthBuffer: true }}>
+          <PerspectiveCamera makeDefault position={[-80, 100, -80]} fov={50} />
+          {!povMode && (
+            <OrbitControls
+              ref={controlsRef}
+              maxPolarAngle={Math.PI / 2.1}
+              minDistance={10}
+              maxDistance={400}
+              makeDefault
+              enableRotate={!isSelectingOrSeeding}
+              enablePan={!isSelectingOrSeeding}
+            />
+          )}
+          <CameraController />
+
+          {/* Atmosphere */}
+          <SceneFog scenario={scenario} />
+
+          {/* Enhanced Sky */}
+          <Sky
+            sunPosition={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).sunPosition}
+            turbidity={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).turbidity}
+            rayleigh={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).rayleigh}
+>>>>>>> c45a5caa079c143bcbfdda32868c3541beeddfd3
           />
-        )}
-        <CameraController />
+          <Stars radius={200} depth={80} count={8000} factor={4} saturation={0} fade speed={0.5} />
 
         {/* Atmosphere */}
         <SceneFog scenario={scenario} />
@@ -662,17 +740,18 @@ export default function Scene3D() {
             z1={searchRegion.z1}
             x2={searchRegion.x2}
             z2={searchRegion.z2}
+
           />
-        )}
 
         {/* Seed mode */}
-        {missionPhase === 'SEED_SURVIVORS' && (
+        {missionPhase === \'SEED_SURVIVORS\' && (
           <SeedMode onSeed={handleSeed} searchRegion={searchRegion} />
         )}
 
         {/* Evasion Lines (visible if behind overlay) */}
         <ProximityEvasionLines encounter={proximityEncounter} />
       </Canvas>
+      </WebGLErrorBoundary>
 
       {/* Floating UI */}
       <div style={{

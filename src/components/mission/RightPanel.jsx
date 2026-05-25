@@ -17,6 +17,7 @@ const FAILURE_ICONS = {
   comms_failure: WifiOff,
   gps_failure: Navigation,
 }
+import ObstacleLogPanel from './ObstacleLogPanel'
 
 export default function RightPanel() {
   const selectedDrone = useSimStore(s => s.selectedDrone)
@@ -35,6 +36,7 @@ export default function RightPanel() {
     areamap: AreaMap,
     survivors: SurvivorsLog,
     pathfinding: PathfindingView,
+    obstaclelog: ObstacleLogPanel,
   }
 
   const ActiveTab = tabContent[activeSidebarTab] || DroneView

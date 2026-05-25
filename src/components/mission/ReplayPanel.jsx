@@ -107,6 +107,51 @@ function MiniRecorderScreen({ scenario }) {
          ctx.strokeStyle = `rgba(224,64,251,${1 - (tick%40)/40})`
          ctx.beginPath(); ctx.arc(cw/2, cy, (tick%40)*1.5, 0, Math.PI*2); ctx.stroke()
       }
+      else if (scenario === 'drone_failure') {
+         const progress = (tick % 240) / 240
+         const d3x = 50 + Math.min(progress, 0.2) * (cw - 100) // Stops early
+         const d4x = d3x + 80 // Drone 4 is ahead
+         
+         const isFailing = progress > 0.2 && progress < 0.7
+         const isSyncing = progress > 0.3 && progress < 0.7
+         const isOffline = progress >= 0.7
+  
+         // Draw Drone 4
+         ctx.fillStyle = '#00e5ff'
+         ctx.beginPath(); ctx.arc(d4x, cy, 6, 0, Math.PI*2); ctx.fill()
+         if (isSyncing) {
+            ctx.fillText('RECEIVING...', d4x, cy - 15)
+         }
+  
+         // Draw Data Transfer Link
+         if (isSyncing) {
+            ctx.strokeStyle = `rgba(244, 63, 94, ${Math.sin(tick*0.1) * 0.8 + 0.2})`
+            ctx.setLineDash([4, 4])
+            ctx.lineDashOffset = -tick * 0.5
+            ctx.beginPath(); ctx.moveTo(d3x, cy); ctx.lineTo(d4x, cy); ctx.stroke()
+            ctx.setLineDash([])
+            
+            // Data packet
+            ctx.fillStyle = '#fff'
+            ctx.beginPath(); ctx.arc(d3x + ((progress - 0.3) / 0.4) * (d4x - d3x), cy, 3, 0, Math.PI*2); ctx.fill()
+         }
+  
+         // Draw Drone 3
+         ctx.fillStyle = isFailing ? '#f43f5e' : (isOffline ? '#334155' : '#00e5ff')
+         ctx.beginPath(); ctx.arc(d3x, cy, 6, 0, Math.PI*2); ctx.fill()
+         
+         if (isFailing) {
+            ctx.fillStyle = '#f43f5e'
+            ctx.fillText('FAULT', d3x, cy + 20)
+            
+            // Error burst
+            ctx.strokeStyle = `rgba(244, 63, 94, ${1 - ((progress-0.2)/0.5)})`
+            ctx.beginPath(); ctx.arc(d3x, cy, ((progress-0.2)/0.5) * 40, 0, Math.PI*2); ctx.stroke()
+         } else if (isOffline) {
+            ctx.fillStyle = '#475569'
+            ctx.fillText('OFFLINE', d3x, cy + 20)
+         }
+      }
 
       anim = requestAnimationFrame(draw)
     }
@@ -189,6 +234,14 @@ export default function ReplayPanel({ onClose }) {
       color: '#e040fb',
       description: 'Severs connection to Drone 5 (MERLIN). Drone enters localized autonomous loiter.',
       impact: 'AUTONOMOUS LOITER'
+    },
+    {
+      id: 'drone_failure',
+      title: 'FAULT TOLERANCE & RECOVERY',
+      icon: Activity,
+      color: '#f43f5e',
+      description: 'Simulates hardware failure in Drone 3. Initiates P2P handshake & data sync to nearest drone before shutdown.',
+      impact: 'DATA SYNC & REASSIGNMENT'
     }
   ]
 

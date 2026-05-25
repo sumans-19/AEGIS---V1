@@ -249,3 +249,10 @@ body::after {
 .thermal-gradient {
   background: linear-gradient(to top, #0000ff, #00ff00, #ffff00, #ff8800, #ff0000);
 }
+
+/* ─── OBSTACLE DETECTION POPUP PULSE ─── */
+@keyframes aegisObstaclePulse {
+  from { color: #ff6b2b; text-shadow: 0 0 6px rgba(255,69,0,0.6); }
+  to   { color: #ff3300; text-shadow: 0 0 14px rgba(255,50,0,0.9); }
+}
+

@@ -1,7 +1,57 @@
 import React, { useMemo, useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { Sparkles } from '@react-three/drei'
 import { useSimStore } from '../../store/useSimStore'
+
+// ── Shared Building Window Texture ──
+const buildingTex = (() => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256; canvas.height = 256
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, 256, 256)
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      ctx.fillStyle = Math.random() > 0.4 ? '#1a1a1a' : '#000000'
+      ctx.fillRect(c * 32 + 4, r * 32 + 6, 24, 20)
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.RepeatWrapping
+  return tex
+})()
+
+// ── Broken/Abandoned Car ──
+function BrokenCar({ position, rotation, color, type }) {
+  // type 0: standard car, 1: SUV, 2: flipped
+  const isFlipped = type === 2
+  const yOff = isFlipped ? 0.8 : 0.3
+  const rot = isFlipped ? [rotation[0], rotation[1], Math.PI - 0.2] : rotation
+
+  return (
+    <group position={[position[0], position[1] + yOff, position[2]]} rotation={rot}>
+      {/* Chassis */}
+      <mesh castShadow>
+        <boxGeometry args={type === 1 ? [2.2, 0.8, 4.5] : [2.0, 0.6, 4.2]} />
+        <meshStandardMaterial color={color} roughness={0.6} metalness={0.4} />
+      </mesh>
+      {/* Cabin */}
+      <mesh position={[0, type === 1 ? 0.7 : 0.5, -0.2]} castShadow>
+        <boxGeometry args={type === 1 ? [1.8, 0.7, 2.5] : [1.6, 0.5, 2.0]} />
+        <meshStandardMaterial color="#111" roughness={0.1} metalness={0.8} />
+      </mesh>
+      {/* Wheels */}
+      {[[-1, -0.3, -1.5], [1, -0.3, -1.5], [-1, -0.3, 1.5], [1, -0.3, 1.5]].map((pos, i) => (
+        <mesh key={i} position={pos} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.35, 0.35, 0.2, 16]} />
+          <meshStandardMaterial color="#0A0A0A" roughness={0.9} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
 
 function seededRandom(seed) {
   let x = Math.sin(seed) * 10000
@@ -203,7 +253,9 @@ function RealisticTree({ position, scale = 1, seed = 0 }) {
 function StreetLight({ position, rotation = [0, 0, 0], seed = 0 }) {
   const isWorking = seededRandom(seed) > 0.6
   const materialRef = useRef()
+  const frameCounter = useRef(0)
   useFrame((state) => {
+    if (++frameCounter.current % 6 !== 0) return  // update every 6th frame
     if (isWorking && materialRef.current) {
       // Flickering effect for broken lights
       const flicker = seededRandom(seed + 1) > 0.5 ? (Math.random() > 0.95 ? 0 : 1) : 1
@@ -288,65 +340,75 @@ function DeadTree({ position, seed = 0 }) {
 
 // ── Particle Fire Effect ──
 function Fire({ position, intensity = 1, spread = null }) {
-  const meshRef = useRef()
   const flickerRef = useRef()
-  const particleCount = spread ? 60 : 20
-  
-  const dummy = useMemo(() => new THREE.Object3D(), [])
-  const particles = useMemo(() => {
-    const [w, d] = spread || [2, 2]
-    return Array.from({ length: particleCount }).map(() => ({
-      x: (Math.random() - 0.5) * w,
-      y: Math.random() * 4 * intensity,
-      z: (Math.random() - 0.5) * d,
-      speed: 1.5 + Math.random() * 2,
-      scale: 0.5 + Math.random() * 1.5,
-      phase: Math.random() * Math.PI * 2
-    }))
-  }, [spread, particleCount, intensity])
 
+  const subFlames = useMemo(() => {
+    if (!spread) return [{ ox: 0, oz: 0, s: 1 }]
+    const flames = []
+    const [w, d] = spread
+    const numFlames = 5 + Math.floor(Math.random() * 4)
+    // create a primary cluster
+    for (let i = 0; i < numFlames; i++) {
+      flames.push({
+        ox: (Math.random() - 0.5) * w * 0.7,
+        oz: (Math.random() - 0.5) * d * 0.7,
+        s: 0.45 + Math.random() * 0.75  // Increased scale
+      })
+    }
+    return flames
+  }, [spread])
+
+  const frameCounter = useRef(0)
   useFrame((state) => {
+    if (++frameCounter.current % 2 !== 0) return  // update every 2nd frame
     const t = state.clock.elapsedTime
-    particles.forEach((p, i) => {
-      p.y += p.speed * 0.05
-      p.x += Math.sin(t * 2 + p.phase) * 0.02
-      if (p.y > 6 * intensity) {
-        p.y = 0
-        const [w, d] = spread || [2, 2]
-        p.x = (Math.random() - 0.5) * w
-      }
-      dummy.position.set(position[0] + p.x, position[1] + p.y, position[2] + p.z)
-      
-      // Calculate scale based on height (smaller as it goes up)
-      const heightPercent = p.y / (6 * intensity)
-      const currentScale = p.scale * Math.max(0.1, 1 - heightPercent)
-      dummy.scale.setScalar(currentScale * intensity)
-      
-      // Billboard rotation (facing camera)
-      dummy.rotation.y = Math.atan2(state.camera.position.x - dummy.position.x, state.camera.position.z - dummy.position.z)
-      
-      dummy.updateMatrix()
-      meshRef.current.setMatrixAt(i, dummy.matrix)
-    })
-    meshRef.current.instanceMatrix.needsUpdate = true
-
     if (flickerRef.current) {
       flickerRef.current.intensity = intensity * (3 + Math.sin(t * 15 + position[0] * 3) * 2.0 + Math.cos(t * 22) * 1.5)
     }
   })
 
   return (
-    <group>
-      <instancedMesh ref={meshRef} args={[null, null, particleCount]}>
-        <planeGeometry args={[2, 2]} />
-        <meshBasicMaterial 
-          map={getParticleTexture('fire')} 
-          transparent 
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </instancedMesh>
-      <pointLight ref={flickerRef} color="#FF5500" intensity={4} distance={spread ? 60 * intensity : 35 * intensity} position={[position[0], position[1] + (spread ? 5 : 3), position[2]]} />
+    <group position={position}>
+      <mesh position={[0, 1.5, 0]}>
+        <sphereGeometry args={[1.5 * intensity, 16, 16]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <Sparkles count={spread ? 40 : 15} scale={spread ? spread[0] * 1.5 : 4} size={6} speed={2.5} opacity={1} color="#ffaa00" position={[0, 3, 0]} />
+      {subFlames.map((flm, i) => (
+        <group key={i} position={[flm.ox, 0, flm.oz]}>
+          {/* Outer Flame Core */}
+          <mesh position={[0, 1.2 * flm.s, 0]}>
+            <coneGeometry args={[0.75 * intensity * flm.s, 2.8 * intensity * flm.s, 6]} />
+            <meshStandardMaterial
+              color="#FF4500"
+              emissive="#FF2200"
+              emissiveIntensity={4}
+              transparent
+              opacity={0.8}
+            />
+          </mesh>
+          {/* Inner HOT Flame */}
+          <mesh position={[0, 1.5 * flm.s, 0]}>
+            <coneGeometry args={[0.35 * intensity * flm.s, 1.8 * intensity * flm.s, 5]} />
+            <meshStandardMaterial
+              color="#FFCC00"
+              emissive="#FFD700"
+              emissiveIntensity={6}
+              transparent
+              opacity={0.9}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Fire glow overarching light */}
+      <pointLight
+        ref={flickerRef}
+        color="#FF3300"
+        intensity={4}
+        distance={spread ? 60 * intensity : 35 * intensity}
+        position={[0, spread ? 5 : 3, 0]}
+      />
     </group>
   )
 }
@@ -354,7 +416,8 @@ function Fire({ position, intensity = 1, spread = null }) {
 // ── Billboard Smoke ──
 function Smoke({ position, scale = 1 }) {
   const meshRef = useRef()
-  const particleCount = 10
+  const particleCount = 6
+  const frameCounter = useRef(0)
   
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const particles = useMemo(() => {
@@ -367,12 +430,13 @@ function Smoke({ position, scale = 1 }) {
       rot: Math.random() * Math.PI * 2,
       phase: Math.random() * Math.PI * 2
     }))
-  }, [particleCount])
+  }, [])
 
   useFrame((state) => {
+    if (++frameCounter.current % 3 !== 0) return  // update every 3rd frame
     const t = state.clock.elapsedTime
     particles.forEach((p, i) => {
-      p.y += p.speed * 0.05
+      p.y += p.speed * 0.15  // compensate for fewer updates (x3)
       p.x += Math.sin(t * 0.5 + p.phase) * 0.02
       p.rot += p.rotSpeed
       if (p.y > 25 * scale) {
@@ -414,6 +478,7 @@ function Smoke({ position, scale = 1 }) {
 function DustParticles({ count = 200, area = [200, 20, 200] }) {
   const meshRef = useRef()
   const dummy = useMemo(() => new THREE.Object3D(), [])
+  const frameCounter = useRef(0)
   
   const particles = useMemo(() => {
     return Array.from({ length: count }).map((_, i) => ({
@@ -426,11 +491,12 @@ function DustParticles({ count = 200, area = [200, 20, 200] }) {
   }, [count, area])
 
   useFrame((state) => {
+    if (++frameCounter.current % 4 !== 0) return  // update every 4th frame
     const t = state.clock.elapsedTime
     particles.forEach((p, i) => {
-      p.x += Math.sin(t * p.speed + p.phase) * 0.02
-      p.y += Math.cos(t * p.speed * 0.5) * 0.01
-      p.z += Math.sin(t * p.speed * 0.8) * 0.02
+      p.x += Math.sin(t * p.speed + p.phase) * 0.08  // compensate for fewer updates (x4)
+      p.y += Math.cos(t * p.speed * 0.5) * 0.04
+      p.z += Math.sin(t * p.speed * 0.8) * 0.08
       dummy.position.set(p.x, p.y, p.z)
       dummy.updateMatrix()
       meshRef.current.setMatrixAt(i, dummy.matrix)
@@ -449,7 +515,9 @@ function DustParticles({ count = 200, area = [200, 20, 200] }) {
 // ── Emergency Lights (Flickering Blue/Red) ──
 function EmergencyLight({ position }) {
   const lightRef = useRef()
+  const frameCounter = useRef(0)
   useFrame((state) => {
+    if (++frameCounter.current % 3 !== 0) return  // update every 3rd frame
     const t = state.clock.elapsedTime * 10
     if (lightRef.current) {
       const isRed = Math.sin(t) > 0
@@ -523,7 +591,7 @@ function EarthquakeTerrain() {
     '#353535', // very dark
   ]
 
-  const { buildings, rubble, nature, roads, fires, smokes, cracks, emergencyLights, streetLights, vehicles } = useMemo(() => {
+  const { buildings, rubble, nature, roads, fires, smokes, cracks, cars, emergencyLights, streetLights, vehicles } = useMemo(() => {
     const buildings = []
     const rubble = []
     const nature = []
@@ -531,25 +599,26 @@ function EarthquakeTerrain() {
     const fires = []
     const smokes = []
     const cracks = []
+    const cars = []
     const emergencyLights = []
     const streetLights = []
     const vehicles = []
-    const gridSize = 12
-    const spacing = 22
-    const offset = (gridSize * spacing) / 2
+    const gridSize = 18
+    const spacing = 30
+    const offset = (gridSize * spacing) / 2   // 270
 
     // Road grid
     for (let i = 0; i <= gridSize; i++) {
       const pos = i * spacing - offset
-      roads.push({ start: [pos, -offset - 15], end: [pos, offset + 15] })
-      roads.push({ start: [-offset - 15, pos], end: [offset + 15, pos] })
+      roads.push({ start: [pos, -offset - 20], end: [pos, offset + 20] })
+      roads.push({ start: [-offset - 20, pos], end: [offset + 20, pos] })
     }
 
-    // Ground cracks (seismic fissures)
-    for (let c = 0; c < 25; c++) {
-      const sx = (seededRandom(c * 77) - 0.5) * 200
-      const sz = (seededRandom(c * 88) - 0.5) * 200
-      const len = 15 + seededRandom(c * 99) * 40
+    // Ground cracks (seismic fissures) — scaled to new city size
+    for (let c = 0; c < 40; c++) {
+      const sx = (seededRandom(c * 77) - 0.5) * 420
+      const sz = (seededRandom(c * 88) - 0.5) * 420
+      const len = 20 + seededRandom(c * 99) * 60
       const ang = seededRandom(c * 111) * Math.PI
       cracks.push({
         start: [sx, sz],
@@ -611,9 +680,19 @@ function EarthquakeTerrain() {
           const wallColor = WALL_SHADES[colorIdx]
           const roofColor = ROOF_SHADES[roofIdx]
 
+          // Add a car near the road occasionally
+          if (seededRandom(seed + 80) > 0.6) {
+            cars.push({
+              position: [x + (seededRandom(seed + 81) - 0.5) * 20, 0, z + (seededRandom(seed + 82) - 0.5) * 20],
+              rotation: [0, seededRandom(seed + 83) * Math.PI * 2, 0],
+              color: ['#1E3A8A', '#991B1B', '#374151', '#F59E0B', '#10B981'][Math.floor(seededRandom(seed + 84) * 5)],
+              type: Math.floor(seededRandom(seed + 85) * 3) // 0: car, 1: suv, 2: flipped
+            })
+          }
+
           if (damageLevel < 0.35) {
             // FULLY COLLAPSED — rubble pile
-            const chunks = 4 + Math.floor(rand * 5)
+            const chunks = 2 + Math.floor(rand * 3)
             for (let c = 0; c < chunks; c++) {
               const cw = 2 + rand * 5
               const ch = 0.8 + rand * 3
@@ -634,7 +713,7 @@ function EarthquakeTerrain() {
               })
             }
             // Scattered small debris
-            for (let r = 0; r < 12; r++) {
+            for (let r = 0; r < 3; r++) {
               rubble.push({
                 position: [
                   x + (seededRandom(seed + r * 5) - 0.5) * 12,
@@ -666,9 +745,9 @@ function EarthquakeTerrain() {
             }
           } else if (damageLevel < 0.6) {
             // PARTIALLY COLLAPSED — leaning/broken building
-            const height = 8 + rand * 15
-            const w = 7 + rand * 5
-            const d = 7 + rand * 5
+            const height = 16 + rand * 30
+            const w = 9 + rand * 8
+            const d = 9 + rand * 8
             const lean = (seededRandom(seed + 7) - 0.5) * 0.3
 
             buildings.push({
@@ -716,9 +795,9 @@ function EarthquakeTerrain() {
             }
           } else {
             // INTACT building (damaged but standing)
-            const height = 10 + rand * 25
-            const w = 7 + rand * 6
-            const d = 7 + rand * 6
+            const height = 20 + rand * 55
+            const w = 9 + rand * 8
+            const d = 9 + rand * 8
 
             buildings.push({
               position: [x, height / 2, z],
@@ -755,7 +834,7 @@ function EarthquakeTerrain() {
           }
         } else {
           // Empty lot with scattered debris
-          for (let r = 0; r < 3; r++) {
+          for (let r = 0; r < 1; r++) {
             rubble.push({
               position: [
                 x + (seededRandom(seed + r * 20) - 0.5) * 10,
@@ -769,7 +848,7 @@ function EarthquakeTerrain() {
         }
       }
     }
-    return { buildings, rubble, nature, roads, fires, smokes, cracks, emergencyLights, streetLights, vehicles }
+    return { buildings, rubble, nature, roads, fires, smokes, cracks, cars, emergencyLights, streetLights, vehicles }
   }, [])
 
   const isDark = theme === 'dark'
@@ -808,7 +887,7 @@ function EarthquakeTerrain() {
       
       {/* Ground — dusty/cracked earth */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[500, 500]} />
+        <planeGeometry args={[1200, 1200]} />
         <meshStandardMaterial
           color={isDark ? '#1C1C1A' : '#6B6B60'}
           roughness={1}
@@ -819,10 +898,10 @@ function EarthquakeTerrain() {
       </mesh>
 
       {/* Dust/dirt patches on ground */}
-      {Array.from({ length: 30 }, (_, i) => {
-        const px = (seededRandom(i * 200) - 0.5) * 300
-        const pz = (seededRandom(i * 201) - 0.5) * 300
-        const r = 8 + seededRandom(i * 202) * 15
+      {Array.from({ length: 60 }, (_, i) => {
+        const px = (seededRandom(i * 200) - 0.5) * 800
+        const pz = (seededRandom(i * 201) - 0.5) * 800
+        const r = 10 + seededRandom(i * 202) * 20
         return (
           <mesh key={`dust-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[px, 0.03, pz]}>
             <circleGeometry args={[r, 12]} />
@@ -851,16 +930,6 @@ function EarthquakeTerrain() {
         <RealisticTree key={`tree-${i}`} position={n.position} scale={n.scale} seed={n.seed} />
       ))}
 
-      {/* Street Lights */}
-      {streetLights.map((s, i) => (
-        <StreetLight key={`sl-${i}`} position={s.position} rotation={s.rotation} seed={s.seed} />
-      ))}
-
-      {/* Abandoned Vehicles */}
-      {vehicles.map((v, i) => (
-        <AbandonedVehicle key={`veh-${i}`} position={v.position} rotation={v.rotation} seed={v.seed} />
-      ))}
-
       {/* Buildings */}
       {buildings.map((b, i) => (
         <group key={`b-${i}`} position={b.position} rotation={b.rotation || [0, 0, 0]}>
@@ -869,7 +938,7 @@ function EarthquakeTerrain() {
             <boxGeometry args={b.scale} />
             <meshStandardMaterial
               color={b.color}
-              map={getBuildingTexture(512, 512, isDark)}
+              map={(!b.isBroken && b.scale[1] > 8) ? buildingTex : getBuildingTexture(512, 512, isDark)}
               roughness={0.9}
               metalness={0.05}
               bumpMap={getProceduralTexture('bump')}
@@ -877,12 +946,26 @@ function EarthquakeTerrain() {
             />
           </mesh>
 
-          {/* Roof slab */}
+          {/* Roof slab & details */}
           {!b.isBroken && (
-            <mesh position={[0, b.scale[1] / 2 + 0.2, 0]} castShadow>
-              <boxGeometry args={[b.scale[0] + 0.4, 0.4, b.scale[2] + 0.4]} />
-              <meshStandardMaterial color={b.roofColor} roughness={0.9} roughnessMap={getProceduralTexture('concrete')} bumpMap={getProceduralTexture('bump')} bumpScale={0.05} />
-            </mesh>
+            <group position={[0, b.scale[1] / 2 + 0.2, 0]}>
+              <mesh castShadow>
+                <boxGeometry args={[b.scale[0] + 0.4, 0.4, b.scale[2] + 0.4]} />
+                <meshStandardMaterial color={b.roofColor} roughness={0.9} roughnessMap={getProceduralTexture('concrete')} bumpMap={getProceduralTexture('bump')} bumpScale={0.05} />
+              </mesh>
+              {/* HVAC Unit */}
+              <mesh position={[b.scale[0] * 0.2, 0.6, -b.scale[2] * 0.2]} castShadow>
+                <boxGeometry args={[b.scale[0] * 0.3, 0.8, b.scale[2] * 0.3]} />
+                <meshStandardMaterial color="#2a2a2a" roughness={0.7} metalness={0.5} />
+              </mesh>
+              {/* Antenna */}
+              {b.scale[1] > 25 && (
+                <mesh position={[-b.scale[0] * 0.3, 1.5, b.scale[2] * 0.3]}>
+                  <cylinderGeometry args={[0.05, 0.05, 3]} />
+                  <meshStandardMaterial color="#111" />
+                </mesh>
+              )}
+            </group>
           )}
 
           {/* Damage marks on partially broken buildings */}
@@ -908,9 +991,20 @@ function EarthquakeTerrain() {
         </mesh>
       ))}
 
-      {/* Dead/damaged trees */}
-      {nature.map((n, i) => (
-        <DeadTree key={`t-${i}`} position={n.position} seed={n.seed} />
+
+      {/* Broken Cars */}
+      {cars.map((c, i) => (
+        <BrokenCar key={`car-${i}`} position={c.position} rotation={c.rotation} color={c.color} type={c.type} />
+      ))}
+
+      {/* Street Lights */}
+      {streetLights.map((s, i) => (
+        <StreetLight key={`sl-${i}`} position={s.position} rotation={s.rotation} seed={s.seed} />
+      ))}
+
+      {/* Abandoned Vehicles */}
+      {vehicles.map((v, i) => (
+        <AbandonedVehicle key={`veh-${i}`} position={v.position} rotation={v.rotation} seed={v.seed} />
       ))}
 
       {/* Fires & Smoke */}

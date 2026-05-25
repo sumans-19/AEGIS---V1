@@ -180,6 +180,9 @@ export const useSimStore = create(
       hardwareFailures: {},
       dronePathOverrides: {},
 
+      // ── Obstacle Detection Logs (per drone) ──
+      droneObstacleLogs: {}, // { [droneId]: [{time, message, pos}] }
+
       // ── Notifications ──
       notifications: [
         { id: 1, message: 'System initialized. Drones stationed at base.', type: 'system', timestamp: Date.now() },
@@ -748,6 +751,21 @@ export const useSimStore = create(
         }))
       },
 
+      // ── Obstacle Log ──
+      addObstacleLog: (droneId, entry) => set(state => {
+        const prev = state.droneObstacleLogs[droneId] || []
+        return {
+          droneObstacleLogs: {
+            ...state.droneObstacleLogs,
+            [droneId]: [...prev, entry].slice(-60),
+          }
+        }
+      }),
+
+      clearObstacleLogs: (droneId) => set(state => ({
+        droneObstacleLogs: { ...state.droneObstacleLogs, [droneId]: [] }
+      })),
+
       // ── UI Actions ──
       setCoordinationPanelOpen: (val) => set({ coordinationPanelOpen: val }),
       setSelectedDrone: (id) => set({ selectedDrone: id }),
@@ -799,6 +817,10 @@ export const useSimStore = create(
       setPlaybackProgress: (p) => set({ playbackProgress: typeof p === 'function' ? p(get().playbackProgress) : p }),
       isPlayingScript: false,
       setIsPlayingScript: (b) => set({ isPlayingScript: b }),
+      
+      // ── Manual Step-by-Step State ──
+      edgeCaseStep: 1,
+      setEdgeCaseStep: (step) => set({ edgeCaseStep: step }),
     }),
     {
       name: 'aegis-storage',
