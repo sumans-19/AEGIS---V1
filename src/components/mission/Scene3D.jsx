@@ -603,6 +603,8 @@ export default function Scene3D() {
   const povMode = useSimStore(s => s.povMode)
   const setPovMode = useSimStore(s => s.setPovMode)
   const edgeCaseStep = useSimStore(s => s.edgeCaseStep)
+  const rawDrones = useSimStore(s => s.drones)
+  const displayDrones = useEdgeCaseScript(rawDrones)
 
   const params = new URLSearchParams(window.location.search)
   const scriptId = params.get('script')
