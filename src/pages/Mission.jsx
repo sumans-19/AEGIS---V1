@@ -9,6 +9,7 @@ import RightPanel from '../components/mission/RightPanel'
 import NotificationPanel from '../components/mission/NotificationPanel'
 import EdgeCaseOverlay from '../components/mission/EdgeCaseOverlay'
 import CoordinationPanel from '../components/mission/CoordinationPanel'
+import ProximityEncounterPanel from '../components/mission/ProximityEncounterPanel'
 import { PanelLeftOpen, ChevronUp, ChevronDown } from 'lucide-react'
 
 export default function Mission() {
@@ -23,6 +24,8 @@ export default function Mission() {
   const setCoordinationPanelOpen = useSimStore(s => s.setCoordinationPanelOpen)
   const bottomPanelCollapsed = useSimStore(s => s.bottomPanelCollapsed)
   const setBottomPanelCollapsed = useSimStore(s => s.setBottomPanelCollapsed)
+  const proximityEncounter = useSimStore(s => s.proximityEncounter)
+  const encounterViewMode = useSimStore(s => s.encounterViewMode)
   const scriptId = searchParams.get('script')
 
   useSimulation()
@@ -161,7 +164,7 @@ export default function Mission() {
           </div>
 
           {/* Right Panel — sits above bottom, not full height */}
-          {showRight && !scriptId && (
+          {showRight && !scriptId && !proximityEncounter && (
             <div style={{
               width: '360px',
               minWidth: '360px',
@@ -171,6 +174,23 @@ export default function Mission() {
               background: '#0a0a0f',
             }}>
               <RightPanel />
+            </div>
+          )}
+
+          {/* Inline Proximity Encounter Panel */}
+          {proximityEncounter && encounterViewMode === 'side' && (
+            <div style={{
+              width: '50%',
+              minWidth: '700px',
+              flexShrink: 0,
+              height: '100%',
+              borderLeft: '1px solid rgba(255, 50, 0, 0.4)',
+              background: '#04090f',
+              position: 'relative',
+              boxShadow: '-10px 0 30px rgba(0,0,0,0.5)',
+              zIndex: 100
+            }}>
+              <ProximityEncounterPanel isInline={true} />
             </div>
           )}
         </div>
@@ -245,6 +265,11 @@ export default function Mission() {
       {/* Coordination Dashboard Overlay */}
       {coordinationPanelOpen && (
         <CoordinationPanel onClose={() => setCoordinationPanelOpen(false)} />
+      )}
+
+      {/* Proximity Encounter Premium UI Overlay */}
+      {proximityEncounter && encounterViewMode === 'full' && (
+        <ProximityEncounterPanel isInline={false} />
       )}
     </div>
   )

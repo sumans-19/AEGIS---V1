@@ -250,54 +250,7 @@ export default function PathfindingView() {
       ctx.stroke()
       ctx.setLineDash([])
 
-      // --- Draw A* Path as glowing tube ---
-      if (path.length > 1) {
-        // Outer glow
-        ctx.beginPath()
-        for (let i = 0; i < path.length; i++) {
-          const [pr, pc] = path[i]
-          const px = padL + pc * CELL + CELL / 2
-          const py = padT + pr * CELL + CELL / 2
-          if (i === 0) ctx.moveTo(px, py)
-          else ctx.lineTo(px, py)
-        }
-        ctx.strokeStyle = `${droneColor}40`
-        ctx.lineWidth = 6
-        ctx.lineJoin = 'round'
-        ctx.stroke()
-
-        // Inner path (animated dashes)
-        ctx.beginPath()
-        for (let i = 0; i < path.length; i++) {
-          const [pr, pc] = path[i]
-          const px = padL + pc * CELL + CELL / 2
-          const py = padT + pr * CELL + CELL / 2
-          if (i === 0) ctx.moveTo(px, py)
-          else ctx.lineTo(px, py)
-        }
-        ctx.strokeStyle = droneColor
-        ctx.lineWidth = 2
-        ctx.setLineDash([4, 3])
-        ctx.lineDashOffset = -tick * 0.4
-        ctx.stroke()
-        ctx.setLineDash([])
-        ctx.lineDashOffset = 0
-
-        // Waypoint stops (octahedrons / diamonds)
-        for (let i = 1; i < path.length - 1; i += Math.max(1, Math.floor(path.length / 4))) {
-          const [wr, wc] = path[i]
-          const wx = padL + wc * CELL + CELL / 2
-          const wy = padT + wr * CELL + CELL / 2
-          const s = 4
-          ctx.beginPath()
-          ctx.moveTo(wx, wy - s); ctx.lineTo(wx + s, wy); ctx.lineTo(wx, wy + s); ctx.lineTo(wx - s, wy); ctx.closePath()
-          ctx.fillStyle = droneColor
-          ctx.shadowBlur = 8
-          ctx.shadowColor = droneColor
-          ctx.fill()
-          ctx.shadowBlur = 0
-        }
-      }
+      // --- Path rendering removed as per user request ---
 
       // --- All drones: show their path starts as small triangles ---
       useSimStore.getState().drones.forEach(d => {

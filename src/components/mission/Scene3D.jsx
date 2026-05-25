@@ -7,7 +7,7 @@ import Terrain from './Terrain'
 import DroneModel from './DroneModel'
 import { PanelRightClose, PanelRightOpen, Target } from 'lucide-react'
 import { useEdgeCaseScript } from '../../hooks/useEdgeCaseScript'
-import { DRONE_BASE } from '../../hooks/useDroneMovement'
+import { DRONE_BASE, PROXIMITY_THRESHOLD } from '../../hooks/useDroneMovement'
 
 // ═══════════════════════════════════
 // ATMOSPHERE CONFIG
@@ -147,10 +147,11 @@ function RegionSelectMode({ onRegionSelected }) {
 
   return (
     <group>
-      {/* Invisible click plane */}
+      {/* Invisible click plane (raised above terrain for reliable clicks) */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.1, 0]}
+        position={[0, 8, 0]}
+        renderOrder={999}
         onPointerDown={(e) => {
           e.stopPropagation()
           const pt = { x: e.point.x, z: e.point.z }
@@ -174,7 +175,7 @@ function RegionSelectMode({ onRegionSelected }) {
         }}
       >
         <planeGeometry args={[500, 500]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} side={2} />
       </mesh>
 
       {/* First corner marker */}
@@ -239,7 +240,8 @@ function SeedMode({ onSeed, searchRegion }) {
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0.1, 0]}
+      position={[0, 8, 0]}
+      renderOrder={999}
       onPointerDown={(e) => {
         e.stopPropagation()
         if (e.button !== 0) return
@@ -253,7 +255,7 @@ function SeedMode({ onSeed, searchRegion }) {
       }}
     >
       <planeGeometry args={[500, 500]} />
-      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} side={2} />
     </mesh>
   )
 }
@@ -340,6 +342,39 @@ function CameraController() {
 }
 
 // ═══════════════════════════════════
+// PROXIMITY EVASION VISUALIZATION
+// ═══════════════════════════════════
+
+function ProximityEvasionLines({ encounter }) {
+  if (!encounter) return null
+  const { reroutePath1, reroutePath2 } = encounter
+
+  const renderPath = (path, color) => {
+    if (!path || path.length < 2) return null
+    const points = []
+    path.forEach(p => points.push(new THREE.Vector3(p.x, 15, p.z)))
+    const geo = new THREE.BufferGeometry().setFromPoints(points)
+    return (
+      <line geometry={geo}>
+        <lineBasicMaterial color={color} transparent opacity={0.8} linewidth={3} />
+      </line>
+    )
+  }
+
+  return (
+    <group>
+      {renderPath(reroutePath1, '#ff3200')}
+      {renderPath(reroutePath2, '#ffb300')}
+      {/* Draw a subtle cylinder between them representing the threshold */}
+      <mesh position={[(encounter.pos1.x + encounter.pos2.x)/2, 15, (encounter.pos1.z + encounter.pos2.z)/2]}>
+        <cylinderGeometry args={[PROXIMITY_THRESHOLD, PROXIMITY_THRESHOLD, 4, 32]} />
+        <meshBasicMaterial color="#ff3200" transparent opacity={0.1} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  )
+}
+
+// ═══════════════════════════════════
 // MAIN SCENE
 // ═══════════════════════════════════
 export default function Scene3D() {
@@ -362,8 +397,9 @@ export default function Scene3D() {
   const setSearchRegion = useSimStore(s => s.setSearchRegion)
   const setMissionPhase = useSimStore(s => s.setMissionPhase)
   const addNotification = useSimStore(s => s.addNotification)
+  const proximityEncounter = useSimStore(s => s.proximityEncounter)
 
-  const isSelectingOrSeeding = ['SELECT_REGION', 'SEED_SURVIVORS'].includes(missionPhase)
+  const isSelectingOrSeeding = missionPhase === 'SELECT_REGION' || missionPhase === 'SEED_SURVIVORS'
 
   const handleRegionSelected = (region) => {
     setSearchRegion(region)
@@ -475,6 +511,9 @@ export default function Scene3D() {
         {missionPhase === 'SEED_SURVIVORS' && (
           <SeedMode onSeed={handleSeed} searchRegion={searchRegion} />
         )}
+
+        {/* Evasion Lines (visible if behind overlay) */}
+        <ProximityEvasionLines encounter={proximityEncounter} />
       </Canvas>
 
       {/* Floating UI */}

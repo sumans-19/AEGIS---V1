@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Map, Navigation, Maximize2, Minimize2, ZoomIn, ZoomOut, Target } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
+import { droneWaypointState } from '../../hooks/useDroneMovement'
 
 export default function TrajectoryMap() {
   const canvasRef = useRef(null)
@@ -50,12 +51,14 @@ export default function TrajectoryMap() {
        
        // 2. Draw Trails
        currentDrones.forEach(d => {
-         if (!d.trail || d.trail.length < 2) return
+         const state = droneWaypointState.get(d.id)
+         const history = state?.history || []
+         if (history.length < 2) return
          ctx.beginPath()
-         ctx.moveTo(d.trail[0][0], d.trail[0][2])
-         d.trail.forEach(p => ctx.lineTo(p[0], p[2]))
-         ctx.strokeStyle = d.id === currentSid ? 'rgba(0, 229, 255, 0.6)' : 'rgba(148, 163, 184, 0.2)'
-         ctx.lineWidth = 0.5
+         ctx.moveTo(history[0].x, history[0].z)
+         history.forEach(p => ctx.lineTo(p.x, p.z))
+         ctx.strokeStyle = d.id === currentSid ? 'rgba(0, 229, 255, 0.6)' : 'rgba(148, 163, 184, 0.3)'
+         ctx.lineWidth = 1.0
          ctx.stroke()
        })
        

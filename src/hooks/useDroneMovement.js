@@ -23,6 +23,12 @@ const DEPLOY_SPEED = 22
 const SEARCH_SPEED = 10
 const RETURN_SPEED = 24
 export const DEPLOY_STAGGER = 2.5 // seconds between drone launches
+export const PROXIMITY_THRESHOLD = 30 // meters for encounter trigger
+
+// ── Dynamic Waypoint State ──
+// We store this outside zustand to prevent massive re-render storms
+export const droneWaypointState = new Map()
+// Shape: { path: [{x,z}...], segmentStartTime: timestamp, history: [{x,z}...], visited: Set }
 
 // ═══════════════════════════════════════════
 // ROAD INTERSECTION GRAPH
@@ -169,6 +175,17 @@ function posOnPath(path, elapsed, speed, loop = false) {
   return { x: l.x, z: l.z, progress: 1 }
 }
 
+function getRandomNodeInColumns(colsMap, colKeys, excludeNodeId = null) {
+  if (colKeys.length === 0) return null
+  const randomCol = colKeys[Math.floor(Math.random() * colKeys.length)]
+  let nodes = colsMap[randomCol]
+  if (excludeNodeId !== null && nodes.length > 1) {
+    nodes = nodes.filter(n => n.id !== excludeNodeId)
+  }
+  if (!nodes || nodes.length === 0) return null
+  return nodes[Math.floor(Math.random() * nodes.length)]
+}
+
 // ═══════════════════════════════════════════
 // ZONE DISTRIBUTION LOGIC
 // ═══════════════════════════════════════════
@@ -236,7 +253,7 @@ export function computeDeployPaths(searchRegion) {
 }
 
 // ═══════════════════════════════════════════
-// SEARCH PATHS: Lawnmower via safe road intersections
+// SEARCH PATHS: Random Waypoint Generation (Kinematic Pathfinding)
 // ═══════════════════════════════════════════
 export function computeSearchPaths(searchRegion) {
   if (!searchRegion) return {}
@@ -244,53 +261,98 @@ export function computeSearchPaths(searchRegion) {
   const result = {}
   
   const activeCount = getActiveDronesCount(searchRegion)
-
-  const allNodes = ROAD_NODES.filter(n => n.x >= x1 && n.x <= x2 && n.z >= z1 && n.z <= z2)
-  const cols = {}
-  allNodes.forEach(n => { if (!cols[n.gi]) cols[n.gi] = []; cols[n.gi].push(n) })
-  const colKeys = Object.keys(cols).map(Number).sort((a, b) => a - b)
-  const perDrone = Math.max(1, Math.ceil(colKeys.length / activeCount))
+  droneWaypointState.clear()
 
   for (let i = 0; i < 5; i++) {
     const pad = BASE_PADS[i]
     if (i >= activeCount) {
       result[i + 1] = [{ x: pad.x, z: pad.z }, { x: pad.x, z: pad.z }]
-      continue;
+      continue
     }
 
-    const myCols = colKeys.slice(i * perDrone, (i + 1) * perDrone)
-    
-    if (myCols.length < 1) {
-      const sx = x1 + (x2 - x1) * ((i + 0.5) / activeCount)
-      const centerNode = findNearestNode(sx, (z1 + z2)/2)
-      result[i + 1] = [{x: centerNode.x, z: centerNode.z}, {x: centerNode.x, z: centerNode.z}]
-      continue;
-    }
-    
-    const wps = []
-    let fwd = true
-    let prevNode = null
-    
-    for (const ck of myCols) {
-      const nodes = cols[ck].sort((a, b) => fwd ? a.z - b.z : b.z - a.z)
-      
-      for (const n of nodes) {
-        if (prevNode) {
-          // Guarantee safe 90-degree corner turns around buildings
-          const pathSegment = astar(prevNode, n)
-          wps.push(...pathSegment.slice(1))
-        } else {
-          wps.push({ x: n.x, z: n.z })
-        }
-        prevNode = n
-      }
-      fwd = !fwd
-    }
-    
-    const rev = [...wps].reverse()
-    result[i + 1] = [...wps, ...rev]
+    // Assign drone a horizontal sub-region for initial spread
+    const droneW = (x2 - x1) / activeCount
+    const subX1 = x1 + i * droneW
+    const subX2 = x1 + (i + 1) * droneW
+
+    const targetX = subX1 + Math.random() * (subX2 - subX1)
+    const targetZ = z1 + Math.random() * (z2 - z1)
+
+    // Current position
+    const storeDrone = useSimStore.getState().drones.find(d => d.id === i + 1) || { id: i + 1 }
+    const currentPosStr = getDronePosition(storeDrone)
+    const startPoint = { x: currentPosStr.x, z: currentPosStr.z }
+    const path = [startPoint, { x: targetX, z: targetZ }]
+
+    result[i + 1] = path
+
+    droneWaypointState.set(i + 1, {
+      path,
+      segmentStartTime: performance.now() / 1000,
+      history: [],
+      visited: new Set(),
+      region: searchRegion,
+      subRegion: { x1: subX1, x2: subX2, z1, z2 } // bias its random movement slightly
+    })
   }
   return result
+}
+
+export function generateNextWaypoint(droneId) {
+  const state = droneWaypointState.get(droneId)
+  if (!state || !state.path || state.path.length === 0) return null
+
+  const now = performance.now() / 1000
+  // Throttle spam if completed instantly
+  if (now - state.segmentStartTime < 0.1) {
+     return state.path 
+  }
+
+  const currentPos = state.path[state.path.length - 1]
+  const { x1, z1, x2, z2 } = state.region
+  
+  // Truly random point inside the FULL region
+  const targetX = x1 + Math.random() * (x2 - x1)
+  const targetZ = z1 + Math.random() * (z2 - z1)
+  
+  const newPath = [currentPos, { x: targetX, z: targetZ }]
+  
+  state.history.push(currentPos)
+  if (state.history.length > 20) state.history.shift()
+  
+  state.path = newPath
+  state.segmentStartTime = now
+  droneWaypointState.set(droneId, state)
+  return newPath
+}
+
+export function rerouteForCollisionAvoidance(droneId, otherDronePos) {
+  const state = droneWaypointState.get(droneId)
+  if (!state || !state.path) return null
+
+  const currentPosStr = getDronePosition({id: droneId}) // use real-time pos
+  const currentPos = {x: currentPosStr.x, z: currentPosStr.z}
+  
+  // Calculate vector away from other drone
+  const dx = currentPos.x - otherDronePos.x
+  const dz = currentPos.z - otherDronePos.z
+  
+  // RRT* style perpendicular evasion point
+  // Go 40m away perpendicularly
+  const evasionDist = 40
+  const mag = Math.sqrt(dx*dx + dz*dz) || 1
+  const evadeX = currentPos.x + (dx/mag) * evasionDist + (Math.random() - 0.5) * 20
+  const evadeZ = currentPos.z + (dz/mag) * evasionDist + (Math.random() - 0.5) * 20
+  
+  const newPath = [currentPos, { x: evadeX, z: evadeZ }]
+  
+  state.history.push(currentPos)
+  if (state.history.length > 300) state.history.shift()
+  state.path = newPath
+  state.segmentStartTime = performance.now() / 1000
+  droneWaypointState.set(droneId, state)
+  
+  return newPath
 }
 
 // ═══════════════════════════════════════════
@@ -353,14 +415,37 @@ export function getDronePosition(drone, timeOffset = 0) {
     }
 
     case 'SEARCHING': {
-      const path = searchPaths[drone.id]
-      if (!path || !searchStartTime) {
-        return { x: drone.pos?.[0] || 0, y: 15, z: drone.pos?.[2] || 0 }
+      const state = droneWaypointState.get(drone.id)
+      
+      if (!state || !state.path) {
+        // Fallback to basic search Paths if dynamic state is missing
+        const path = searchPaths[drone.id]
+        if (!path || !searchStartTime) {
+          return { x: drone.pos?.[0] || 0, y: 15, z: drone.pos?.[2] || 0 }
+        }
+        const elapsedFallback = now - searchStartTime
+        const rFallback = posOnPath(path, elapsedFallback, SEARCH_SPEED, true)
+        if (!rFallback) return { x: drone.pos?.[0] || 0, y: 15, z: drone.pos?.[2] || 0 }
+        return { x: rFallback.x, y: 15 + Math.sin(elapsedFallback * 0.4 + drone.id * 1.5) * 2, z: rFallback.z }
       }
-      const elapsed = now - searchStartTime
-      const r = posOnPath(path, elapsed, SEARCH_SPEED, true)
+
+      const elapsed = now - state.segmentStartTime
+      const r = posOnPath(state.path, elapsed, SEARCH_SPEED, false) // DO NOT LOOP
+      
+      // Continuously record history for dense point cloud visualization
+      if (r && (!state.lastHistoryTime || now - state.lastHistoryTime > 0.2)) {
+        state.history.push({ x: r.x, z: r.z })
+        if (state.history.length > 300) state.history.shift()
+        state.lastHistoryTime = now
+      }
+
+      // If we reached the end of the current dynamic segment, generate next waypoint
+      if (r && r.progress >= 1) {
+        generateNextWaypoint(drone.id)
+      }
+
       if (!r) return { x: drone.pos?.[0] || 0, y: 15, z: drone.pos?.[2] || 0 }
-      const alt = 15 + Math.sin(elapsed * 0.4 + drone.id * 1.5) * 2
+      const alt = 15 + Math.sin(now * 0.4 + drone.id * 1.5) * 2
       return { x: r.x, y: alt, z: r.z }
     }
 

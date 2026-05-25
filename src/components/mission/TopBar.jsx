@@ -5,7 +5,7 @@ import {
   MapPin, Rocket, RotateCcw, Maximize, RefreshCw, Sun, Moon, CheckCircle2
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
-import { computeDeployPaths, computeReturnPaths, DRONE_BASE } from '../../hooks/useDroneMovement'
+import { computeDeployPaths, computeReturnPaths, getDronePosition, DRONE_BASE } from '../../hooks/useDroneMovement'
 
 const PHASE_LABELS = {
   IDLE: 'STANDBY',
@@ -79,10 +79,15 @@ export default function TopBar() {
   }
 
   const handleEndTask = () => {
-    // Compute return paths from current drone positions
+    // Use real-time calculated positions (not stale store positions) for return paths
     const positions = {}
     drones.forEach(d => {
-      positions[d.id] = { x: d.pos?.[0] || 0, z: d.pos?.[2] || 0 }
+      try {
+        const calcPos = getDronePosition(d)
+        positions[d.id] = { x: calcPos.x || 0, z: calcPos.z || 0 }
+      } catch (_) {
+        positions[d.id] = { x: d.pos?.[0] || 0, z: d.pos?.[2] || 0 }
+      }
     })
     const paths = computeReturnPaths(positions)
     startReturn(paths)
@@ -257,6 +262,24 @@ export default function TopBar() {
             icon={Rocket}
             label="DEPLOY DRONES"
             color="#00ff88"
+          />
+        )}
+
+        {missionPhase === 'READY_TO_DEPLOY' && (
+          <ActionButton
+            onClick={handleStartMission}
+            icon={Rocket}
+            label="DEPLOY DRONES"
+            color="#00ff88"
+          />
+        )}
+
+        {missionPhase === 'SEARCHING' && (
+          <ActionButton
+            onClick={handleEndTask}
+            icon={RotateCcw}
+            label="END SEARCH"
+            color="#ff6b2b"
           />
         )}
 

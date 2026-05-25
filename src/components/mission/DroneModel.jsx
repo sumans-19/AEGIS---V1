@@ -17,28 +17,14 @@ export default function DroneModel({ drone, index }) {
   const crosshairRef = useRef()
   const dropRingsRef = useRef([])
   const dropLinesRef = useRef()
+  const frameCounter = useRef(0)
 
   const theme = useSimStore(s => s.theme)
   const selectedDrone = useSimStore(s => s.selectedDrone)
   const missionPhase = useSimStore(s => s.missionPhase)
   const isSelected = selectedDrone === drone.id
 
-  const trailPositions = useRef([])
   const scanColor = DRONE_COLORS[(drone.id - 1) % DRONE_COLORS.length]
-
-  const { trailGeometry, trailLine } = useMemo(() => {
-    const geom = new THREE.BufferGeometry()
-    const positions = new Float32Array(300 * 3)
-    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    geom.setDrawRange(0, 0)
-    const mat = new THREE.LineBasicMaterial({
-      color: scanColor,
-      transparent: true,
-      opacity: 0.4,
-      linewidth: 1,
-    })
-    return { trailGeometry: geom, trailLine: new THREE.Line(geom, mat) }
-  }, [scanColor])
 
   const { dropLinesGeom, dropLinesMesh } = useMemo(() => {
     const geom = new THREE.BufferGeometry()
@@ -77,12 +63,17 @@ export default function DroneModel({ drone, index }) {
       groupRef.current.rotation.y = Math.atan2(dir.x, dir.z)
     }
 
-    // ── Store position back ──
-    useSimStore.getState().updateDrone(drone.id, {
-      altitude: getDroneAltitude(pos) || 0,
-      speed: getDroneSpeed(drone) || 0,
-      pos: [pos.x, pos.y, pos.z],
-    })
+    // ── Store position back (throttled to every 6th frame ≈ 10 updates/sec) ──
+    // PERF FIX: Writing to zustand every frame caused 300 state updates/sec across
+    // 5 drones, triggering a re-render storm that froze the UI.
+    frameCounter.current++
+    if (frameCounter.current % 6 === 0) {
+      useSimStore.getState().updateDrone(drone.id, {
+        altitude: getDroneAltitude(pos) || 0,
+        speed: getDroneSpeed(drone) || 0,
+        pos: [pos.x, pos.y, pos.z],
+      })
+    }
 
     // ── Rotor animation ──
     const isFlying = ['DEPLOYING', 'SEARCHING', 'RETURNING', 'ALL_FOUND'].includes(missionPhase)
@@ -139,19 +130,6 @@ export default function DroneModel({ drone, index }) {
       if (crosshairRef.current) crosshairRef.current.position.set(0, -100, 0)
       if (scanRingRef.current) scanRingRef.current.position.set(0, -100, 0)
       dropRingsRef.current.forEach(r => r && r.position.set(0, -100, 0))
-    }
-
-    // ── Trail ──
-    if (isFlying) {
-      trailPositions.current.push([pos.x, pos.y, pos.z])
-      if (trailPositions.current.length > 250) trailPositions.current.shift()
-
-      const arr = trailGeometry.attributes.position.array
-      trailPositions.current.forEach((p, i) => {
-        arr[i * 3] = p[0]; arr[i * 3 + 1] = p[1]; arr[i * 3 + 2] = p[2]
-      })
-      trailGeometry.attributes.position.needsUpdate = true
-      trailGeometry.setDrawRange(0, trailPositions.current.length)
     }
   })
 
@@ -295,8 +273,6 @@ export default function DroneModel({ drone, index }) {
           </group>
         </mesh>
       </group>
-
-      <primitive object={trailLine} />
     </group>
   )
 }

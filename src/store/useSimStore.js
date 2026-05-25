@@ -76,6 +76,11 @@ export const useSimStore = create(
       coordinationPanelOpen: false,
       bottomPanelCollapsed: false,
 
+      // ── Proximity Encounter ──
+      proximityEncounter: null,  // { drone1, drone2, timestamp, pointCloud1, pointCloud2, reroutePath1, reroutePath2, algorithmState, survivorLogs }
+      encounterCooldowns: {},    // { "1-2": timestamp } — per-pair cooldown to prevent spam
+      encounterViewMode: 'side', // 'side' or 'full'
+
       // ══════════════════════════════════════
       // ACTIONS
       // ══════════════════════════════════════
@@ -188,6 +193,13 @@ export const useSimStore = create(
       setFullMapMode: (val) => set({ fullMapMode: val }),
       setPovMode: (val) => set({ povMode: val }),
       setBottomPanelCollapsed: (val) => set({ bottomPanelCollapsed: val }),
+
+      triggerProximityEncounter: (data) => set({ proximityEncounter: data }),
+      dismissProximityEncounter: () => set({ proximityEncounter: null }),
+      toggleEncounterViewMode: () => set(s => ({ encounterViewMode: s.encounterViewMode === 'side' ? 'full' : 'side' })),
+      setEncounterCooldown: (pairKey) => set(s => ({
+        encounterCooldowns: { ...s.encounterCooldowns, [pairKey]: Date.now() }
+      })),
 
       toggleSimulation: () => {
         const currentlyRunning = get().simulationRunning
