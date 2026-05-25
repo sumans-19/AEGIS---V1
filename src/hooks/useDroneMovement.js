@@ -898,12 +898,10 @@ function buildCoverageWaypoints(bounds, obstacles, horizontalFirst) {
     const lanes = Math.max(1, Math.ceil(height / laneStep))
     for (let lane = 0; lane <= lanes; lane++) {
       const z = b.minZ + (height * lane) / lanes
-      // Generate intermediate points every ~laneStep for obstacle-safe routing
-      const steps = Math.max(2, Math.ceil(width / laneStep))
-      const row = []
-      for (let s = 0; s <= steps; s++) {
-        row.push({ x: b.minX + (width * s) / steps, z })
-      }
+      const row = [
+        { x: b.minX, z },
+        { x: b.maxX, z },
+      ]
       waypoints.push(...(forward ? row : [...row].reverse()))
       forward = !forward
     }
@@ -911,11 +909,10 @@ function buildCoverageWaypoints(bounds, obstacles, horizontalFirst) {
     const lanes = Math.max(1, Math.ceil(width / laneStep))
     for (let lane = 0; lane <= lanes; lane++) {
       const x = b.minX + (width * lane) / lanes
-      const steps = Math.max(2, Math.ceil(height / laneStep))
-      const column = []
-      for (let s = 0; s <= steps; s++) {
-        column.push({ x, z: b.minZ + (height * s) / steps })
-      }
+      const column = [
+        { x, z: b.minZ },
+        { x, z: b.maxZ },
+      ]
       waypoints.push(...(forward ? column : [...column].reverse()))
       forward = !forward
     }
@@ -976,7 +973,6 @@ export function computeDeployPaths(searchRegion) {
 // ═══════════════════════════════════════════
 // SEARCH PATHS: Random Waypoint Generation (Kinematic Pathfinding)
 // ═══════════════════════════════════════════
-let latestSliceMap = {}
 
 export function computeSearchPaths(searchRegion) {
   if (!searchRegion) return {}
