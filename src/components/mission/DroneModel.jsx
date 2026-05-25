@@ -83,29 +83,46 @@ export default function DroneModel({ drone, index }) {
 
     const isActivelyFlying = ['DEPLOYING', 'SEARCHING'].includes(missionPhase)
 
+    // ── Optional continuous movement for Edge Case Steps 1 & 2 ──────────────
+    let scriptOffsetX = 0, scriptOffsetZ = 0
+    let scriptNextOffsetX = 0, scriptNextOffsetZ = 0
+    
+    // Disable wide sweeping patrol for now to prevent building clipping.
+    // Drones will just hover with tiny micro-movements.
+    if (drone.isScriptOverride) {
+      const step = useSimStore.getState().edgeCaseStep
+      if (step === 1 || step === 2) {
+         const phase = drone.id * Math.PI
+         scriptOffsetX = Math.sin(now * 1.5 + phase) * 1.0 // Tiny 1m hover wobble
+         scriptOffsetZ = Math.cos(now * 1.5 + phase) * 1.0
+         
+         scriptNextOffsetX = Math.sin((now + 0.05) * 1.5 + phase) * 1.0
+         scriptNextOffsetZ = Math.cos((now + 0.05) * 1.5 + phase) * 1.0
+      }
+    }
+
+    // Drone's intended position (including patrol sweeps)
+    const activeX = pos.x + scriptOffsetX
+    const activeZ = pos.z + scriptOffsetZ
+
     // ── Continuous per-frame building repulsion ───────────────────────────
-    // This runs every frame — it CANNOT be throttled or skipped.
-    // It permanently steers the rendered position away from all buildings.
     let repX = 0, repZ = 0
     let hitAny = false
 
     for (const b of BUILDING_OBSTACLES) {
-      // Only repel if drone altitude is below building top + margin
       if (pos.y > b.height + ABOVE_MARGIN) continue
 
-      // Signed penetration depth into each axis of the expanded AABB
       const marginHW = b.hw + REPULSE_MARGIN
       const marginHD = b.hd + REPULSE_MARGIN
-      const dx = pos.x - b.cx
-      const dz = pos.z - b.cz
+      const dx = activeX - b.cx
+      const dz = activeZ - b.cz
       const overlapX = marginHW - Math.abs(dx)
       const overlapZ = marginHD - Math.abs(dz)
 
-      if (overlapX <= 0 || overlapZ <= 0) continue  // drone is outside safe zone
+      if (overlapX <= 0 || overlapZ <= 0) continue
 
       hitAny = true
 
-      // Push along the axis with LESS penetration (shortest escape)
       if (overlapX < overlapZ) {
         repX += Math.sign(dx) * overlapX * REPULSE_STRENGTH
       } else {
@@ -150,21 +167,30 @@ export default function DroneModel({ drone, index }) {
     }
 
     // Update icon badge visibility
+    // Completely hide it during script override as requested by the user
     if (popupEl.current) {
-      popupEl.current.style.opacity   = obstaclePopupVisible.current ? '1' : '0'
-      popupEl.current.style.transform = obstaclePopupVisible.current ? 'scale(1)' : 'scale(0.6)'
+      const shouldShow = obstaclePopupVisible.current && !drone.isScriptOverride
+      popupEl.current.style.opacity   = shouldShow ? '1' : '0'
+      popupEl.current.style.transform = shouldShow ? 'scale(1)' : 'scale(0.6)'
     }
 
-    // ── Apply path position + repulsion offset ────────────────────────────
+    // ── Apply path position + repulsion offset + script patrol offset ──────
     groupRef.current.position.set(
-      pos.x + repulseOffset.current.x,
+      activeX + repulseOffset.current.x,
       pos.y,
-      pos.z + repulseOffset.current.z
+      activeZ + repulseOffset.current.z
     )
 
     // ── Banking / heading from movement direction ───────────────────────────
     const nextPos2 = getDronePosition(drone, 0.05)
-    const mv = new THREE.Vector3(nextPos2.x - pos.x, nextPos2.y - pos.y, nextPos2.z - pos.z)
+    const nextX = nextPos2.x + scriptNextOffsetX
+    const nextZ = nextPos2.z + scriptNextOffsetZ
+    
+    const mv = new THREE.Vector3(
+      nextX - activeX, 
+      nextPos2.y - pos.y, 
+      nextZ - activeZ
+    )
     if (mv.lengthSq() > 0.0001) {
       const dir = mv.normalize()
       groupRef.current.rotation.x = dir.z * 0.2
@@ -183,7 +209,13 @@ export default function DroneModel({ drone, index }) {
     // ── Rotor animation ─────────────────────────────────────────────────────
     const isFlying = ['DEPLOYING', 'SEARCHING', 'RETURNING', 'ALL_FOUND'].includes(missionPhase)
     const isIdle   = ['IDLE', 'SELECT_REGION', 'SEED_SURVIVORS', 'COMPLETED'].includes(missionPhase)
-    const rotorSpeed = isFlying ? 1.5 : (isIdle ? 0.05 : 0.3)
+    
+    // Rotor failure simulation
+    let rotorSpeed = isFlying ? 1.5 : (isIdle ? 0.05 : 0.3)
+    if (drone.status === 'FAILED' || drone.status === 'FAILED_SYNCING') rotorSpeed = Math.random() * 0.2 // sporadic
+    if (drone.status === 'OFFLINE') rotorSpeed = 0 // dead
+    if (drone.status === 'RECEIVING') rotorSpeed = 1.0 // hover
+    
     rotorRefs.current.forEach(r => r && (r.rotation.y += rotorSpeed))
 
     // ── Beacon blink ────────────────────────────────────────────────────────
@@ -246,10 +278,14 @@ export default function DroneModel({ drone, index }) {
     }
   })
 
-  const primaryColor = scanColor
-  const bodyColor    = '#f1f5f9'
+  const primaryColor = (drone.status === 'FAILED' || drone.status === 'FAILED_SYNCING') ? '#f43f5e' : (drone.status === 'OFFLINE' ? '#475569' : scanColor)
+  const bodyColor    = (drone.status === 'OFFLINE') ? '#334155' : '#f1f5f9'
   const darkDetail   = '#0f172a'
   const droneScale   = 2.8
+
+  const isFailedState = drone.status === 'FAILED' || drone.status === 'FAILED_SYNCING'
+  const isReceiving = drone.status === 'RECEIVING'
+  const isOffline = drone.status === 'OFFLINE'
 
   return (
     <group>
@@ -376,7 +412,31 @@ export default function DroneModel({ drone, index }) {
           </div>
         </Html>
 
-        <pointLight ref={lightRef} color={scanColor} distance={30} intensity={4} position={[0, -2, 0]} />
+        {/* ── Status Indicator (Failure / Syncing) ────────────────────────── */}
+        {(isFailedState || isReceiving || isOffline) && (
+           <Html position={[0, 6.5, 0]} center zIndexRange={[300, 0]} style={{ pointerEvents: 'none' }}>
+             <div style={{
+               background: isFailedState ? 'rgba(244, 63, 94, 0.2)' : (isReceiving ? 'rgba(0, 229, 255, 0.2)' : 'rgba(71, 85, 105, 0.5)'),
+               border: `1px solid ${isFailedState ? '#f43f5e' : (isReceiving ? '#00e5ff' : '#94a3b8')}`,
+               color: isFailedState ? '#f43f5e' : (isReceiving ? '#00e5ff' : '#94a3b8'),
+               padding: '4px 10px',
+               borderRadius: '4px',
+               fontSize: '10px',
+               fontFamily: 'JetBrains Mono',
+               fontWeight: 'bold',
+               letterSpacing: '1px',
+               backdropFilter: 'blur(4px)',
+               animation: (isFailedState || isReceiving) ? 'aegisObstaclePulse 0.5s ease-in-out infinite alternate' : 'none',
+             }}>
+               {drone.status === 'FAILED' && 'HARDWARE FAULT'}
+               {drone.status === 'FAILED_SYNCING' && 'SYNCING...'}
+               {drone.status === 'RECEIVING' && 'RECEIVING DATA...'}
+               {drone.status === 'OFFLINE' && 'OFFLINE'}
+             </div>
+           </Html>
+        )}
+
+        <pointLight ref={lightRef} color={primaryColor} distance={30} intensity={4} position={[0, -2, 0]} />
       </group>
 
       {/* ── Scan visuals (ground projection) ──────────────────────────────── */}

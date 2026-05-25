@@ -341,6 +341,14 @@ export function computeReturnPaths(currentPositions, activeCount = 5) {
 // MAIN POSITION CALCULATION (phase-aware)
 // ═════════════════════════════════════════════════════════════════════════
 export function getDronePosition(drone, timeOffset = 0) {
+  // If a script has overridden the position (e.g. edge cases), use it directly
+  if (drone.isScriptOverride && drone.pos) {
+    if (timeOffset > 0 && drone.nextPos) {
+      return { x: drone.nextPos[0], y: drone.nextPos[1], z: drone.nextPos[2] }
+    }
+    return { x: drone.pos[0], y: drone.pos[1], z: drone.pos[2] }
+  }
+
   const store = useSimStore.getState()
   const { missionPhase, deployPaths, searchPaths, returnPaths,
     deployStartTime, searchStartTime, returnStartTime } = store

@@ -237,6 +237,10 @@ export const useSimStore = create(
       setPlaybackProgress: (p) => set({ playbackProgress: typeof p === 'function' ? p(get().playbackProgress) : p }),
       isPlayingScript: false,
       setIsPlayingScript: (b) => set({ isPlayingScript: b }),
+      
+      // ── Manual Step-by-Step State ──
+      edgeCaseStep: 1,
+      setEdgeCaseStep: (step) => set({ edgeCaseStep: step }),
     }),
     {
       name: 'aegis-storage',

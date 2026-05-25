@@ -1,6 +1,7 @@
 import { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { WebGLErrorBoundary } from '../WebGLErrorBoundary'
 
 function Globe() {
   const globeRef = useRef()
@@ -79,13 +80,15 @@ function Globe() {
 
 export default function HeroGlobe() {
   return (
-    <Canvas
-      camera={{ position: [0, 2, 10], fov: 45 }}
-      style={{ width: '100%', height: '100%' }}
-      gl={{ antialias: true, alpha: true }}
-    >
-      <ambientLight intensity={0.1} color="#1a1a2e" />
-      <Globe />
-    </Canvas>
+    <WebGLErrorBoundary fallbackType="globe">
+      <Canvas
+        camera={{ position: [0, 2, 10], fov: 45 }}
+        style={{ width: '100%', height: '100%' }}
+        gl={{ antialias: true, alpha: true }}
+      >
+        <ambientLight intensity={0.1} color="#1a1a2e" />
+        <Globe />
+      </Canvas>
+    </WebGLErrorBoundary>
   )
 }

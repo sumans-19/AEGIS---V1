@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Zap, AlertTriangle, Wind, WifiOff, Play, Pause, RotateCcw } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Zap, AlertTriangle, Wind, WifiOff, Play, Pause, RotateCcw, Activity } from 'lucide-react'
 
 const EDGE_CASES = [
   {
@@ -34,6 +35,14 @@ const EDGE_CASES = [
     color: '#e040fb',
     description: 'Instantly severs the simulated uplink connection to Drone 5. Validates that the drone falls back to its onboard autonomous loiter protocol to hold position safely until the mesh network can reestablish contact.',
     impact: 'AUTONOMOUS LOITER'
+  },
+  {
+    id: 'drone_failure',
+    title: 'FAULT TOLERANCE & RECOVERY',
+    icon: Activity,
+    color: '#f43f5e',
+    description: 'Simulates a critical hardware failure in Drone 3. The system immediately identifies the nearest active drone (Drone 4) and securely transfers all locally generated terrain maps and survivor data before going offline.',
+    impact: 'DATA SYNC & REASSIGNMENT'
   }
 ]
 
@@ -65,6 +74,13 @@ const SCRIPT_STAGES = {
     { t: 0.4, text: "> 1.6s: CRITICAL: Handshake lost. Connection completely severed." },
     { t: 0.5, text: "> 2.0s: Localized autonomous loiter protocol activated. Holding." },
     { t: 0.9, text: "> 3.6s: Mesh network relayed connection. Uplink restored." },
+  ],
+  drone_failure: [
+    { t: 0.0, text: "> 0.0s: Drone 3 scanning nominal path. Telemetry green." },
+    { t: 0.2, text: "> 0.8s: HARDWARE FAULT: Motor 4 failure detected on Drone 3." },
+    { t: 0.3, text: "> 1.2s: Initiating emergency P2P handshake with Drone 4." },
+    { t: 0.4, text: "> 1.6s: Handshake OK. Synchronizing terrain map & survivor data." },
+    { t: 0.7, text: "> 2.8s: Transfer 100% complete. Drone 3 offline. Drone 4 resuming mission." },
   ]
 }
 
@@ -223,12 +239,54 @@ function InteractiveSimulator({ scenario, color }) {
        ctx.beginPath(); ctx.arc(droneX, cy, 6, 0, Math.PI*2); ctx.fill()
        ctx.fillText(isLost ? 'LINK SEVERED' : 'UPLINK OK', droneX, cy - 15)
 
-       if (isLost) {
+        if (isLost) {
           // Loiter rings
           const r2 = Math.max(0.1, Math.abs((progress*10)%1)*30)
           ctx.strokeStyle = `rgba(${parseInt(color.slice(1,3),16)}, ${parseInt(color.slice(3,5),16)}, ${parseInt(color.slice(5,7),16)}, ${1 - Math.abs((progress*10)%1)})`
           ctx.beginPath(); ctx.arc(droneX, cy, r2, 0, Math.PI*2); ctx.stroke()
           ctx.fillText('AUTONOMOUS LOITER', droneX, cy + 20)
+       }
+    }
+    else if (scenario === 'drone_failure') {
+       const d3x = 40 + Math.min(progress, 0.2) * (cw - 80) // Stops early
+       const d4x = d3x + 100 // Drone 4 is ahead
+       
+       const isFailing = progress > 0.2 && progress < 0.7
+       const isSyncing = progress > 0.3 && progress < 0.7
+       const isOffline = progress >= 0.7
+
+       // Draw Drone 4
+       ctx.fillStyle = '#00e5ff'
+       ctx.beginPath(); ctx.arc(d4x, cy, 6, 0, Math.PI*2); ctx.fill()
+       ctx.fillText(isSyncing ? 'RECEIVING DATA...' : 'NOMINAL', d4x, cy - 15)
+
+       // Draw Data Transfer Link
+       if (isSyncing) {
+          ctx.strokeStyle = `rgba(244, 63, 94, ${Math.sin(progress*50) * 0.8 + 0.2})`
+          ctx.setLineDash([4, 4])
+          ctx.lineDashOffset = -progress * 100
+          ctx.beginPath(); ctx.moveTo(d3x, cy); ctx.lineTo(d4x, cy); ctx.stroke()
+          ctx.setLineDash([])
+          
+          // Data packet
+          ctx.fillStyle = '#fff'
+          ctx.beginPath(); ctx.arc(d3x + ((progress - 0.3) / 0.4) * (d4x - d3x), cy, 3, 0, Math.PI*2); ctx.fill()
+       }
+
+       // Draw Drone 3
+       ctx.fillStyle = isFailing ? color : (isOffline ? '#334155' : '#00e5ff')
+       ctx.beginPath(); ctx.arc(d3x, cy, 6, 0, Math.PI*2); ctx.fill()
+       
+       if (isFailing) {
+          ctx.fillStyle = color
+          ctx.fillText('HARDWARE FAILURE', d3x, cy + 20)
+          
+          // Error burst
+          ctx.strokeStyle = `rgba(244, 63, 94, ${1 - ((progress-0.2)/0.5)})`
+          ctx.beginPath(); ctx.arc(d3x, cy, ((progress-0.2)/0.5) * 40, 0, Math.PI*2); ctx.stroke()
+       } else if (isOffline) {
+          ctx.fillStyle = '#475569'
+          ctx.fillText('OFFLINE', d3x, cy + 20)
        }
     }
   }, [scenario, color, progress])
@@ -408,8 +466,8 @@ export default function EdgeCasesGrid() {
                         PROTOCOL: {scenario.impact}
                      </div>
                      
-                     <a 
-                        href={`/mission?scenario=earthquake&script=${scenario.id}`}
+                     <Link 
+                        to={`/mission?scenario=earthquake&script=${scenario.id}`}
                         style={{
                            textDecoration: 'none',
                            fontFamily: 'Rajdhani',
@@ -423,7 +481,7 @@ export default function EdgeCasesGrid() {
                         }}
                      >
                         LAUNCH 3D SCRIPT
-                     </a>
+                     </Link>
                    </div>
                 </div>
              </motion.div>
