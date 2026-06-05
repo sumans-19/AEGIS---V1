@@ -17,6 +17,30 @@ AEGIS (Autonomous Emergency Ground Intelligence System) is a web-based mission c
 - Mission replay and telemetry data export
 - Educational demonstrations for swarm robotics
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/scenarios.png" alt="Disaster Scenario Selector" width="100%" />
+  <br/>
+  <em>Disaster Scenario Selector -- Choose from earthquake, tsunami, wildfire, flood, and more</em>
+</p>
+
+<br/>
+
+<p align="center">
+  <img src="screenshots/mission_control.png" alt="3D Mission Control Dashboard" width="100%" />
+  <br/>
+  <em>3D Mission Control Dashboard -- Real-time swarm telemetry with procedural urban terrain</em>
+</p>
+
+<br/>
+
+<p align="center">
+  <img src="screenshots/pathfinding.png" alt="Drone Pathfinding Control" width="100%" />
+  <br/>
+  <em>Drone Pathfinding Control -- A* path visualization with live deployment tracking</em>
+</p>
+
 ## Tech Stack
 
 ### Frontend
