@@ -239,34 +239,6 @@ CSS:                 6,617 bytes  ( 1.01%)
 HTML:                  869 bytes  ( 0.13%)
 ```
 
-### Build Performance
-
-| Metric | Value |
-|--------|-------|
-| Dev Server Startup | < 1 second with Vite |
-| HMR Update Time | < 100 ms |
-| Physics Tick Rate | 20 Hz (50 ms per tick) |
-| WebSocket Broadcast Rate | 20 Hz |
-| Control-to-Render Latency | < 100 ms |
-| 3D Rendering | 60 FPS on modern hardware |
-| Thermal Feed | 320 x 240 @ 30 fps |
-| Concurrent Drones | 5 (extensible to 50+) |
-| Terrain Resolution | 20 x 20 grid (5 m per cell) |
-| Simulation Speed Range | 0.5x -- 4x (configurable) |
-
-### Hardware Reference (Simulation Baseline: DJI Matrice 300 RTK)
-
-| Specification | Value |
-|--------------|-------|
-| Max Horizontal Speed | 19 m/s (68 km/h) |
-| Max Flight Time | 55 min (cruise, no wind) |
-| Battery Capacity | 2.7 kWh |
-| Communication Range | 8,000 m (standard) |
-| Thermal Sensor | 640 x 512 @ 30 fps, NETD 40 mK |
-| Telemetry Rate | 50 Hz |
-| Control Latency | 50 -- 150 ms |
-
-
 ## Repository Details
 
 | Field | Value |
