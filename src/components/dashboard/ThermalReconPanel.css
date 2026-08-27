@@ -1,0 +1,443 @@
+/* ==========================================================================
+   AEGIS — Drone Thermal Reconnaissance Interface
+   Cinematic, realistic, technical aviation style.
+   ========================================================================== */
+
+.thermal-panel {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--light-bg);
+  padding: 24px;
+  overflow: hidden;
+  font-family: var(--font-primary, 'Inter', sans-serif);
+}
+
+/* ── HEADER ── */
+.thermal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.thermal-header__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.thermal-header__icon {
+  color: var(--light-cyan);
+}
+
+.thermal-header h2 {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--light-text-hover);
+}
+
+.thermal-header__id {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--light-muted);
+  letter-spacing: 0.1em;
+  background: var(--glass-bg);
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Status Indicator */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: var(--glass-bg);
+}
+
+.status-indicator__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-indicator.live { color: #8ACBD2; border: 1px solid rgba(138, 203, 210, 0.3); }
+.status-indicator.live .status-indicator__dot { background: #8ACBD2; animation: pulseLive 2s infinite ease-in-out; }
+
+.status-indicator.connecting { color: #E5B842; border: 1px solid rgba(229, 184, 66, 0.3); }
+.status-indicator.connecting .status-indicator__dot { background: #E5B842; animation: pulseLive 1s infinite ease-in-out; }
+
+.status-indicator.error { color: #D95858; border: 1px solid rgba(217, 88, 88, 0.3); }
+.status-indicator.error .status-indicator__dot { background: #D95858; }
+
+@keyframes pulseLive {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── MAIN CONTENT (GRID) ── */
+.thermal-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+  gap: 24px;
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .thermal-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    overflow-y: auto;
+  }
+}
+
+/* ── VIEWPORT (CINEMATIC) ── */
+.thermal-viewport-container {
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.thermal-viewport {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #1B2326;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thermal-viewport__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: contrast(1.1) brightness(0.95);
+  z-index: 1;
+}
+
+/* Offline State */
+.thermal-viewport__offline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--light-muted);
+  text-align: center;
+  z-index: 2;
+}
+
+.thermal-viewport__offline h3 {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #D95858;
+}
+
+.thermal-btn-retry {
+  margin-top: 16px;
+  background: rgba(217, 88, 88, 0.1);
+  border: 1px solid rgba(217, 88, 88, 0.4);
+  color: #D95858;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.thermal-btn-retry:hover {
+  background: rgba(217, 88, 88, 0.2);
+}
+
+/* ── HUD OVERLAYS ── */
+.thermal-overlay__vignette {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.thermal-overlay__grid {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 6;
+  mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 80%);
+  -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 80%);
+}
+
+.thermal-overlay__scanline {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: rgba(121, 185, 193, 0.4);
+  box-shadow: 0 0 10px rgba(121, 185, 193, 0.6);
+  pointer-events: none;
+  z-index: 7;
+  animation: scanSweep 4s linear infinite;
+}
+
+@keyframes scanSweep {
+  0% { transform: translateY(-10px); opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { transform: translateY(800px); opacity: 0; }
+}
+
+.thermal-overlay__reticle {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px; height: 40px;
+  pointer-events: none;
+  z-index: 8;
+  opacity: 0.4;
+}
+
+.reticle-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px; height: 4px;
+  background: var(--light-cyan);
+  border-radius: 50%;
+}
+
+.reticle-h {
+  position: absolute;
+  top: 50%; left: -20px; right: -20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--light-cyan), transparent);
+}
+
+.reticle-v {
+  position: absolute;
+  left: 50%; top: -20px; bottom: -20px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--light-cyan), transparent);
+}
+
+/* Frame Brackets */
+.frame-bracket {
+  position: absolute;
+  width: 20px; height: 20px;
+  border: 2px solid rgba(255,255,255,0.4);
+  z-index: 8;
+}
+
+.frame-bracket.tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+.frame-bracket.tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+.frame-bracket.bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+.frame-bracket.br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+/* HUD Typography */
+.hud-top-left, .hud-top-right, .hud-bottom-left, .hud-bottom-right {
+  position: absolute;
+  z-index: 10;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hud-top-left { top: 24px; left: 48px; }
+.hud-top-right { top: 24px; right: 48px; align-items: flex-end; }
+.hud-bottom-left { bottom: 24px; left: 48px; }
+.hud-bottom-right { bottom: 24px; right: 48px; align-items: flex-end; }
+
+/* ── MISSION PANEL ── */
+.thermal-mission-panel {
+  background: var(--glass-bg);
+  border: var(--glass-border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--glass-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.panel-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--light-text);
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+}
+
+.mission-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mission-stat {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--light-muted);
+  letter-spacing: 0.1em;
+}
+
+.stat-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--light-text-hover);
+}
+
+.stat-value.active { color: #8ACBD2; }
+.stat-value.highlight { color: #E5B842; }
+.stat-value.alert { color: #D95858; }
+
+.mission-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.05);
+  margin: 24px 0;
+}
+
+.system-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sys-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--light-text);
+}
+
+.sys-status {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.sys-status.ok { color: #8ACBD2; }
+.sys-status.warn { color: #E5B842; }
+
+/* Live Target Intel Log */
+.target-intel-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.intel-entry {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.intel-entry.active {
+  border-left-color: #E5B842;
+  background: rgba(229, 184, 66, 0.05);
+  box-shadow: inset 20px 0 20px -20px rgba(229, 184, 66, 0.1);
+}
+
+.intel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.intel-id {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--light-text-hover);
+  letter-spacing: 0.1em;
+}
+
+.intel-entry.active .intel-id {
+  color: #E5B842;
+}
+
+.intel-time {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--light-muted);
+}
+
+.intel-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.intel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.intel-row span:first-child {
+  color: var(--light-muted);
+}
+
+.intel-row span:last-child {
+  color: var(--light-text);
+  font-weight: 700;
+}
+
+.intel-row span.highlight { color: #E5B842; }
+.intel-row span.ok { color: #8ACBD2; }
+.intel-row span.warn { color: #D95858; }

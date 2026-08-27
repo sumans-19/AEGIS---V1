@@ -4,6 +4,7 @@ import MasterHeader from '../components/dashboard/MasterHeader';
 import MasterSidebar from '../components/dashboard/MasterSidebar';
 import HomeOverview from '../components/dashboard/HomeOverview';
 import DroneInspectionView from '../components/dashboard/DroneInspectionView';
+import ThermalReconPanel from '../components/dashboard/ThermalReconPanel';
 import Mission from './Mission';
 import AIDashboard from './AIDashboard';
 import Disasters from './Disasters';
@@ -101,6 +102,10 @@ export default function MasterDashboard() {
 
             {activeTab === 'drone-3d' && (
               <DroneInspectionView />
+            )}
+
+            {activeTab === 'sensors' && (
+              <ThermalReconPanel />
             )}
 
             {activeTab === 'mission' && (

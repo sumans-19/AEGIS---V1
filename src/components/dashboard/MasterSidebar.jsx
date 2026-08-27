@@ -8,6 +8,7 @@ import './MasterSidebar.css';
 const NAV_ITEMS = [
   { id: 'overview', label: 'OVERVIEW', Icon: Home },
   { id: 'drone-3d', label: '3D DRONE', Icon: Box },
+  { id: 'sensors', label: 'SENSORS', Icon: Activity },
   { id: 'mission', label: 'MISSION', Icon: Target },
   { id: 'ai-decisions', label: 'AI DECISIONS', Icon: Cpu },
   { id: 'swarm', label: 'SWARM', Icon: Share2 },
