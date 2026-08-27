@@ -1,31 +1,27 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { AnimatePresence } from 'framer-motion'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSimStore } from './store/useSimStore'
 import { useBackend } from './hooks/useBackend'
-import Landing from './pages/Landing'
-import Mission from './pages/Mission'
-import Disasters from './pages/Disasters'
-import AIDashboard from './pages/AIDashboard'
+import MasterDashboard from './pages/MasterDashboard'
 
 export default function App() {
   const theme = useSimStore(s => s.theme)
   useBackend() // Initialize WebSocket connection
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.setAttribute('data-theme', theme || 'light')
   }, [theme])
 
   return (
     <BrowserRouter>
-      <AnimatePresence mode="wait">
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/disasters" element={<Disasters />} />
-          <Route path="/mission" element={<Mission />} />
-          <Route path="/ai-dashboard" element={<AIDashboard />} />
-        </Routes>
-      </AnimatePresence>
+      <Routes>
+        <Route path="/" element={<MasterDashboard />} />
+        <Route path="/mission" element={<MasterDashboard />} />
+        <Route path="/ai-dashboard" element={<MasterDashboard />} />
+        <Route path="/disasters" element={<MasterDashboard />} />
+        <Route path="/drone-inspection" element={<MasterDashboard />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </BrowserRouter>
   )
 }

@@ -1,0 +1,30 @@
+/* ============================================
+   AEROVIEW — Model Options Panel
+   ============================================ */
+
+.model-options {
+  background: rgba(235, 243, 245, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  outline: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  padding: 12px 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.model-options__title {
+  font-family: var(--font-primary);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #55666B;
+  margin-bottom: 6px;
+}
+
+.model-options__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

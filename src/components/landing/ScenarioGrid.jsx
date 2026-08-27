@@ -73,42 +73,42 @@ const scenarios = [
 export default function ScenarioGrid() {
   return (
     <section id="scenarios" style={{
-      padding: '100px 40px 120px',
+      padding: '80px 40px 100px',
       background: 'var(--bg-primary)',
       transition: 'background 0.5s ease',
     }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <motion.div
-// ... Keep motion wrapper ...
-          style={{ textAlign: 'center', marginBottom: '80px' }}
+          style={{ textAlign: 'center', marginBottom: '60px' }}
         >
           <div style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '12px',
-            color: 'var(--cyan)',
-            letterSpacing: '5px',
-            marginBottom: '16px',
-            fontWeight: 700,
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+            color: '#1a565e',
+            letterSpacing: '0.15em',
+            marginBottom: '12px',
+            fontWeight: 800,
+            textTransform: 'uppercase',
           }}>
             // MISSION DATABASE
           </div>
           <h2 style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '48px',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            letterSpacing: '4px',
-            marginBottom: '16px',
+            fontFamily: 'var(--font-display)',
+            fontSize: '40px',
+            fontWeight: 800,
+            color: '#172124',
+            letterSpacing: '0.04em',
+            marginBottom: '12px',
           }}>
             SELECT DISASTER SCENARIO
           </h2>
           <p style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '18px',
-            color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-primary)',
+            fontSize: '16px',
+            color: '#55666B',
             maxWidth: '700px',
             margin: '0 auto',
-            lineHeight: 1.7,
+            lineHeight: 1.65,
             fontWeight: 500,
           }}>
             Each simulation uses real geographic data and physics-based destruction 

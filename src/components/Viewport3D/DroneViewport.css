@@ -1,0 +1,194 @@
+/* ============================================
+   AEROVIEW — Central 3D Drone Viewport
+   ============================================ */
+
+.drone-viewport {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, #E5EFF2 0%, #D8E4E7 60%, #CDD9DC 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  user-select: none;
+}
+
+/* Top instruction tooltip container with vertical guide line */
+.drone-viewport__instruction-container {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.drone-viewport__tooltip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  padding: 4px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  pointer-events: auto;
+}
+
+.drone-viewport__tooltip svg {
+  color: #55666B;
+}
+
+.drone-viewport__tooltip span {
+  font-family: var(--font-primary);
+  font-size: 8.5px;
+  font-weight: 600;
+  color: #4A5B60;
+  letter-spacing: 0.02em;
+}
+
+/* Vertical guide line descending toward top hotspot */
+.drone-viewport__guide-line {
+  width: 1px;
+  height: 38px;
+  background: linear-gradient(to bottom, rgba(121, 185, 193, 0.8), rgba(121, 185, 193, 0.2));
+  margin-top: 2px;
+}
+
+/* Bottom Segmented Controls: EXPLORE | ANALYZE | DIAGNOSTICS */
+.drone-viewport__segmented-bar {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  background: rgba(225, 235, 238, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  outline: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  padding: 3px;
+  z-index: 10;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.drone-viewport__seg-btn {
+  padding: 6px 20px;
+  border-radius: 16px;
+  font-family: var(--font-primary);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6C7F84;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.drone-viewport__seg-btn:hover {
+  color: #1F282B;
+  background: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.drone-viewport__seg-btn:active {
+  transform: scale(0.94) translateY(0);
+  transition: transform 0.08s ease;
+}
+
+/* Active Segmented Pill Button (EXPLORE) */
+.drone-viewport__seg-btn--active {
+  color: #172124;
+  background: #B9DCE1;
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 8px rgba(138, 203, 210, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.drone-viewport__seg-btn--active:hover {
+  background: #C6E6EA;
+  color: #172124;
+  transform: translateY(-1px);
+}
+
+/* ---- Propeller Play/Pause Toggle ---- */
+.drone-viewport__prop-toggle {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px 5px 10px;
+  background: rgba(28, 39, 43, 0.80);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.drone-viewport__prop-toggle:hover {
+  background: rgba(28, 39, 43, 0.92);
+  border-color: rgba(121, 185, 193, 0.4);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.drone-viewport__prop-toggle:active {
+  transform: scale(0.95) translateY(0);
+  transition: transform 0.08s ease;
+}
+
+.drone-viewport__prop-toggle--running {
+  border-color: rgba(138, 203, 210, 0.3);
+}
+
+.drone-viewport__prop-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+.drone-viewport__prop-toggle:hover .drone-viewport__prop-toggle-icon {
+  background: rgba(121, 185, 193, 0.2);
+}
+
+.drone-viewport__prop-toggle-label {
+  font-family: var(--font-primary);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+.drone-viewport__prop-toggle-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5A6A6E;
+  transition: all 0.3s ease;
+}
+
+.drone-viewport__prop-toggle-dot--on {
+  background: #8ACBD2;
+  box-shadow: 0 0 6px #8ACBD2, 0 0 12px rgba(138, 203, 210, 0.4);
+}

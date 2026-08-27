@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, LayoutPanelTop, PanelLeftClose, PanelLeftOpen,
   PanelBottomClose, PanelBottomOpen,
-  MapPin, Rocket, RotateCcw, Maximize, RefreshCw, Sun, Moon, CheckCircle2
+  MapPin, Rocket, RotateCcw, Maximize, RefreshCw, Sun, Moon, CheckCircle2, X
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
 import { computeDeployPaths, computeReturnPaths, DRONE_BASE } from '../../hooks/useDroneMovement'
@@ -20,18 +20,18 @@ const PHASE_LABELS = {
 }
 
 const PHASE_COLORS = {
-  IDLE: '#64748b',
-  SELECT_REGION: '#00e5ff',
-  SEED_SURVIVORS: '#ffb300',
-  READY_TO_DEPLOY: '#00ff88',
-  DEPLOYING: '#a855f7',
-  SEARCHING: '#00e5ff',
-  ALL_FOUND: '#00ff88',
-  RETURNING: '#ff6b2b',
-  COMPLETED: '#00ff88',
+  IDLE: '#6C7F84',
+  SELECT_REGION: '#79B9C1',
+  SEED_SURVIVORS: '#D4A844',
+  READY_TO_DEPLOY: '#58ba8a',
+  DEPLOYING: '#3b82f6',
+  SEARCHING: '#79B9C1',
+  ALL_FOUND: '#58ba8a',
+  RETURNING: '#f59e0b',
+  COMPLETED: '#58ba8a',
 }
 
-export default function TopBar() {
+export default function TopBar({ onClose }) {
   const navigate = useNavigate()
   const missionPhase = useSimStore(s => s.missionPhase)
   const scenario = useSimStore(s => s.scenario)
@@ -54,7 +54,7 @@ export default function TopBar() {
   const addNotification = useSimStore(s => s.addNotification)
 
   const seededSurvivors = survivors.filter(s => String(s.id).startsWith('SURV-'))
-  const phaseColor = PHASE_COLORS[missionPhase] || '#64748b'
+  const phaseColor = PHASE_COLORS[missionPhase] || '#6C7F84'
 
   // ── Action Handlers ──
   const handleSelectRegion = () => {
@@ -67,7 +67,6 @@ export default function TopBar() {
     const paths = computeDeployPaths(searchRegion)
     startDeploy(paths)
     addNotification('Launch sequence initiated. Drones departing base.', 'system')
-    // Update drone statuses
     drones.forEach(d => {
       useSimStore.getState().updateDrone(d.id, { status: 'DEPLOYING' })
     })
@@ -79,7 +78,6 @@ export default function TopBar() {
   }
 
   const handleEndTask = () => {
-    // Compute return paths from current drone positions
     const positions = {}
     drones.forEach(d => {
       positions[d.id] = { x: d.pos?.[0] || 0, z: d.pos?.[2] || 0 }
@@ -125,63 +123,83 @@ export default function TopBar() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 24px',
-      background: '#0d1117',
-      borderBottom: '1px solid #1e293b',
+      padding: '0 16px',
+      background: '#20292B',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
       position: 'relative',
       zIndex: 1000,
+      userSelect: 'none',
     }}>
       {/* ── Left: Nav + Logo ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <button
-          onClick={() => navigate('/disasters')}
-          style={navBtnStyle}
-          title="Return to Disaster Registry"
-          onMouseOver={e => { e.currentTarget.style.borderColor = '#00e5ff'; e.currentTarget.style.color = '#00e5ff' }}
-          onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-dim)' }}
+          onClick={() => onClose ? onClose() : navigate('/disasters')}
+          style={{
+            ...navBtnStyle,
+            padding: '5px 10px',
+            gap: '6px',
+            fontSize: '9.5px',
+            fontWeight: 800,
+            fontFamily: 'var(--font-primary)',
+            color: '#DCE6E8',
+          }}
+          title="Return to Dashboard / Overview"
+          onMouseOver={e => { e.currentTarget.style.borderColor = '#79B9C1'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)' }}
+          onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#DCE6E8'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)' }}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={14} /> RETURN
         </button>
 
-        <div style={{ width: '1px', height: '20px', background: 'var(--border-color)' }} />
+        <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.1)' }} />
 
         <button
           onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
-          style={{ ...navBtnStyle, color: '#00e5ff' }}
-          title={leftPanelCollapsed ? "Open Left Panel" : "Close Left Panel"}
+          style={{ ...navBtnStyle, color: leftPanelCollapsed ? '#8A9A9E' : '#79B9C1' }}
+          title={leftPanelCollapsed ? "Open Fleet Panel" : "Close Fleet Panel"}
         >
-          {leftPanelCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          {leftPanelCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
         </button>
 
         <button
           onClick={() => setBottomPanelCollapsed(!bottomPanelCollapsed)}
-          style={{ ...navBtnStyle, color: '#00e5ff' }}
+          style={{ ...navBtnStyle, color: bottomPanelCollapsed ? '#8A9A9E' : '#79B9C1' }}
           title={bottomPanelCollapsed ? "Show Bottom Panel" : "Hide Bottom Panel"}
         >
-          {bottomPanelCollapsed ? <PanelBottomOpen size={18} /> : <PanelBottomClose size={18} />}
+          {bottomPanelCollapsed ? <PanelBottomOpen size={14} /> : <PanelBottomClose size={14} />}
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <LayoutPanelTop size={20} color="#00e5ff" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '6px' }}>
+          <div style={{
+            width: '24px',
+            height: '24px',
+            borderRadius: '5px',
+            background: 'rgba(121, 185, 193, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid rgba(121, 185, 193, 0.4)',
+          }}>
+            <LayoutPanelTop size={14} color="#79B9C1" />
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{
-              fontFamily: 'Rajdhani',
-              fontSize: '15px',
-              fontWeight: 700,
-              letterSpacing: '2px',
-              color: '#e2e8f0',
-              lineHeight: 1,
+              fontFamily: 'var(--font-primary)',
+              fontSize: '11px',
+              fontWeight: 800,
+              letterSpacing: '0.12em',
+              color: '#FFFFFF',
+              lineHeight: 1.1,
             }}>
-              AEGIS MISSION CONTROL
+              AEGIS SWARMSYNC
             </span>
             <span style={{
-              fontFamily: 'JetBrains Mono',
-              fontSize: '9px',
-              color: '#00e5ff',
-              letterSpacing: '1px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '7.5px',
+              color: '#79B9C1',
+              letterSpacing: '0.08em',
               textTransform: 'uppercase',
             }}>
-              SYSTEM: {scenario}
+              SYSTEM // {scenario}
             </span>
           </div>
         </div>
@@ -191,32 +209,33 @@ export default function TopBar() {
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
+        gap: '8px',
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
-          padding: '6px 20px',
-          borderRadius: '40px',
-          background: `${phaseColor}10`,
-          border: `1px solid ${phaseColor}40`,
+          gap: '6px',
+          padding: '4px 14px',
+          borderRadius: '12px',
+          background: 'rgba(0, 0, 0, 0.35)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
         }}>
           <div style={{
-            width: 8,
-            height: 8,
+            width: 6,
+            height: 6,
             borderRadius: '50%',
             background: phaseColor,
-            boxShadow: `0 0 10px ${phaseColor}`,
+            boxShadow: `0 0 6px ${phaseColor}`,
             animation: ['DEPLOYING', 'SEARCHING', 'RETURNING'].includes(missionPhase)
               ? 'pulse 1.5s ease-in-out infinite' : 'none',
           }} />
           <span style={{
-            fontFamily: 'JetBrains Mono',
-            fontSize: '11px',
-            fontWeight: 700,
-            letterSpacing: '2px',
-            color: phaseColor,
+            fontFamily: 'var(--font-primary)',
+            fontSize: '8.5px',
+            fontWeight: 800,
+            letterSpacing: '0.1em',
+            color: '#DCE6E8',
+            textTransform: 'uppercase',
           }}>
             {PHASE_LABELS[missionPhase] || missionPhase}
           </span>
@@ -224,22 +243,22 @@ export default function TopBar() {
       </div>
 
       {/* ── Right: Action Buttons + Theme/FullView + Backend Status ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         
         {/* Theme and full view controls */}
-        <div style={{ display: 'flex', gap: '8px', marginRight: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', marginRight: '4px' }}>
           <button onClick={toggleTheme} style={iconBtnStyle} title="Toggle Day/Night View">
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
           </button>
           <button onClick={() => setFullMapMode(!fullMapMode)} style={iconBtnStyle} title="Toggle Full View">
-            <Maximize size={16} color={fullMapMode ? "#00e5ff" : "currentColor"} />
+            <Maximize size={13} color={fullMapMode ? "#79B9C1" : "currentColor"} />
           </button>
           <button onClick={handleReset} style={iconBtnStyle} title="Reset Mission">
-            <RefreshCw size={16} />
+            <RefreshCw size={13} />
           </button>
         </div>
 
-        <div style={{ width: '1px', height: '24px', background: 'var(--border-color)' }} />
+        <div style={{ width: '1px', height: '18px', background: 'rgba(255, 255, 255, 0.1)' }} />
 
         {/* Phase-specific action buttons */}
         {missionPhase === 'IDLE' && (
@@ -247,7 +266,7 @@ export default function TopBar() {
             onClick={handleSelectRegion}
             icon={MapPin}
             label="SELECT SEARCH REGION"
-            color="#00e5ff"
+            color="#79B9C1"
           />
         )}
 
@@ -256,7 +275,7 @@ export default function TopBar() {
             onClick={handleFinishSeedingAndDeploy}
             icon={Rocket}
             label="DEPLOY DRONES"
-            color="#00ff88"
+            color="#58ba8a"
           />
         )}
 
@@ -265,7 +284,7 @@ export default function TopBar() {
             onClick={handleEndTask}
             icon={RotateCcw}
             label="END TASK"
-            color="#ff6b2b"
+            color="#f59e0b"
           />
         )}
 
@@ -275,27 +294,30 @@ export default function TopBar() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '8px 16px',
+            gap: '6px',
+            padding: '5px 12px',
             borderRadius: '6px',
-            border: '1px solid rgba(0, 229, 255, 0.5)',
-            background: 'rgba(0, 229, 255, 0.1)',
-            color: '#00e5ff',
+            border: '1px solid rgba(121, 185, 193, 0.4)',
+            background: 'rgba(121, 185, 193, 0.15)',
+            color: '#79B9C1',
             cursor: 'pointer',
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '10px',
-            fontWeight: 700,
-            letterSpacing: '1.5px',
-            boxShadow: '0 0 16px rgba(0, 229, 255, 0.15)',
+            fontFamily: 'var(--font-primary)',
+            fontSize: '8px',
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            boxShadow: '0 2px 6px rgba(121, 185, 193, 0.2)',
             transition: 'all 0.2s ease',
+            textTransform: 'uppercase',
           }}
           onMouseOver={(e) => {
-            e.currentTarget.style.boxShadow = '0 0 24px rgba(0, 229, 255, 0.3)'
-            e.currentTarget.style.background = 'rgba(0, 229, 255, 0.18)'
+            e.currentTarget.style.boxShadow = '0 3px 10px rgba(121, 185, 193, 0.4)'
+            e.currentTarget.style.background = '#79B9C1'
+            e.currentTarget.style.color = '#172124'
           }}
           onMouseOut={(e) => {
-            e.currentTarget.style.boxShadow = '0 0 16px rgba(0, 229, 255, 0.15)'
-            e.currentTarget.style.background = 'rgba(0, 229, 255, 0.1)'
+            e.currentTarget.style.boxShadow = '0 2px 6px rgba(121, 185, 193, 0.2)'
+            e.currentTarget.style.background = 'rgba(121, 185, 193, 0.15)'
+            e.currentTarget.style.color = '#79B9C1'
           }}
         >
           VIEW AI DECISIONS
@@ -304,18 +326,43 @@ export default function TopBar() {
         {/* Backend status */}
         <div style={{
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          borderLeft: '1px solid rgba(148, 163, 184, 0.1)',
-          paddingLeft: '16px',
+          alignItems: 'center',
+          gap: '5px',
+          borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+          paddingLeft: '10px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: backendConnected ? '#00ff88' : '#ffb300' }} />
-            <span style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: '#e2e8f0' }}>
-              BACKEND: {backendConnected ? 'ONLINE' : 'OFFLINE'}
-            </span>
-          </div>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: backendConnected ? '#58ba8a' : '#f59e0b', boxShadow: `0 0 5px ${backendConnected ? '#58ba8a' : '#f59e0b'}` }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8.5px', color: '#8A9A9E', fontWeight: 600 }}>
+            {backendConnected ? 'ONLINE' : 'OFFLINE'}
+          </span>
         </div>
+
+        {/* Exit Button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            style={{
+              ...navBtnStyle,
+              background: 'rgba(220, 53, 69, 0.15)',
+              border: '1px solid rgba(220, 53, 69, 0.4)',
+              color: '#ff8080',
+              padding: '4px 10px',
+              fontSize: '9.5px',
+              fontWeight: 800,
+              fontFamily: 'var(--font-primary)',
+              gap: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              marginLeft: '6px',
+            }}
+            title="Exit Fullscreen Mission View"
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(220, 53, 69, 0.3)'; e.currentTarget.style.color = '#FFFFFF' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(220, 53, 69, 0.15)'; e.currentTarget.style.color = '#ff8080' }}
+          >
+            <X size={13} /> EXIT
+          </button>
+        )}
       </div>
 
       {/* Pulse animation */}
@@ -336,57 +383,60 @@ function ActionButton({ onClick, icon: Icon, label, color }) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '10px',
-        padding: '8px 20px',
+        gap: '6px',
+        padding: '5px 14px',
         borderRadius: '6px',
-        border: `1px solid ${color}60`,
-        background: `${color}15`,
-        color: color,
+        border: '1px solid rgba(255, 255, 255, 0.4)',
+        background: '#79B9C1',
+        color: '#172124',
         cursor: 'pointer',
-        fontFamily: 'JetBrains Mono',
-        fontSize: '11px',
-        fontWeight: 700,
-        letterSpacing: '1.5px',
-        transition: 'all 0.3s',
+        fontFamily: 'var(--font-primary)',
+        fontSize: '8px',
+        fontWeight: 800,
+        letterSpacing: '0.08em',
+        boxShadow: '0 2px 8px rgba(121, 185, 193, 0.35)',
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+        textTransform: 'uppercase',
       }}
       onMouseOver={e => {
-        e.currentTarget.style.background = `${color}30`
-        e.currentTarget.style.borderColor = color
-        e.currentTarget.style.boxShadow = `0 0 20px ${color}30`
+        e.currentTarget.style.background = '#96CCD3'
+        e.currentTarget.style.transform = 'translateY(-1px)'
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(121, 185, 193, 0.5)'
       }}
       onMouseOut={e => {
-        e.currentTarget.style.background = `${color}15`
-        e.currentTarget.style.borderColor = `${color}60`
-        e.currentTarget.style.boxShadow = 'none'
+        e.currentTarget.style.background = '#79B9C1'
+        e.currentTarget.style.transform = 'none'
+        e.currentTarget.style.boxShadow = '0 2px 8px rgba(121, 185, 193, 0.35)'
       }}
     >
-      <Icon size={16} />
+      <Icon size={12} />
       {label}
     </button>
   )
 }
 
 const navBtnStyle = {
-  background: 'none',
-  border: '1px solid var(--border-color)',
-  color: 'var(--text-dim)',
+  background: 'rgba(255, 255, 255, 0.06)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  color: '#8A9A9E',
   cursor: 'pointer',
-  padding: '6px',
-  borderRadius: '4px',
+  padding: '5px',
+  borderRadius: '5px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  transition: '0.2s',
+  transition: 'all 0.18s ease',
 }
 
 const iconBtnStyle = {
-  background: 'none',
-  border: 'none',
-  color: 'var(--text-dim)',
+  background: 'rgba(255, 255, 255, 0.06)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  color: '#8A9A9E',
   cursor: 'pointer',
-  padding: '6px',
+  padding: '5px',
+  borderRadius: '5px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  transition: '0.2s',
+  transition: 'all 0.18s ease',
 }

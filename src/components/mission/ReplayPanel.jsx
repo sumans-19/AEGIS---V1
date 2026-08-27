@@ -203,39 +203,40 @@ export default function ReplayPanel({ onClose }) {
         bottom: 0, left: 0, right: 0,
         height: '45vh',
         zIndex: 9500,
-        background: 'rgba(5, 9, 15, 0.98)',
-        borderTop: '1px solid rgba(168, 85, 247, 0.3)',
+        background: 'rgba(23, 33, 36, 0.98)',
+        borderTop: '1px solid rgba(121, 185, 193, 0.4)',
         backdropFilter: 'blur(20px)',
         display: 'flex',
         flexDirection: 'column',
-        fontFamily: 'JetBrains Mono, monospace',
-        boxShadow: '0 -10px 50px rgba(0,0,0,0.5)',
+        fontFamily: 'var(--font-primary)',
+        boxShadow: '0 -10px 40px rgba(0,0,0,0.4)',
+        userSelect: 'none',
       }}
     >
       {/* HEADER */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)',
-        background: '#0a0a0a'
+        padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+        background: '#20292B'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ width: '4px', height: '20px', background: '#a855f7', borderRadius: '2px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '4px', height: '18px', background: '#79B9C1', borderRadius: '2px' }} />
           <div>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', letterSpacing: '2px', fontFamily: 'Rajdhani' }}>
-              AEGIS MISSION REPLAY & EDGE TESTING
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.08em', fontFamily: 'var(--font-display)' }}>
+              AEGIS MISSION REPLAY // EDGE TESTING
             </div>
-            <div style={{ fontSize: '10px', color: '#a855f7', letterSpacing: '1px' }}>
+            <div style={{ fontSize: '9px', color: '#79B9C1', letterSpacing: '0.04em', fontFamily: 'var(--font-mono)' }}>
               ARCHIVE PLAYBACK // SYSTEM STRESS TESTER
             </div>
           </div>
         </div>
         
         <button onClick={onClose} style={{
-          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-          color: '#e2e8f0', cursor: 'pointer', padding: '6px', borderRadius: '4px',
-          display: 'flex', transition: '0.2s',
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+          color: '#DCE6E8', cursor: 'pointer', padding: '5px', borderRadius: '4px',
+          display: 'flex', transition: 'all 0.18s ease',
         }}>
-          <X size={16} />
+          <X size={14} />
         </button>
       </div>
 

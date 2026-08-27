@@ -1,0 +1,197 @@
+/* ============================================
+   AEROVIEW — Components & Sensors Panel
+   ============================================ */
+
+.components-strip {
+  display: flex;
+  flex-direction: column;
+  background: #1B2326;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  margin: 4px 10px 10px 10px;
+  padding: 12px 20px 14px 20px;
+  gap: 10px;
+  user-select: none;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.components-strip__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.components-strip__title {
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+/* Legend */
+.components-strip__legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.components-strip__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.components-strip__legend-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.components-strip__legend-label {
+  font-family: var(--font-primary);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8C9C9F;
+}
+
+/* Horizontal Row of 8 Cards */
+.components-strip__cards {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.components-strip__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 6px 12px 6px;
+  background: #222B2F;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 6px;
+  color: #9DB0B4;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.components-strip__card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.components-strip__card:hover .components-strip__icon-wrap {
+  transform: scale(1.08);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.components-strip__card:active {
+  transform: scale(0.93) translateY(0);
+  transition: transform 0.08s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Active State: Soft Illuminated Pale Ice-Teal Tile */
+.components-strip__card--active {
+  background: #79B9C1;
+  color: #172124;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(121, 185, 193, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transform: none;
+}
+
+.components-strip__card--active:hover {
+  background: #88C5CC;
+  color: #172124;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(121, 185, 193, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* Card Top Right Status Dot */
+.components-strip__card-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.components-strip__card-dot--active {
+  background: #8ACBD2;
+  box-shadow: 0 0 5px #8ACBD2;
+}
+
+.components-strip__card-dot--idle {
+  background: #7E8F94;
+}
+
+.components-strip__card-dot--warning {
+  background: #E5B842;
+}
+
+.components-strip__card-dot--error {
+  background: #D95858;
+}
+
+.components-strip__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+}
+
+.components-strip__card-name {
+  font-family: var(--font-primary);
+  font-size: 7.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  white-space: nowrap;
+  color: inherit;
+}
+
+.components-strip__status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.components-strip__status-text {
+  font-family: var(--font-primary);
+  font-size: 7.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #798C90;
+}
+
+.components-strip__card--active .components-strip__status-text {
+  color: #172124;
+}
+
+.components-strip__battery-val {
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 800;
+  color: #8ACBD2;
+  margin-left: 2px;
+}
+
+.components-strip__card--active .components-strip__battery-val {
+  color: #172124;
+}

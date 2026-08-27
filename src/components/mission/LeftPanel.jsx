@@ -4,7 +4,7 @@ import DroneCard from './DroneCard'
 import { ChevronDown, ChevronUp, MapPin } from 'lucide-react'
 import { getActiveDronesCount } from '../../hooks/useDroneMovement'
 
-const DRONE_COLORS = ['#00e5ff', '#ff6b2b', '#00ff88', '#a855f7', '#ffb300']
+const DRONE_COLORS = ['#79B9C1', '#f59e0b', '#58ba8a', '#8b5cf6', '#D4A844']
 
 export default function LeftPanel() {
   const drones = useSimStore(s => s.drones)
@@ -20,31 +20,35 @@ export default function LeftPanel() {
     <div style={{
       width: '100%',
       height: '100%',
-      background: 'var(--bg-panel)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
+      userSelect: 'none',
     }}>
       {/* Title */}
       <div style={{
-        padding: '14px 16px 10px',
-        borderBottom: '1px solid var(--border-color)',
+        padding: '12px 14px 8px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
       }}>
         <div style={{
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: '10px',
-          color: 'var(--text-dim)',
-          letterSpacing: '2px',
-          marginBottom: '4px',
+          fontFamily: 'var(--font-primary)',
+          fontSize: '7.5px',
+          fontWeight: 800,
+          color: '#55666B',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
         }}>
-          // FLEET STATUS
+          FLEET STATUS
         </div>
         <div style={{
-          fontFamily: 'Rajdhani, sans-serif',
-          fontSize: '16px',
-          fontWeight: 700,
-          color: 'var(--text-primary)',
-          letterSpacing: '2px',
+          fontFamily: 'var(--font-primary)',
+          fontSize: '13px',
+          fontWeight: 800,
+          color: '#172124',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
         }}>
           DRONE FLEET SWARM
         </div>
@@ -54,10 +58,10 @@ export default function LeftPanel() {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '8px',
+        padding: '6px 8px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
+        gap: '7px',
       }}>
         {drones.map(drone => (
           <DroneCard key={drone.id} drone={drone} />
@@ -67,27 +71,27 @@ export default function LeftPanel() {
       {/* Mapped Zones Info Board */}
       {showZones && (
         <div style={{
-          background: 'var(--bg-card)',
-          borderTop: '1px solid var(--border-color)',
-          padding: '12px 16px',
-          fontFamily: 'JetBrains Mono, monospace',
+          background: 'rgba(235, 243, 245, 0.85)',
+          borderTop: '1px solid rgba(0, 0, 0, 0.06)',
+          padding: '10px 14px',
+          fontFamily: 'var(--font-primary)',
         }}>
-          <div style={{ color: 'var(--cyan)', fontSize: '10px', fontWeight: 'bold', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <MapPin size={12} /> SPATIAL ZONE TOPOLOGY
+          <div style={{ color: '#1a565e', fontSize: '9px', fontWeight: 800, letterSpacing: '0.06em', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <MapPin size={11} color="#79B9C1" /> SPATIAL ZONE TOPOLOGY
           </div>
           
           {searchRegion ? (
             <>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                <span style={{ color: 'var(--text-dim)' }}>BOUNDS: </span> 
+              <div style={{ fontSize: '9px', color: '#55666B', marginBottom: '3px' }}>
+                <span style={{ color: '#8A9A9E', fontWeight: 700 }}>BOUNDS: </span> 
                 [{Math.round(searchRegion.x1)}, {Math.round(searchRegion.z1)}] TO [{Math.round(searchRegion.x2)}, {Math.round(searchRegion.z2)}]
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--text-dim)' }}>ACTIVE UNITS: </span> 
+              <div style={{ fontSize: '9px', color: '#55666B', marginBottom: '8px' }}>
+                <span style={{ color: '#8A9A9E', fontWeight: 700 }}>ACTIVE UNITS: </span> 
                 {activeCount} DRONES DEPLOYED
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 {Array.from({ length: 5 }).map((_, i) => {
                   const isActive = i < activeCount
                   const zoneChar = String.fromCharCode(65 + i)
@@ -95,11 +99,13 @@ export default function LeftPanel() {
                     <div key={i} style={{
                       display: 'flex',
                       justifyContent: 'space-between',
-                      fontSize: '10px',
-                      padding: '4px 6px',
-                      background: isActive ? 'rgba(0,0,0,0.3)' : 'transparent',
-                      borderLeft: isActive ? `2px solid ${DRONE_COLORS[i]}` : '2px solid transparent',
-                      color: isActive ? 'var(--text-secondary)' : 'var(--text-dim)'
+                      fontSize: '8px',
+                      padding: '3px 6px',
+                      borderRadius: '4px',
+                      background: isActive ? 'rgba(255, 255, 255, 0.6)' : 'transparent',
+                      borderLeft: isActive ? `3px solid ${DRONE_COLORS[i]}` : '3px solid transparent',
+                      color: isActive ? '#172124' : '#8A9A9E',
+                      fontWeight: 700,
                     }}>
                       <span>ZONE {zoneChar}</span>
                       <span>{isActive ? `DRONE-0${i + 1}` : 'STANDBY'}</span>
@@ -109,7 +115,7 @@ export default function LeftPanel() {
               </div>
             </>
           ) : (
-            <div style={{ fontSize: '10px', color: 'var(--orange)', fontStyle: 'italic', padding: '10px 0' }}>
+            <div style={{ fontSize: '8.5px', color: '#dc3545', fontStyle: 'italic', padding: '6px 0', fontWeight: 600 }}>
               No active region mapped. Please outline a target perimeter.
             </div>
           )}
@@ -118,8 +124,12 @@ export default function LeftPanel() {
 
       {/* Mission Parameters */}
       <div style={{
-        borderTop: '1px solid var(--border-color)',
-        background: 'rgba(0,0,0,0.2)',
+        margin: '4px 8px',
+        background: 'rgba(235, 243, 245, 0.85)',
+        border: '1px solid rgba(255, 255, 255, 0.95)',
+        outline: '1px solid rgba(0, 0, 0, 0.07)',
+        borderRadius: '8px',
+        overflow: 'hidden',
       }}>
         <button
           onClick={toggleParameters}
@@ -128,26 +138,30 @@ export default function LeftPanel() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 16px',
+            padding: '8px 12px',
             background: 'none',
             border: 'none',
-            color: 'var(--text-secondary)',
+            color: '#172124',
             cursor: 'pointer',
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '12px',
-            fontWeight: 700,
-            letterSpacing: '2px',
+            fontFamily: 'var(--font-primary)',
+            fontSize: '8px',
+            fontWeight: 800,
+            letterSpacing: '0.1em',
+            transition: 'background 0.15s ease',
           }}
+          onMouseOver={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.6)'}
+          onMouseOut={e => e.currentTarget.style.background = 'none'}
         >
           MISSION PARAMETERS
-          {parametersOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {parametersOpen ? <ChevronUp size={12} color="#6C7F84" /> : <ChevronDown size={12} color="#6C7F84" />}
         </button>
 
         {parametersOpen && (
           <div style={{
-            padding: '0 16px 12px',
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '10px',
+            padding: '6px 12px 8px',
+            fontFamily: 'var(--font-primary)',
+            borderTop: '1px solid rgba(0, 0, 0, 0.05)',
+            background: 'rgba(255, 255, 255, 0.4)',
           }}>
             {[
               { label: 'Zone radius', value: '5.2km' },
@@ -158,11 +172,12 @@ export default function LeftPanel() {
               <div key={param.label} style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                padding: '4px 0',
-                borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
+                padding: '3px 0',
+                fontSize: '7.5px',
+                borderBottom: '1px solid rgba(0, 0, 0, 0.04)',
               }}>
-                <span style={{ color: 'var(--text-dim)' }}>{param.label}</span>
-                <span style={{ color: 'var(--cyan)' }}>{param.value}</span>
+                <span style={{ color: '#6C7F84', fontWeight: 700 }}>{param.label}</span>
+                <span style={{ color: '#172124', fontWeight: 800 }}>{param.value}</span>
               </div>
             ))}
           </div>
@@ -171,8 +186,7 @@ export default function LeftPanel() {
 
       {/* Auxiliary Actions */}
       <div style={{
-        borderTop: '1px solid var(--border-color)',
-        padding: '12px 16px',
+        padding: '8px',
         display: 'flex',
         flexDirection: 'column',
       }}>
@@ -182,25 +196,31 @@ export default function LeftPanel() {
             setCoordinationPanelOpen(true)
           }}
           style={{
-            background: showZones ? 'var(--cyan)' : 'var(--cyan-dim)',
-            border: '1px solid var(--cyan)',
-            padding: '8px 12px',
-            color: showZones ? '#000' : 'var(--cyan)',
-            fontFamily: 'JetBrains Mono',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            borderRadius: '4px',
+            background: 'rgba(121, 185, 193, 0.2)',
+            border: '1px solid #79B9C1',
+            padding: '7px 10px',
+            color: '#172124',
+            fontFamily: 'var(--font-primary)',
+            fontSize: '8px',
+            fontWeight: 800,
+            borderRadius: '6px',
             cursor: 'pointer',
-            letterSpacing: '1px',
+            letterSpacing: '0.08em',
             display: 'flex',
             justifyContent: 'center',
-            transition: 'background 0.2s, color 0.2s'
+            textTransform: 'uppercase',
+            boxShadow: '0 2px 8px rgba(121, 185, 193, 0.25)',
+            transition: 'all 0.2s ease'
           }}
           onMouseOver={e => {
-            if (!showZones) e.currentTarget.style.background = 'rgba(0, 229, 255, 0.2)'
+            e.currentTarget.style.background = '#79B9C1'
+            e.currentTarget.style.transform = 'translateY(-1px)'
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(121, 185, 193, 0.4)'
           }}
           onMouseOut={e => {
-            if (!showZones) e.currentTarget.style.background = 'var(--cyan-dim)'
+            e.currentTarget.style.background = 'rgba(121, 185, 193, 0.2)'
+            e.currentTarget.style.transform = 'none'
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(121, 185, 193, 0.25)'
           }}
         >
           OPEN MISSION DASHBOARD

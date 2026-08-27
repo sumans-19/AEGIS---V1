@@ -1,9 +1,10 @@
 export default function Footer() {
   return (
     <footer style={{
-      padding: '60px 40px',
-      background: '#080c1a',
-      borderTop: '1px solid #1e293b',
+      padding: '40px 40px',
+      background: '#20292B',
+      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+      userSelect: 'none',
     }}>
       <div style={{
         maxWidth: '1200px',
@@ -14,40 +15,42 @@ export default function Footer() {
       }}>
         <div>
           <div style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '14px',
-            color: '#475569',
-            fontWeight: 600,
-            letterSpacing: '1px',
+            fontFamily: 'var(--font-primary)',
+            fontSize: '13px',
+            color: '#FFFFFF',
+            fontWeight: 800,
+            letterSpacing: '0.08em',
             marginBottom: '4px',
+            textTransform: 'uppercase',
           }}>
-            AEGIS v1.0 — Disaster Response Simulation Platform
+            AEGIS SWARMSYNC // Autonomous Disaster Response Platform
           </div>
           <div style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '11px',
-            color: '#334155',
-            letterSpacing: '0.5px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '9.5px',
+            color: '#8A9A9E',
+            letterSpacing: '0.04em',
           }}>
-            Built for training autonomous drone systems in emergency scenarios
+            Built for coordinating multi-UAV autonomous search & rescue operations
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '24px' }}>
-          {['Documentation', 'GitHub', 'Contact'].map(link => (
+        <div style={{ display: 'flex', gap: '20px' }}>
+          {['Documentation', 'GitHub', 'Diagnostics'].map(link => (
             <a
               key={link}
               href="#"
               style={{
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: '11px',
-                color: '#475569',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '9.5px',
+                color: '#8A9A9E',
                 textDecoration: 'none',
-                letterSpacing: '1px',
-                transition: 'color 0.2s',
+                letterSpacing: '0.04em',
+                fontWeight: 600,
+                transition: 'color 0.18s ease',
               }}
-              onMouseOver={e => e.target.style.color = '#00e5ff'}
-              onMouseOut={e => e.target.style.color = '#475569'}
+              onMouseOver={e => e.target.style.color = '#79B9C1'}
+              onMouseOut={e => e.target.style.color = '#8A9A9E'}
             >
               {link}
             </a>

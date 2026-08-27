@@ -17,7 +17,10 @@ export default function SidebarTabs() {
   return (
     <div style={{
       display: 'flex',
-      borderBottom: '1px solid #1e293b',
+      padding: '4px 8px',
+      background: 'rgba(0, 0, 0, 0.04)',
+      gap: '3px',
+      borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
     }}>
       {TABS.map(tab => {
         const isActive = activeSidebarTab === tab.id
@@ -31,26 +34,34 @@ export default function SidebarTabs() {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '3px',
-              padding: '8px 4px',
-              background: isActive ? '#00e5ff08' : 'transparent',
+              gap: '2px',
+              padding: '5px 2px',
+              background: isActive ? '#B9DCE1' : 'transparent',
+              borderRadius: '5px',
               border: 'none',
-              borderBottom: isActive ? '2px solid #00e5ff' : '2px solid transparent',
-              color: isActive ? '#00e5ff' : '#475569',
+              color: isActive ? '#172124' : '#6C7F84',
               cursor: 'pointer',
-              transition: 'all 0.2s',
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: '8px',
-              letterSpacing: '0.5px',
+              transition: 'all 0.18s ease',
+              fontFamily: 'var(--font-primary)',
+              fontSize: '7px',
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              boxShadow: isActive ? '0 1px 4px rgba(0, 0, 0, 0.06)' : 'none',
             }}
             onMouseOver={e => {
-              if (!isActive) e.currentTarget.style.color = '#94a3b8'
+              if (!isActive) {
+                e.currentTarget.style.color = '#172124'
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.6)'
+              }
             }}
             onMouseOut={e => {
-              if (!isActive) e.currentTarget.style.color = '#475569'
+              if (!isActive) {
+                e.currentTarget.style.color = '#6C7F84'
+                e.currentTarget.style.background = 'transparent'
+              }
             }}
           >
-            <Icon size={14} />
+            <Icon size={12} />
             {tab.label}
           </button>
         )

@@ -1,0 +1,159 @@
+/* Master Sidebar Styling (#20292B) */
+.master-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 86px;
+  min-width: 86px;
+  background: #20292B;
+  padding: 10px 6px 12px 6px;
+  align-items: center;
+  z-index: 10;
+  user-select: none;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.master-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  flex: 1;
+  width: 100%;
+}
+
+.master-sidebar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 74px;
+  height: 54px;
+  border-radius: 8px;
+  gap: 3px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.master-sidebar__item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  transform: translateY(-2px);
+}
+
+.master-sidebar__item:hover .master-sidebar__item-icon {
+  transform: scale(1.08);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.master-sidebar__item:active {
+  transform: scale(0.95);
+}
+
+/* Active State: Soft Illuminated Pale Ice-Teal Tile (#79B9C1) */
+.master-sidebar__item--active {
+  background: #79B9C1;
+  color: #172124;
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 14px rgba(121, 185, 193, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.master-sidebar__item--active:hover {
+  background: #8FCBD1;
+  color: #172124;
+  transform: translateY(-1px);
+}
+
+.master-sidebar__item--active .master-sidebar__item-label {
+  color: #172124;
+  font-weight: 800;
+}
+
+.master-sidebar__item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.master-sidebar__item-label {
+  font-family: var(--font-primary);
+  font-size: 7.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1;
+  color: inherit;
+}
+
+/* System Status at bottom */
+.master-sidebar__status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 8px 6px 0 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.master-sidebar__status-title {
+  font-family: var(--font-primary);
+  font-size: 6.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8A9A9E;
+  margin-bottom: 3px;
+}
+
+.master-sidebar__status-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.master-sidebar__status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #58ba8a;
+  box-shadow: 0 0 5px rgba(88, 186, 138, 0.8);
+  flex-shrink: 0;
+}
+
+.master-sidebar__status-label {
+  font-family: var(--font-primary);
+  font-size: 6.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.master-sidebar__status-value {
+  font-family: var(--font-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #79B9C1;
+  line-height: 1.1;
+}
+
+.master-sidebar__waveform {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.master-sidebar__waveform svg {
+  display: block;
+}

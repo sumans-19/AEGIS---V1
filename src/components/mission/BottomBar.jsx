@@ -16,12 +16,12 @@ export default function BottomBar() {
     <div style={{
       height: '100%',
       display: 'grid',
-      gridTemplateColumns: '1fr 340px',
-      gap: '24px',
-      padding: '16px 24px',
-      background: 'var(--bg-panel)',
-      borderTop: '1px solid var(--border-color)',
-      fontFamily: 'JetBrains Mono, monospace',
+      gridTemplateColumns: '1fr 280px',
+      gap: '20px',
+      padding: '12px 20px',
+      background: 'transparent',
+      fontFamily: 'var(--font-mono)',
+      userSelect: 'none',
     }}>
       {/* 1. Terminal Event Log */}
       <div style={{
@@ -34,15 +34,15 @@ export default function BottomBar() {
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center', 
-            marginBottom: '8px',
-            borderBottom: '1px solid rgba(148, 163, 184, 0.1)',
+            marginBottom: '6px',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
             paddingBottom: '4px',
          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-               <Terminal size={14} color="#00e5ff" />
-               <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', letterSpacing: '2px' }}>MISSION_LOG</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+               <Terminal size={12} color="#79B9C1" />
+               <span style={{ fontSize: '10.5px', fontWeight: 800, color: '#172124', letterSpacing: '0.08em', fontFamily: 'var(--font-primary)' }}>MISSION LOG</span>
             </div>
-            <span style={{ fontSize: '10px', color: '#475569' }}>SESSION_T+{simulationTime.toFixed(1)}s</span>
+            <span style={{ fontSize: '9px', color: '#6C7F84', fontWeight: 600 }}>T+{simulationTime.toFixed(1)}s</span>
          </header>
 
          <div style={{
@@ -50,33 +50,35 @@ export default function BottomBar() {
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
-            paddingRight: '12px',
+            gap: '4px',
+            paddingRight: '8px',
          }}>
             <AnimatePresence initial={false}>
                {eventLog.map((log, idx) => (
                   <motion.div
                     key={`${log.time}-${idx}`}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                       fontSize: '11px',
+                       fontSize: '9.5px',
                        display: 'flex',
-                       gap: '12px',
-                       padding: '4px 8px',
-                       background: 'rgba(255,255,255,0.01)',
+                       gap: '8px',
+                       padding: '3px 6px',
+                       background: 'rgba(255, 255, 255, 0.65)',
+                       borderRadius: '4px',
                        alignItems: 'flex-start',
                     }}
                   >
-                     <span style={{ color: '#475569', minWidth: '45px' }}>[{log.time.toFixed(1)}s]</span>
+                     <span style={{ color: '#8A9A9E', minWidth: '40px', fontWeight: 600 }}>[{log.time.toFixed(1)}s]</span>
                      <LogIcon category={log.category} />
                      <span style={{ 
-                        color: log.category === 'critical' ? '#ff2929'
-                          : log.category === 'survivor' ? '#00ff88'
-                          : log.category === 'ai' ? '#a855f7'
-                          : log.category === 'failover' ? '#ffb300'
-                          : '#e2e8f0',
+                        color: log.category === 'critical' ? '#dc3545'
+                          : log.category === 'survivor' ? '#2e7d5a'
+                          : log.category === 'ai' ? '#7c3aed'
+                          : log.category === 'failover' ? '#d97706'
+                          : '#1F282B',
                         flex: 1,
+                        fontWeight: 500,
                      }}>
                         {log.message}
                      </span>
@@ -91,17 +93,17 @@ export default function BottomBar() {
       <div style={{ 
          display: 'flex', 
          flexDirection: 'column', 
-         gap: '12px',
-         borderLeft: '1px solid rgba(148, 163, 184, 0.1)',
-         paddingLeft: '24px',
+         gap: '6px',
+         borderLeft: '1px solid rgba(0, 0, 0, 0.06)',
+         paddingLeft: '16px',
       }}>
-         <span style={{ fontSize: '11px', color: '#00e5ff', fontWeight: 600, letterSpacing: '2px' }}>DEPLO_TIMELINE</span>
+         <span style={{ fontSize: '9px', color: '#1a565e', fontWeight: 800, letterSpacing: '0.08em', fontFamily: 'var(--font-primary)', textTransform: 'uppercase' }}>DEPLOYMENT TIMELINE</span>
          <div style={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            padding: '8px 0',
+            padding: '4px 0',
          }}>
             <TimelineStep label="PRE_FLIGHT" time="T-00:00" done />
             <TimelineStep label="SWARM_DEPLOY" time="T+00:15" done />
@@ -116,30 +118,30 @@ export default function BottomBar() {
 
 function LogIcon({ category }) {
    switch (category) {
-      case 'survivor': return <Crosshair size={12} color="#00ff88" style={{ marginTop: '2px' }} />
-      case 'warning': return <AlertTriangle size={12} color="#ffb300" style={{ marginTop: '2px' }} />
-      case 'critical': return <ShieldCheck size={12} color="#ff2929" style={{ marginTop: '2px' }} />
-      case 'ai': return <Terminal size={12} color="#a855f7" style={{ marginTop: '2px' }} />
-      case 'failover': return <AlertTriangle size={12} color="#ffb300" style={{ marginTop: '2px' }} />
-      default: return <Info size={12} color="#00e5ff" style={{ marginTop: '2px' }} />
+      case 'survivor': return <Crosshair size={11} color="#58ba8a" style={{ marginTop: '1px' }} />
+      case 'warning': return <AlertTriangle size={11} color="#f59e0b" style={{ marginTop: '1px' }} />
+      case 'critical': return <ShieldCheck size={11} color="#dc3545" style={{ marginTop: '1px' }} />
+      case 'ai': return <Terminal size={11} color="#8b5cf6" style={{ marginTop: '1px' }} />
+      case 'failover': return <AlertTriangle size={11} color="#f59e0b" style={{ marginTop: '1px' }} />
+      default: return <Info size={11} color="#79B9C1" style={{ marginTop: '1px' }} />
    }
 }
 
 function TimelineStep({ label, time, active, done }) {
    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', opacity: (done || active) ? 1 : 0.3 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', opacity: (done || active) ? 1 : 0.4 }}>
          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <div style={{ 
-               width: 10, 
-               height: 10, 
+               width: 6, 
+               height: 6, 
                borderRadius: '50%', 
-               background: done ? '#00ff88' : (active ? '#00e5ff' : '#475569'),
-               boxShadow: active ? '0 0 10px #00e5ff' : 'none'
+               background: done ? '#58ba8a' : (active ? '#79B9C1' : '#AAB5B8'),
+               boxShadow: active ? '0 0 6px #79B9C1' : 'none'
             }} />
          </div>
          <div style={{ display: 'flex', flexDirection: 'column' }}>
-             <span style={{ fontSize: '10px', fontWeight: 600, color: '#e2e8f0', letterSpacing: '1px' }}>{label}</span>
-             <span style={{ fontSize: '9px', color: '#64748b' }}>{time}</span>
+             <span style={{ fontSize: '8.5px', fontWeight: 700, color: '#1F282B', letterSpacing: '0.04em', fontFamily: 'var(--font-primary)' }}>{label}</span>
+             <span style={{ fontSize: '7.5px', color: '#6C7F84', fontFamily: 'var(--font-mono)' }}>{time}</span>
          </div>
       </div>
    )

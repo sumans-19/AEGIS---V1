@@ -318,42 +318,46 @@ export default function DroneView() {
     <div style={{
       width: '100%',
       height: '100%',
-      background: '#0a0a0f',
+      minHeight: '260px',
+      background: '#151d20',
+      borderRadius: '8px',
       position: 'relative',
       overflow: 'hidden',
-      border: '1px solid var(--border-color)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
     }}>
       <div style={{
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        padding: '8px 12px',
+        padding: '6px 10px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(4px)',
+        background: 'rgba(23, 33, 36, 0.85)',
+        backdropFilter: 'blur(8px)',
         zIndex: 10,
-        borderBottom: '1px solid rgba(0, 229, 255, 0.3)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Camera size={14} color="#00e5ff" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Camera size={13} color="#79B9C1" />
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '11px',
-            color: '#e2e8f0',
-            letterSpacing: '1px',
+            fontFamily: 'var(--font-primary)',
+            fontSize: '8.5px',
+            fontWeight: 800,
+            color: '#FFFFFF',
+            letterSpacing: '0.08em',
           }}>
-            LIVE FEED: {drone?.callsign || 'N/A'}
+            LIVE FEED // {drone?.callsign || 'N/A'}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span className="blink-rec" style={{ width: 8, height: 8, background: '#ff2929', borderRadius: '50%' }} />
-            <span style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: '#ff2929', fontWeight: 600 }}>REC ●</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span className="blink-rec" style={{ width: 6, height: 6, background: '#dc3545', borderRadius: '50%', boxShadow: '0 0 5px #dc3545' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#dc3545', fontWeight: 800 }}>REC</span>
           </div>
-          <Maximize2 size={12} color="#94a3b8" style={{ cursor: 'pointer' }} />
+          <Maximize2 size={11} color="#8A9A9E" style={{ cursor: 'pointer' }} />
         </div>
       </div>
 
@@ -361,7 +365,7 @@ export default function DroneView() {
         ref={canvasRef}
         width={640}
         height={480}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(0.2) contrast(1.1)' }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(0.1) contrast(1.05)' }}
       />
       
       <div className="hud-corners" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }} />
@@ -371,19 +375,20 @@ export default function DroneView() {
         bottom: 0,
         left: 0,
         right: 0,
-        padding: '12px 16px',
-        background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)',
+        padding: '8px 12px',
+        background: 'linear-gradient(to top, rgba(23, 33, 36, 0.9), transparent)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'baseline',
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: '11px',
-        color: '#00e5ff',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '8.5px',
+        fontWeight: 700,
+        color: '#79B9C1',
       }}>
-        <div>DRONE_ID: 0{drone?.id}</div>
+        <div>UNIT: 0{drone?.id}</div>
         <div>ALT: {drone?.pos?.[1]?.toFixed(1) || '0.0'}m</div>
         <div>SPD: {drone?.vel ? Math.sqrt(drone.vel[0] ** 2 + drone.vel[2] ** 2).toFixed(1) : '0.0'}m/s</div>
-        <div>BAT: {drone?.battery?.toFixed(1) || '100'}%</div>
+        <div>BAT: <span style={{ color: (drone?.battery || 100) < 20 ? '#dc3545' : '#79B9C1' }}>{drone?.battery?.toFixed(0) || '100'}%</span></div>
       </div>
     </div>
   )

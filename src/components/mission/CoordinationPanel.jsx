@@ -9,8 +9,12 @@ import { useSimStore } from '../../store/useSimStore'
 
 // ── Drone color registry ────────────────────────────────────────────────────
 const DRONE_COLORS = {
-  FALCON: '#00e5ff', HAWK: '#ff6b2b', OSPREY: '#00ff88',
-  KESTREL: '#e040fb', MERLIN: '#f9e23c',
+  Arjun: '#79B9C1', Bhima: '#f59e0b', Karna: '#58ba8a',
+  Krishna: '#8b5cf6', Ram: '#D4A844',
+  ARJUN: '#79B9C1', BHIMA: '#f59e0b', KARNA: '#58ba8a',
+  KRISHNA: '#8b5cf6', RAM: '#D4A844',
+  FALCON: '#79B9C1', HAWK: '#f59e0b', OSPREY: '#58ba8a',
+  KESTREL: '#8b5cf6', MERLIN: '#D4A844',
 }
 const ZONE_NAMES = ['A', 'B', 'C', 'D', 'E']
 
@@ -32,7 +36,8 @@ function SwarmCanvas({ drones, selectedId, survivors }) {
       const t = tick * 0.02
       const { width, height } = canvas
 
-      ctx.fillStyle = '#030608'
+      // Light aerospace canvas background
+      ctx.fillStyle = '#EDF3F4'
       ctx.fillRect(0, 0, width, height)
 
       const store = useSimStore.getState()
@@ -48,21 +53,20 @@ function SwarmCanvas({ drones, selectedId, survivors }) {
       })
 
       // ── Background Tactical Zones ──
-      // Instead of small grid blocks, map the whole area into 5 operational columns
       const cols = 5
       for (let i = 0; i < cols; i++) {
         const x1 = (i / cols) * width
         const w = width / cols
         
         // Zone Background
-        ctx.fillStyle = i % 2 === 0 ? 'rgba(0, 229, 255, 0.015)' : 'rgba(0, 229, 255, 0.005)'
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(121, 185, 193, 0.08)' : 'rgba(121, 185, 193, 0.03)'
         ctx.fillRect(x1, 0, w, height)
 
         // Zone Separator Line
         if (i > 0) {
-          ctx.strokeStyle = 'rgba(0, 229, 255, 0.1)'
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
           ctx.lineWidth = 1
-          ctx.setLineDash([4, 8])
+          ctx.setLineDash([4, 6])
           ctx.beginPath()
           ctx.moveTo(x1, 0)
           ctx.lineTo(x1, height)
@@ -70,32 +74,30 @@ function SwarmCanvas({ drones, selectedId, survivors }) {
           ctx.setLineDash([])
         }
 
-        // Faded Zone Label at top center of column
-        ctx.fillStyle = 'rgba(0, 229, 255, 0.08)'
-        ctx.font = 'bold 24px Rajdhani'
+        // Zone Label at top center of column
+        ctx.fillStyle = 'rgba(23, 33, 36, 0.15)'
+        ctx.font = '800 24px Space Grotesk, sans-serif'
         ctx.textAlign = 'center'
-        ctx.fillText(`ZONE ${ZONE_NAMES[i]}`, x1 + w / 2, Math.max(40, height * 0.15))
+        ctx.fillText(`ZONE ${ZONE_NAMES[i]}`, x1 + w / 2, Math.max(36, height * 0.14))
       }
+
       // ── Selected Drone Column Highlight ──
       liveDrones.forEach((d, i) => {
-        const color = DRONE_COLORS[d.callsign] || '#94a3b8'
+        const color = DRONE_COLORS[d.callsign] || '#79B9C1'
         if (d.id === selectedId) {
-          // Highlight entire column for selected drone
           const colW = width / 5
           const colX = i * colW
-          ctx.fillStyle = color + '0f' // subtle tint for the active column
+          ctx.fillStyle = 'rgba(185, 220, 225, 0.35)'
           ctx.fillRect(colX, 0, colW, height)
           
-          // Draw subtle outline around the active column
-          ctx.strokeStyle = color + '50'
+          ctx.strokeStyle = '#79B9C1'
           ctx.lineWidth = 1.5
           ctx.strokeRect(colX, 0, colW, height)
           
-          // Active label for the column
-          ctx.fillStyle = color
-          ctx.font = 'bold 12px JetBrains Mono'
+          ctx.fillStyle = '#1a565e'
+          ctx.font = '800 11px Inter, sans-serif'
           ctx.textAlign = 'left'
-          ctx.fillText(`SECTOR ${d.callsign} ACTIVE`, colX + 10, 20)
+          ctx.fillText(`SECTOR ${d.callsign} ACTIVE`, colX + 10, 22)
         }
       })
 
@@ -105,20 +107,20 @@ function SwarmCanvas({ drones, selectedId, survivors }) {
           if (!d1.pos || !d2.pos) return
           const dx = d1.pos[0] - d2.pos[0], dz = d1.pos[2] - d2.pos[2]
           const sep = Math.sqrt(dx * dx + dz * dz)
-          if (sep > 80) return // only nearby pairs show relay link
+          if (sep > 80) return
           const p1 = toCanvas(d1.pos[0], d1.pos[2])
           const p2 = toCanvas(d2.pos[0], d2.pos[2])
           const isCollision = sep < 8
           ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y)
-          ctx.strokeStyle = isCollision ? `rgba(255,50,0,${0.3 + Math.sin(t * 6) * 0.3})` : 'rgba(0,229,255,0.08)'
-          ctx.lineWidth = isCollision ? 1.5 : 0.7
+          ctx.strokeStyle = isCollision ? `rgba(220,53,69,${0.6 + Math.sin(t * 6) * 0.4})` : 'rgba(121,185,193,0.45)'
+          ctx.lineWidth = isCollision ? 2 : 1
           ctx.setLineDash(isCollision ? [2, 3] : [])
           ctx.stroke()
           ctx.setLineDash([])
-          // Sep label at midpoint for collision pairs
+
           if (isCollision) {
-            ctx.fillStyle = '#ff3200'
-            ctx.font = '9px JetBrains Mono'
+            ctx.fillStyle = '#dc3545'
+            ctx.font = 'bold 9px IBM Plex Mono'
             ctx.textAlign = 'center'
             ctx.fillText(`${sep.toFixed(0)}m`, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2 - 4)
           }
@@ -129,50 +131,52 @@ function SwarmCanvas({ drones, selectedId, survivors }) {
       const liveSurvivors = store.survivors.filter(s => s.detected && s.pos)
       liveSurvivors.forEach(s => {
         const { x, y } = toCanvas(s.pos[0], s.pos[2])
-        const pulse = 3 + Math.sin(t * 4) * 1.5
+        const pulse = 4 + Math.sin(t * 4) * 1.5
         ctx.beginPath(); ctx.arc(x, y, pulse, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(0,255,136,0.7)`; ctx.fill()
+        ctx.fillStyle = `#58ba8a`; ctx.fill()
         ctx.beginPath(); ctx.arc(x, y, pulse + 4, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(0,255,136,${0.2 + Math.sin(t * 4) * 0.2})`
-        ctx.lineWidth = 1; ctx.stroke()
+        ctx.strokeStyle = `rgba(88,186,138,${0.4 + Math.sin(t * 4) * 0.4})`
+        ctx.lineWidth = 1.2; ctx.stroke()
       })
 
       // ── Drone icons ──
       liveDrones.forEach(d => {
         if (!d.pos) return
         const { x, y } = toCanvas(d.pos[0], d.pos[2])
-        const color = DRONE_COLORS[d.callsign] || '#94a3b8'
+        const color = DRONE_COLORS[d.callsign] || '#79B9C1'
         const isSelected = d.id === selectedId
 
         // Scan radius circle
         const scanWorldR = d.scan_radius || 15
         const scanCanvasR = (scanWorldR / (WORLD * 2)) * width
         ctx.beginPath(); ctx.arc(x, y, scanCanvasR, 0, Math.PI * 2)
-        ctx.strokeStyle = isSelected ? color + '40' : color + '15'
-        ctx.lineWidth = isSelected ? 1 : 0.5
-        ctx.setLineDash([2, 4]); ctx.stroke(); ctx.setLineDash([])
+        ctx.strokeStyle = isSelected ? color + '80' : color + '40'
+        ctx.lineWidth = isSelected ? 1.5 : 0.8
+        ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([])
 
         // Glow
         if (isSelected) {
-          ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2)
-          ctx.fillStyle = color + '20'; ctx.fill()
+          ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2)
+          ctx.fillStyle = 'rgba(121, 185, 193, 0.35)'; ctx.fill()
         }
 
         // Drone triangle
         ctx.save(); ctx.translate(x, y)
         ctx.rotate(((d.heading || 0) * Math.PI) / 180)
         ctx.beginPath()
-        ctx.moveTo(0, -7); ctx.lineTo(-5, 5); ctx.lineTo(5, 5); ctx.closePath()
-        ctx.fillStyle = isSelected ? color : color + '70'
-        ctx.shadowBlur = isSelected ? 12 : 0; ctx.shadowColor = color
+        ctx.moveTo(0, -8); ctx.lineTo(-6, 6); ctx.lineTo(6, 6); ctx.closePath()
+        ctx.fillStyle = isSelected ? '#172124' : color
+        ctx.strokeStyle = '#FFFFFF'
+        ctx.lineWidth = 1.5
+        ctx.stroke()
         ctx.fill()
-        ctx.shadowBlur = 0; ctx.restore()
+        ctx.restore()
 
         // Callsign label
-        ctx.fillStyle = isSelected ? color : color + '80'
-        ctx.font = `${isSelected ? 'bold ' : ''}10px JetBrains Mono`
+        ctx.fillStyle = isSelected ? '#172124' : '#55666B'
+        ctx.font = `${isSelected ? '800 ' : '700 '}10px Inter, sans-serif`
         ctx.textAlign = 'center'
-        ctx.fillText(d.callsign, x, y - 13)
+        ctx.fillText(d.callsign, x, y - 14)
       })
 
       animRef.current = requestAnimationFrame(draw)
@@ -183,7 +187,7 @@ function SwarmCanvas({ drones, selectedId, survivors }) {
   }, [selectedId])
 
   return (
-    <canvas ref={canvasRef} width={440} height={300}
+    <canvas ref={canvasRef} width={600} height={350}
       style={{ width: '100%', height: '100%', display: 'block' }} />
   )
 }
@@ -228,7 +232,7 @@ export default function CoordinationPanel({ onClose }) {
   }, [])
 
   const drone = drones.find(d => d.id === selectedDroneId) || drones[0]
-  const droneColor = DRONE_COLORS[drone?.callsign] || '#00e5ff'
+  const droneColor = DRONE_COLORS[drone?.callsign] || '#79B9C1'
   const droneIdx = drones.findIndex(d => d.id === drone?.id)
   const zoneLabel = ZONE_NAMES[droneIdx] ?? 'A'
   
@@ -237,7 +241,6 @@ export default function CoordinationPanel({ onClose }) {
     if (coordData?.zone_pcts && coordData.zone_pcts[droneIdx] !== undefined) {
       return coordData.zone_pcts[droneIdx]
     }
-    // Static fallback based on simulation time if backend is offline/500ing
     return Math.min(100, (simulationTime / 600) * 100 * 0.9)
   }
   const zonePct = getZonePct()
@@ -273,7 +276,6 @@ export default function CoordinationPanel({ onClose }) {
     const entry = { time: simulationTime, action, callsign: drone?.callsign }
     setCmdLog(prev => [...prev.slice(-4), entry])
     try {
-      // Send over fetch for simplicity
       await fetch('http://localhost:8000/api/drone/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,8 +286,8 @@ export default function CoordinationPanel({ onClose }) {
   }, [drone, simulationTime])
 
   const battery = drone?.battery || 0
-  const batteryColor = battery < 20 ? '#ff4500' : battery < 50 ? '#ffb300' : '#00ff88'
-  const statusColor = { SCANNING: '#00e5ff', RETURNING: '#ff6b2b', SEARCHING: '#ffb300', CHARGING: '#00ff88' }[drone?.status] || '#94a3b8'
+  const batteryColor = battery < 20 ? '#dc3545' : battery < 50 ? '#f59e0b' : '#58ba8a'
+  const statusColor = { SCANNING: '#79B9C1', RETURNING: '#f59e0b', SEARCHING: '#79B9C1', CHARGING: '#58ba8a' }[drone?.status] || '#8A9A9E'
 
   return (
     <motion.div
@@ -295,69 +297,72 @@ export default function CoordinationPanel({ onClose }) {
       transition={{ duration: 0.15 }}
       style={{
         position: 'fixed', inset: 0, zIndex: 9000,
-        background: 'rgba(2, 5, 10, 0.96)',
-        backdropFilter: 'blur(10px)',
+        background: 'rgba(23, 33, 36, 0.96)',
+        backdropFilter: 'blur(16px)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        fontFamily: 'JetBrains Mono, monospace',
+        fontFamily: 'var(--font-primary)',
+        userSelect: 'none',
       }}
     >
       {/* ── HEADER ────────────────────────────────────────────────────────────────── */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '20px',
-        padding: '16px 28px',
-        background: '#050d15',
-        borderBottom: '1px solid rgba(0,229,255,0.1)',
+        display: 'flex', alignItems: 'center', gap: '16px',
+        padding: '12px 24px',
+        background: '#20292B',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
           <button 
             onClick={onClose}
             style={{
-              background: 'rgba(0, 229, 255, 0.15)',
-              border: '1px solid #00e5ff60',
-              color: '#00e5ff',
+              background: 'rgba(121, 185, 193, 0.15)',
+              border: '1px solid rgba(121, 185, 193, 0.4)',
+              color: '#79B9C1',
               cursor: 'pointer',
               padding: '6px 12px',
-              borderRadius: '4px',
+              borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              fontFamily: 'JetBrains Mono',
-              fontSize: '10px',
-              fontWeight: 700,
-              letterSpacing: '1px',
-              transition: '0.2s',
+              gap: '6px',
+              fontFamily: 'var(--font-primary)',
+              fontSize: '9px',
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              transition: 'all 0.18s ease',
+              textTransform: 'uppercase',
             }}
-            onMouseOver={e => { e.currentTarget.style.background = 'rgba(0, 229, 255, 0.3)'; e.currentTarget.style.borderColor = '#00e5ff' }}
-            onMouseOut={e => { e.currentTarget.style.background = 'rgba(0, 229, 255, 0.15)'; e.currentTarget.style.borderColor = '#00e5ff60' }}
+            onMouseOver={e => { e.currentTarget.style.background = '#79B9C1'; e.currentTarget.style.color = '#172124' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(121, 185, 193, 0.15)'; e.currentTarget.style.color = '#79B9C1' }}
           >
-            <ArrowLeft size={14} /> EXIT DASHBOARD
+            <ArrowLeft size={13} /> EXIT DASHBOARD
           </button>
           
-          <div style={{ width: 1, height: 20, background: 'rgba(0,229,255,0.2)' }} />
+          <div style={{ width: 1, height: 18, background: 'rgba(255, 255, 255, 0.1)' }} />
 
           <div>
-            <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', letterSpacing: '2px', fontFamily: 'Rajdhani' }}>
-              SWARM COORDINATION · {drone?.callsign || '—'}
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.08em', fontFamily: 'var(--font-display)' }}>
+              SWARM COORDINATION // {drone?.callsign || '—'}
             </div>
-            <div style={{ fontSize: '10px', color: '#475569', letterSpacing: '1px' }}>
-              multi-drone ops · {scenario.toUpperCase()} · T+{simulationTime.toFixed(0)}s
+            <div style={{ fontSize: '9px', color: '#8A9A9E', letterSpacing: '0.04em', fontFamily: 'var(--font-mono)' }}>
+              MULTI-DRONE OPS // {scenario.toUpperCase()} // T+{simulationTime.toFixed(0)}s
             </div>
           </div>
         </div>
 
         {/* Drone selector pills */}
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px' }}>
           {drones.map((d, i) => {
-            const c = DRONE_COLORS[d.callsign] || '#94a3b8'
+            const c = DRONE_COLORS[d.callsign] || '#8A9A9E'
             const isSel = d.id === selectedDroneId
             return (
               <button key={d.id} onClick={() => setSelectedDrone(d.id)} style={{
-                padding: '6px 14px', border: `1px solid ${isSel ? c : c + '40'}`,
-                background: isSel ? c + '18' : 'transparent',
-                color: isSel ? c : c + '80',
-                borderRadius: '3px', cursor: 'pointer', fontSize: '10px', letterSpacing: '0.5px',
-                transition: 'all 0.2s',
+                padding: '5px 12px', border: `1px solid ${isSel ? '#79B9C1' : 'rgba(255, 255, 255, 0.1)'}`,
+                background: isSel ? '#B9DCE1' : 'rgba(255, 255, 255, 0.06)',
+                color: isSel ? '#172124' : '#8A9A9E',
+                fontWeight: isSel ? 800 : 700,
+                borderRadius: '6px', cursor: 'pointer', fontSize: '9px', letterSpacing: '0.04em',
+                transition: 'all 0.18s ease',
               }}>
                 {d.callsign}
               </button>
@@ -366,42 +371,42 @@ export default function CoordinationPanel({ onClose }) {
         </div>
 
         <button onClick={onClose} style={{
-          background: 'none', border: '1px solid rgba(255,69,0,0.4)',
-          color: '#ff4500', cursor: 'pointer', padding: '8px', borderRadius: '4px',
-          display: 'flex', transition: '0.2s', alignSelf: 'center'
+          background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.12)',
+          color: '#8A9A9E', cursor: 'pointer', padding: '6px', borderRadius: '6px',
+          display: 'flex', transition: 'all 0.18s ease', alignSelf: 'center'
         }}
-          onMouseOver={e => { e.currentTarget.style.borderColor = '#ff4500'; e.currentTarget.style.background = 'rgba(255,69,0,0.1)' }}
-          onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,69,0,0.4)'; e.currentTarget.style.background = 'none' }}
-        ><X size={18} /></button>
+          onMouseOver={e => { e.currentTarget.style.borderColor = '#dc3545'; e.currentTarget.style.color = '#dc3545'; e.currentTarget.style.background = 'rgba(220, 53, 69, 0.1)' }}
+          onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)'; e.currentTarget.style.color = '#8A9A9E'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)' }}
+        ><X size={15} /></button>
       </div>
 
       {/* ═══════ BODY ════════════════════════════════════════════════════════ */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 380px', gridTemplateRows: '1fr', overflow: 'hidden', gap: '1px', background: 'rgba(0,0,0,0.4)' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 380px', gridTemplateRows: '1fr', overflow: 'hidden', gap: '1px', background: 'rgba(0, 0, 0, 0.08)' }}>
 
         {/* ── LEFT: Swarm map + telemetry ──────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#04090f' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#DCE6E8' }}>
 
           {/* Telemetry strip */}
-          <div style={{ display: 'flex', borderBottom: '1px solid rgba(0,229,255,0.08)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(0, 0, 0, 0.08)', background: 'rgba(235, 243, 245, 0.9)', backdropFilter: 'blur(10px)', flexShrink: 0 }}>
             {[
               { icon: Activity, label: 'STATUS', value: drone?.status || '—', color: statusColor },
-              { icon: MapPin, label: 'POSITION', value: drone?.pos ? `${drone.pos[0].toFixed(0)}, ${drone.pos[2].toFixed(0)}` : '—', color: '#94a3b8' },
-              { icon: ArrowUpRight, label: 'ALTITUDE', value: `${Math.round(drone?.pos?.[1] || 0)}m`, color: '#00e5ff' },
-              { icon: Zap, label: 'SPEED', value: `${Math.round(drone?.speed || 0)} m/s`, color: '#00e5ff' },
+              { icon: MapPin, label: 'POSITION', value: drone?.pos ? `${drone.pos[0].toFixed(0)}, ${drone.pos[2].toFixed(0)}` : '—', color: '#172124' },
+              { icon: ArrowUpRight, label: 'ALTITUDE', value: `${Math.round(drone?.pos?.[1] || 0)}m`, color: '#1a565e' },
+              { icon: Zap, label: 'SPEED', value: `${Math.round(drone?.speed || 0)} m/s`, color: '#1a565e' },
               { icon: Battery, label: 'BATTERY', value: `${Math.round(battery)}%`, color: batteryColor },
               { icon: Shield, label: 'SCAN_R', value: `${drone?.scan_radius || 0}m`, color: droneColor },
-              { icon: Target, label: 'ZONE', value: zoneLabel, color: droneColor },
-              { icon: Activity, label: 'COVERAGE', value: `${Math.min(99, zonePct).toFixed(0)}%`, color: '#00ff88' },
+              { icon: Target, label: 'ZONE', value: zoneLabel, color: '#172124' },
+              { icon: Activity, label: 'COVERAGE', value: `${Math.min(99, zonePct).toFixed(0)}%`, color: '#2e7d5a' },
             ].map(({ icon: Icon, label, value, color }) => (
               <div key={label} style={{
-                flex: 1, padding: '12px 14px', borderRight: '1px solid rgba(0,229,255,0.05)',
-                display: 'flex', flexDirection: 'column', gap: '4px',
+                flex: 1, padding: '10px 14px', borderRight: '1px solid rgba(0, 0, 0, 0.06)',
+                display: 'flex', flexDirection: 'column', gap: '3px',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Icon size={12} color='#475569' />
-                  <span style={{ fontSize: '9px', color: '#394250', letterSpacing: '0.5px' }}>{label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Icon size={11} color='#55666B' />
+                  <span style={{ fontSize: '8.5px', color: '#55666B', letterSpacing: '0.04em', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{label}</span>
                 </div>
-                <span style={{ fontSize: '15px', color, fontWeight: 700, fontFamily: 'Rajdhani', lineHeight: 1 }}>{value}</span>
+                <span style={{ fontSize: '13px', color, fontWeight: 800, fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{value}</span>
               </div>
             ))}
           </div>
@@ -410,45 +415,48 @@ export default function CoordinationPanel({ onClose }) {
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
             <div style={{
               position: 'absolute', top: 12, left: 16,
-              fontSize: '9px', color: 'rgba(0,229,255,0.4)', letterSpacing: '1px', zIndex: 2,
+              fontSize: '8.5px', color: '#55666B', letterSpacing: '0.06em', zIndex: 2,
+              fontFamily: 'var(--font-mono)', fontWeight: 700,
+              background: 'rgba(255, 255, 255, 0.8)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.06)'
             }}>
-              SWARM_CONSTELLATION · ZONE_{zoneLabel}_SELECTED · {drones.length} AGENTS LIVE
+              SWARM CONSTELLATION // ZONE {zoneLabel} SELECTED // {drones.length} AGENTS ACTIVE
             </div>
             <SwarmCanvas drones={drones} selectedId={selectedDroneId} survivors={survivors} />
           </div>
 
           {/* Collision proximity table */}
-          <div style={{ borderTop: '1px solid rgba(0,229,255,0.08)', padding: '16px 20px', flexShrink: 0 }}>
-            <div style={{ fontSize: '9px', color: '#475569', letterSpacing: '1px', marginBottom: '12px' }}>
-              SEPARATION MATRIX · {drone?.callsign} ↔ ALL AGENTS
+          <div style={{ borderTop: '1px solid rgba(0, 0, 0, 0.08)', padding: '12px 18px', background: 'rgba(235, 243, 245, 0.95)', flexShrink: 0 }}>
+            <div style={{ fontSize: '9px', color: '#55666B', letterSpacing: '0.06em', marginBottom: '8px', fontWeight: 800, fontFamily: 'var(--font-primary)' }}>
+              SEPARATION MATRIX // {drone?.callsign} ↔ ALL AGENTS
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
               {myPairs.map((p, i) => {
                 const partner = p.pair.find(c => c !== drone?.callsign)
-                const color = DRONE_COLORS[partner] || '#94a3b8'
+                const color = DRONE_COLORS[partner] || '#55666B'
                 const isWarn = p.separation < 12
                 const isDanger = p.separation < 8
                 return (
                   <div key={i} style={{
-                    padding: '8px 12px', borderRadius: '4px',
-                    background: isDanger ? 'rgba(255,50,0,0.08)' : isWarn ? 'rgba(255,179,0,0.05)' : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${isDanger ? '#ff320030' : isWarn ? '#ffb30025' : 'rgba(71,85,105,0.2)'}`,
+                    padding: '8px 12px', borderRadius: '6px',
+                    background: isDanger ? 'rgba(220, 53, 69, 0.1)' : isWarn ? 'rgba(212, 168, 68, 0.12)' : '#FFFFFF',
+                    border: `1px solid ${isDanger ? 'rgba(220, 53, 69, 0.4)' : isWarn ? 'rgba(212, 168, 68, 0.4)' : 'rgba(0, 0, 0, 0.08)'}`,
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)',
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '10px', color, fontWeight: 700 }}>{partner}</span>
-                      <span style={{ fontSize: '9px', color: isDanger ? '#ff3200' : isWarn ? '#ffb300' : '#475569' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '10px', color: '#172124', fontWeight: 800 }}>{partner}</span>
+                      <span style={{ fontSize: '8.5px', color: isDanger ? '#dc3545' : isWarn ? '#8B6B1B' : '#2e7d5a', fontWeight: 800 }}>
                         {isDanger ? '⚠ CLOSE' : isWarn ? '⚡ NEAR' : '✓ OK'}
                       </span>
                     </div>
-                    <div style={{ fontSize: '14px', color: isDanger ? '#ff3200' : isWarn ? '#ffb300' : '#64748b', fontFamily: 'Rajdhani', fontWeight: 700 }}>
+                    <div style={{ fontSize: '13px', color: isDanger ? '#dc3545' : isWarn ? '#8B6B1B' : '#172124', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>
                       {p.separation.toFixed(1)}m
                     </div>
-                    <div style={{ marginTop: '3px', height: '2px', background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
+                    <div style={{ marginTop: '4px', height: '3px', background: 'rgba(0, 0, 0, 0.06)', borderRadius: 2 }}>
                       <div style={{
                         width: `${Math.min(100, (1 - p.separation / 60) * 100)}%`,
-                        height: '100%', borderRadius: 1,
-                        background: isDanger ? '#ff3200' : isWarn ? '#ffb300' : color,
-                        transition: 'width 0.5s',
+                        height: '100%', borderRadius: 2,
+                        background: isDanger ? '#dc3545' : isWarn ? '#f59e0b' : '#79B9C1',
+                        transition: 'width 0.4s',
                       }} />
                     </div>
                   </div>
@@ -459,73 +467,73 @@ export default function CoordinationPanel({ onClose }) {
         </div>
 
         {/* ── RIGHT: Commands + Events ──────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', background: '#030810', borderLeft: '1px solid rgba(0,229,255,0.08)', overflow: 'hidden', width: '380px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', background: 'rgba(235, 243, 245, 0.98)', borderLeft: '1px solid rgba(0, 0, 0, 0.08)', overflow: 'hidden', width: '380px' }}>
 
           {/* Zone coverage */}
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(0,229,255,0.06)' }}>
-            <div style={{ fontSize: '9px', color: '#475569', letterSpacing: '1px', marginBottom: '8px' }}>ZONE_{zoneLabel} SCAN PROGRESS</div>
-            <div style={{ height: '6px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden', marginBottom: '5px' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+            <div style={{ fontSize: '9px', color: '#55666B', letterSpacing: '0.06em', marginBottom: '6px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>ZONE {zoneLabel} SCAN PROGRESS</div>
+            <div style={{ height: '6px', background: 'rgba(0, 0, 0, 0.06)', borderRadius: '3px', overflow: 'hidden', marginBottom: '5px' }}>
               <motion.div
                 animate={{ width: `${Math.min(99, zonePct)}%` }}
                 transition={{ duration: 1.5, ease: 'easeOut' }}
-                style={{ height: '100%', background: droneColor, borderRadius: '3px', boxShadow: `0 0 8px ${droneColor}60` }}
+                style={{ height: '100%', background: '#79B9C1', borderRadius: '3px' }}
               />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#475569' }}>
-              <span>Scanned: <span style={{ color: droneColor }}>{Math.min(99, zonePct).toFixed(1)}%</span></span>
-              <span>ETA: <span style={{ color: '#94a3b8' }}>{((100 - zonePct) / 0.18).toFixed(0)}s</span></span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', color: '#55666B', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+              <span>Scanned: <span style={{ color: '#172124', fontWeight: 800 }}>{Math.min(99, zonePct).toFixed(1)}%</span></span>
+              <span>ETA: <span style={{ color: '#172124', fontWeight: 800 }}>{((100 - zonePct) / 0.18).toFixed(0)}s</span></span>
             </div>
           </div>
 
           {/* Nearest survivor */}
           {nearestSurvivor && (
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,229,255,0.06)', background: 'rgba(0,255,136,0.03)' }}>
-              <div style={{ fontSize: '9px', color: '#475569', letterSpacing: '1px', marginBottom: '8px' }}>NEAREST SURVIVOR</div>
+            <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)', background: 'rgba(88, 186, 138, 0.1)' }}>
+              <div style={{ fontSize: '8.5px', color: '#2e7d5a', letterSpacing: '0.06em', marginBottom: '4px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>NEAREST SURVIVOR</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: '12px', color: '#00ff88', fontWeight: 700 }}>SURV #{nearestSurvivor.id}</div>
-                  <div style={{ fontSize: '10px', color: '#475569' }}>dist: {nearestSurvivor.dist.toFixed(1)}m</div>
+                  <div style={{ fontSize: '11px', color: '#172124', fontWeight: 800, fontFamily: 'var(--font-primary)' }}>SURV #{nearestSurvivor.id}</div>
+                  <div style={{ fontSize: '9.5px', color: '#55666B', fontFamily: 'var(--font-mono)' }}>dist: {nearestSurvivor.dist.toFixed(1)}m</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '10px', color: '#64748b' }}>conf: <span style={{ color: '#00ff88' }}>{(nearestSurvivor.confidence * 100).toFixed(0)}%</span></div>
-                  <div style={{ fontSize: '10px', color: '#64748b' }}>temp: <span style={{ color: '#ff6b00' }}>{nearestSurvivor.body_temp?.toFixed(1)}°C</span></div>
+                  <div style={{ fontSize: '9.5px', color: '#55666B', fontFamily: 'var(--font-mono)' }}>conf: <span style={{ color: '#2e7d5a', fontWeight: 800 }}>{(nearestSurvivor.confidence * 100).toFixed(0)}%</span></div>
+                  <div style={{ fontSize: '9.5px', color: '#55666B', fontFamily: 'var(--font-mono)' }}>temp: <span style={{ color: '#8B6B1B', fontWeight: 800 }}>{nearestSurvivor.body_temp?.toFixed(1)}°C</span></div>
                 </div>
               </div>
             </div>
           )}
 
           {/* ── COMMAND PANEL ──────────────────────────────────────────────── */}
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(0,229,255,0.06)' }}>
-            <div style={{ fontSize: '9px', color: '#475569', letterSpacing: '1px', marginBottom: '12px' }}>
-              COMMAND · {drone?.callsign}
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+            <div style={{ fontSize: '9px', color: '#55666B', letterSpacing: '0.06em', marginBottom: '10px', fontWeight: 800, fontFamily: 'var(--font-primary)' }}>
+              COMMAND // {drone?.callsign}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {[
                 {
                   action: 'emergency_return', icon: RotateCcw, label: 'EMERGENCY RETURN',
-                  sub: 'RTB immediately · abort mission', color: '#ff4500',
-                  bg: 'rgba(255,69,0,0.08)', border: 'rgba(255,69,0,0.25)',
+                  sub: 'RTB immediately · abort mission', color: '#dc3545',
+                  bg: 'rgba(220, 53, 69, 0.08)', border: 'rgba(220, 53, 69, 0.3)',
                 },
                 {
                   action: 'divert_survivor', icon: Target, label: nearestSurvivor ? `DIVERT → SURV #${nearestSurvivor.id}` : 'DIVERT TO SURVIVOR',
                   sub: nearestSurvivor ? `${nearestSurvivor.dist.toFixed(0)}m away · verify detection` : 'No survivor in range',
-                  color: '#00ff88', bg: 'rgba(0,255,136,0.05)', border: 'rgba(0,255,136,0.2)',
+                  color: '#2e7d5a', bg: 'rgba(88, 186, 138, 0.12)', border: 'rgba(88, 186, 138, 0.4)',
                   disabled: !nearestSurvivor,
                 },
                 {
                   action: 'extend_scan', icon: Radio, label: 'EXPAND SCAN RADIUS',
                   sub: `${drone?.scan_radius || 0}m → ${(drone?.scan_radius || 0) + 5}m (10% battery cost)`,
-                  color: '#00e5ff', bg: 'rgba(0,229,255,0.05)', border: 'rgba(0,229,255,0.2)',
+                  color: '#1a565e', bg: 'rgba(121, 185, 193, 0.15)', border: '#79B9C1',
                 },
                 {
                   action: 'relay_boost', icon: Wifi, label: 'BOOST COMMS RELAY',
                   sub: 'Increase data link · 30s duration',
-                  color: '#e040fb', bg: 'rgba(224,64,251,0.05)', border: 'rgba(224,64,251,0.2)',
+                  color: '#6d28d9', bg: 'rgba(109, 40, 217, 0.08)', border: 'rgba(109, 40, 217, 0.25)',
                 },
                 {
                   action: 'hold_position', icon: Navigation, label: 'HOLD POSITION',
                   sub: 'Hover at current alt · conserve battery',
-                  color: '#ffb300', bg: 'rgba(255,179,0,0.05)', border: 'rgba(255,179,0,0.2)',
+                  color: '#8B6B1B', bg: 'rgba(212, 168, 68, 0.12)', border: 'rgba(212, 168, 68, 0.35)',
                 },
               ].map(cmd => (
                 <button
@@ -533,23 +541,24 @@ export default function CoordinationPanel({ onClose }) {
                   disabled={cmd.disabled || activeCmd === cmd.action}
                   onClick={() => !cmd.disabled && issueCommand(cmd.action)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '10px 14px', border: `1px solid ${cmd.border}`,
-                    background: cmd.disabled ? 'rgba(0,0,0,0.1)' : activeCmd === cmd.action ? cmd.bg + '80' : cmd.bg,
-                    borderRadius: '4px', cursor: cmd.disabled ? 'not-allowed' : 'pointer',
-                    opacity: cmd.disabled ? 0.4 : 1, transition: 'all 0.2s', textAlign: 'left', width: '100%',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '8px 12px', border: `1px solid ${cmd.border}`,
+                    background: cmd.disabled ? 'rgba(0, 0, 0, 0.03)' : activeCmd === cmd.action ? '#FFFFFF' : '#FFFFFF',
+                    borderRadius: '6px', cursor: cmd.disabled ? 'not-allowed' : 'pointer',
+                    opacity: cmd.disabled ? 0.4 : 1, transition: 'all 0.18s ease', textAlign: 'left', width: '100%',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)',
                   }}
-                  onMouseOver={e => { if (!cmd.disabled) e.currentTarget.style.background = cmd.bg + 'cc' }}
-                  onMouseOut={e => { if (!cmd.disabled) e.currentTarget.style.background = cmd.bg }}
+                  onMouseOver={e => { if (!cmd.disabled) e.currentTarget.style.background = cmd.bg }}
+                  onMouseOut={e => { if (!cmd.disabled) e.currentTarget.style.background = '#FFFFFF' }}
                 >
-                  <cmd.icon size={16} color={cmd.color} />
+                  <cmd.icon size={15} color={cmd.color} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '11px', color: cmd.color, fontWeight: 700, letterSpacing: '0.5px' }}>
+                    <div style={{ fontSize: '10px', color: cmd.color, fontWeight: 800, letterSpacing: '0.04em', fontFamily: 'var(--font-primary)' }}>
                       {activeCmd === cmd.action ? 'SENDING...' : cmd.label}
                     </div>
-                    <div style={{ fontSize: '9px', color: '#394250', marginTop: '2px' }}>{cmd.sub}</div>
+                    <div style={{ fontSize: '8.5px', color: '#55666B', marginTop: '1px', fontFamily: 'var(--font-mono)' }}>{cmd.sub}</div>
                   </div>
-                  {!cmd.disabled && <ChevronRight size={14} color={cmd.color + '60'} />}
+                  {!cmd.disabled && <ChevronRight size={13} color={cmd.color} />}
                 </button>
               ))}
             </div>
@@ -557,34 +566,34 @@ export default function CoordinationPanel({ onClose }) {
 
           {/* ── COMMAND LOG ──────────────────────────────────────────────────── */}
           {cmdLog.length > 0 && (
-            <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(0,229,255,0.06)' }}>
-              <div style={{ fontSize: '9px', color: '#475569', letterSpacing: '1px', marginBottom: '8px' }}>CMD LOG</div>
+            <div style={{ padding: '10px 18px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
+              <div style={{ fontSize: '8.5px', color: '#55666B', letterSpacing: '0.06em', marginBottom: '6px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>CMD LOG</div>
               {cmdLog.map((c, i) => (
-                <div key={i} style={{ fontSize: '10px', color: '#475569', marginBottom: '4px' }}>
-                  <span style={{ color: '#394250' }}>[{c.time.toFixed(0)}s] </span>
-                  <span style={{ color: droneColor }}>{c.callsign}</span>
-                  <span style={{ color: '#64748b' }}> → {c.action.replace(/_/g, ' ').toUpperCase()}</span>
+                <div key={i} style={{ fontSize: '9px', color: '#55666B', marginBottom: '3px', fontFamily: 'var(--font-mono)' }}>
+                  <span>[{c.time.toFixed(0)}s] </span>
+                  <span style={{ color: '#172124', fontWeight: 700 }}>{c.callsign}</span>
+                  <span> → {c.action.replace(/_/g, ' ').toUpperCase()}</span>
                 </div>
               ))}
             </div>
           )}
 
           {/* ── DRONE EVENT STREAM ───────────────────────────────────────────── */}
-          <div style={{ flex: 1, overflow: 'hidden', padding: '16px 20px' }}>
-            <div style={{ fontSize: '9px', color: '#475569', letterSpacing: '1px', marginBottom: '10px' }}>
-              EVENT STREAM · {drone?.callsign}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 18px' }}>
+            <div style={{ fontSize: '8.5px', color: '#55666B', letterSpacing: '0.06em', marginBottom: '8px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+              EVENT STREAM // {drone?.callsign}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {myEvents.length > 0 ? myEvents.map((e, i) => (
-                <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '10px' }}>
-                  <span style={{ color: '#394250', minWidth: '36px' }}>{e.time.toFixed(0)}s</span>
+                <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '9.5px', fontFamily: 'var(--font-mono)' }}>
+                  <span style={{ color: '#8A9A9E', minWidth: '32px' }}>{e.time.toFixed(0)}s</span>
                   <span style={{
-                    color: e.category === 'survivor' ? '#00ff88' : e.category === 'warning' ? '#ffb300' : '#475569',
-                    lineHeight: 1.5,
+                    color: e.category === 'survivor' ? '#2e7d5a' : e.category === 'warning' ? '#8B6B1B' : '#172124',
+                    lineHeight: 1.4, fontWeight: 600,
                   }}>{e.message}</span>
                 </div>
               )) : (
-                <div style={{ fontSize: '10px', color: '#2a3340', padding: '16px 0', textAlign: 'center' }}>
+                <div style={{ fontSize: '9.5px', color: '#8A9A9E', padding: '14px 0', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
                   No events logged for {drone?.callsign}
                 </div>
               )}

@@ -295,7 +295,7 @@ function InteractiveSimulator({ scenario, color }) {
 export default function EdgeCasesGrid() {
   return (
     <section id="edgecases" style={{
-      padding: '40px 40px 120px',
+      padding: '40px 40px 100px',
       background: 'var(--bg-primary)',
       transition: 'background 0.5s ease',
     }}>
@@ -305,39 +305,40 @@ export default function EdgeCasesGrid() {
            whileInView={{ opacity: 1, y: 0 }}
            viewport={{ once: true }}
            transition={{ duration: 0.6 }}
-           style={{ textAlign: 'center', marginBottom: '80px' }}
+           style={{ textAlign: 'center', marginBottom: '60px' }}
         >
           <div style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '12px',
-            color: '#a855f7',
-            letterSpacing: '5px',
-            marginBottom: '16px',
-            fontWeight: 700,
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+            color: '#1a565e',
+            letterSpacing: '0.15em',
+            marginBottom: '12px',
+            fontWeight: 800,
+            textTransform: 'uppercase',
           }}>
             // EXTREME CONTINGENCIES
           </div>
           <h2 style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '48px',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            letterSpacing: '4px',
-            marginBottom: '16px',
+            fontFamily: 'var(--font-display)',
+            fontSize: '40px',
+            fontWeight: 800,
+            color: '#172124',
+            letterSpacing: '0.04em',
+            marginBottom: '12px',
           }}>
             INTERACTIVE EDGE LOGIC
           </h2>
           <p style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '18px',
-            color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-primary)',
+            fontSize: '16px',
+            color: '#55666B',
             maxWidth: '700px',
             margin: '0 auto',
-            lineHeight: 1.7,
+            lineHeight: 1.65,
             fontWeight: 500,
           }}>
             Explore dynamic simulations of AEGIS handling critical hardware and environmental failures.
-            Use the interactive scrubbers below to review exactly how the swarm overcomes chaotic events in real-time.
+            Use the interactive controls below to review exactly how the swarm overcomes chaotic events in real-time.
           </p>
         </motion.div>
 
@@ -354,72 +355,88 @@ export default function EdgeCasesGrid() {
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
                 style={{
-                   background: 'var(--bg-panel)',
-                   border: '1px solid var(--border-color)',
-                   borderRadius: '8px',
+                   background: 'rgba(235, 243, 245, 0.85)',
+                   backdropFilter: 'blur(12px)',
+                   WebkitBackdropFilter: 'blur(12px)',
+                   border: '1px solid rgba(255, 255, 255, 0.95)',
+                   outline: '1px solid rgba(0, 0, 0, 0.07)',
+                   borderRadius: '12px',
                    display: 'flex',
                    flexDirection: 'column',
                    overflow: 'hidden',
-                   boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+                   boxShadow: '0 4px 14px rgba(0, 0, 0, 0.03), inset 0 1px 0 #FFFFFF',
+                   transition: 'all 0.25s ease',
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 #FFFFFF'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.03), inset 0 1px 0 #FFFFFF'
+                  e.currentTarget.style.transform = 'none'
                 }}
              >
-                <div style={{ height: '140px', background: `linear-gradient(45deg, #050a10, ${scenario.color}20)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                   <scenario.icon size={64} color={scenario.color} opacity={0.3} />
+                <div style={{ height: '120px', background: `linear-gradient(45deg, #172124, ${scenario.color}25)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                   <scenario.icon size={50} color={scenario.color} opacity={0.4} />
                 </div>
                 
                 <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                      <div style={{ padding: '10px', background: `${scenario.color}15`, borderRadius: '6px', color: scenario.color }}>
-                         <scenario.icon size={24} />
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                      <div style={{ padding: '8px', background: `${scenario.color}15`, borderRadius: '6px', color: scenario.color }}>
+                         <scenario.icon size={20} />
                       </div>
                       <h3 style={{ 
-                         fontFamily: 'Rajdhani, sans-serif', 
-                         fontSize: '22px', 
-                         fontWeight: 700,
-                         color: 'var(--text-primary)',
-                         letterSpacing: '1px'
+                         fontFamily: 'var(--font-display)', 
+                         fontSize: '18px', 
+                         fontWeight: 800,
+                         color: '#172124',
+                         letterSpacing: '0.04em'
                       }}>
                          {scenario.title}
                       </h3>
                    </div>
                    
                    <p style={{
-                      fontFamily: 'Roboto, sans-serif',
-                      fontSize: '14px',
-                      color: 'var(--text-secondary)',
+                      fontFamily: 'var(--font-primary)',
+                      fontSize: '13.5px',
+                      color: '#55666B',
                       lineHeight: 1.6,
-                      marginBottom: '24px'
+                      marginBottom: '20px',
+                      fontWeight: 500,
                    }}>
                       {scenario.description}
                    </p>
                    
-                   <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                   <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
                      <div style={{ 
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: '10px',
-                        padding: '6px 14px',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '9px',
+                        padding: '4px 10px',
                         border: `1px solid ${scenario.color}40`,
                         background: `${scenario.color}15`,
                         color: scenario.color,
                         borderRadius: '4px',
-                        letterSpacing: '0.5px',
-                        fontWeight: 'bold'
+                        letterSpacing: '0.04em',
+                        fontWeight: 800,
                      }}>
-                        PROTOCOL: {scenario.impact}
+                        {scenario.impact}
                      </div>
                      
                      <a 
                         href={`/mission?scenario=earthquake&script=${scenario.id}`}
                         style={{
                            textDecoration: 'none',
-                           fontFamily: 'Rajdhani',
-                           fontWeight: 'bold',
-                           fontSize: '14px',
-                           padding: '8px 16px',
-                           background: scenario.color,
-                           color: '#000',
-                           borderRadius: '4px',
-                           letterSpacing: '1px'
+                           fontFamily: 'var(--font-primary)',
+                           fontWeight: 800,
+                           fontSize: '11px',
+                           padding: '6px 14px',
+                           background: '#79B9C1',
+                           color: '#172124',
+                           borderRadius: '6px',
+                           letterSpacing: '0.06em',
+                           textTransform: 'uppercase',
+                           boxShadow: '0 2px 8px rgba(121, 185, 193, 0.35)',
+                           transition: 'all 0.2s ease',
                         }}
                      >
                         LAUNCH 3D SCRIPT

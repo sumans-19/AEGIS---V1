@@ -2,65 +2,70 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Brain } from 'lucide-react'
 import AIDecisionPanel from '../components/mission/AIDecisionPanel'
 
-export default function AIDashboard() {
+export default function AIDashboard({ isEmbedded }) {
   const navigate = useNavigate()
 
   return (
     <div
       style={{
-        minHeight: '100vh',
-        background: '#0a0a0f',
+        flex: 1,
+        height: '100%',
+        background: 'var(--bg-primary)',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 24px',
-          borderBottom: '2px solid #00e5ff',
-          background: '#0d1117',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button
-            type="button"
-            onClick={() => navigate('/mission')}
-            style={navBtn}
-            title="Back to Mission"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <Brain size={22} color="#00e5ff" />
-          <div>
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: 'Rajdhani, sans-serif',
-                fontSize: '20px',
-                fontWeight: 700,
-                letterSpacing: '3px',
-                color: '#e2e8f0',
-              }}
+      {!isEmbedded && (
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 28px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#20292B',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <button
+              type="button"
+              onClick={() => navigate('/mission')}
+              style={navBtn}
+              title="Back to Mission"
             >
-              AI DECISION DASHBOARD
-            </h1>
-            <p
-              style={{
-                margin: '4px 0 0',
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: '10px',
-                color: '#64748b',
-                letterSpacing: '1px',
-              }}
-            >
-              COMMAND CENTER // LIVE INTERVENTION MONITOR
-            </p>
+              <ArrowLeft size={16} />
+            </button>
+            <Brain size={20} color="#79B9C1" />
+            <div>
+              <h1
+                style={{
+                  margin: 0,
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '17px',
+                  fontWeight: 800,
+                  letterSpacing: '2px',
+                  color: '#FFFFFF',
+                }}
+              >
+                AI DECISION DASHBOARD
+              </h1>
+              <p
+                style={{
+                  margin: '2px 0 0',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8.5px',
+                  color: '#8A9A9E',
+                  letterSpacing: '1px',
+                }}
+              >
+                COMMAND CENTER // LIVE INTERVENTION MONITOR
+              </p>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       <AIDecisionPanel />
     </div>
@@ -71,10 +76,11 @@ const navBtn = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: '8px',
-  background: 'rgba(0, 229, 255, 0.08)',
-  border: '1px solid rgba(0, 229, 255, 0.3)',
+  padding: '6px 10px',
+  background: 'rgba(255, 255, 255, 0.06)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
   borderRadius: '6px',
-  color: '#00e5ff',
+  color: '#DCE6E8',
   cursor: 'pointer',
+  transition: 'all 0.2s ease',
 }

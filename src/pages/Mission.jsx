@@ -21,18 +21,18 @@ const missionLogToggleStyle = {
   left: '50%',
   transform: 'translateX(-50%)',
   zIndex: 200,
-  background: 'rgba(13, 17, 23, 0.9)',
+  background: '#20292B',
   backdropFilter: 'blur(12px)',
-  border: '1px solid rgba(0, 229, 255, 0.3)',
+  border: '1px solid rgba(121, 185, 193, 0.4)',
   borderRadius: '20px',
   padding: '2px 16px',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
   gap: '6px',
-  color: '#00e5ff',
-  transition: 'all 0.3s ease',
-  boxShadow: '0 -2px 12px rgba(0, 229, 255, 0.06)',
+  color: '#79B9C1',
+  transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
 }
 
 const simToggleStyle = {
@@ -40,20 +40,21 @@ const simToggleStyle = {
   right: '20px',
   top: '12px',
   zIndex: 500,
-  padding: '8px 16px',
+  padding: '6px 14px',
   borderRadius: '6px',
-  border: '1px solid rgba(0, 229, 255, 0.5)',
-  background: 'rgba(0, 229, 255, 0.1)',
-  color: '#00e5ff',
+  border: '1px solid rgba(121, 185, 193, 0.5)',
+  background: 'rgba(121, 185, 193, 0.15)',
+  color: '#1a565e',
   cursor: 'pointer',
-  fontFamily: 'JetBrains Mono, monospace',
-  fontSize: '10px',
-  fontWeight: 700,
-  letterSpacing: '1.5px',
-  boxShadow: '0 0 16px rgba(0, 229, 255, 0.15)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '9.5px',
+  fontWeight: 800,
+  letterSpacing: '1.2px',
+  boxShadow: '0 2px 8px rgba(121, 185, 193, 0.2)',
+  transition: 'all 0.2s ease',
 }
 
-export default function Mission() {
+export default function Mission({ isEmbedded, onClose }) {
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true)
   const [showSim, setShowSim] = useState(false)
   const [searchParams] = useSearchParams()
@@ -70,6 +71,9 @@ export default function Mission() {
   const scriptId = searchParams.get('script')
   const backendDrones = useSimStore((s) => s.liveAiDrones)
 
+  const drones = useSimStore(s => s.drones)
+  const setSelectedDrone = useSimStore(s => s.setSelectedDrone)
+
   useSimulation()
 
   useEffect(() => {
@@ -77,32 +81,41 @@ export default function Mission() {
     setScenario(scenario)
   }, [searchParams, setScenario])
 
-  const showRight = selectedDrone && !rightPanelExpanded && !fullMapMode
+  // Default selectedDrone to first drone (Arjun) if not set, so RightPanel displays immediately
+  useEffect(() => {
+    if (!selectedDrone && drones.length > 0) {
+      setSelectedDrone(drones[0].id)
+    }
+  }, [selectedDrone, drones, setSelectedDrone])
+
+  const showRight = !rightPanelExpanded && !fullMapMode && !scriptId
   const showLeftPanel = !leftPanelCollapsed && !fullMapMode && !scriptId
   const showBottomPanel = !scriptId
 
   return (
     <div style={{
-      width: '100vw',
-      height: '100vh',
-      background: '#0a0a0f',
+      position: 'fixed',
+      inset: 0,
+      zIndex: 9000,
+      background: 'var(--bg-primary)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
+      userSelect: 'none',
     }}>
-      {/* HEADER */}
+      {/* Tactical Mission TopBar */}
       <div style={{
-        height: '60px',
+        height: '48px',
         width: '100%',
-        zIndex: 9999,
-        background: '#0d1117',
-        borderBottom: '2px solid #00e5ff',
-        position: 'fixed',
-        top: 0,
-        left: 0,
+        zIndex: 50,
+        background: '#20292B',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        position: 'relative',
         display: 'block',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        flexShrink: 0,
       }}>
-        <TopBar />
+        <TopBar onClose={onClose} />
       </div>
 
       {/* MAIN CONTENT — column: top row + bottom panel */}
@@ -111,8 +124,9 @@ export default function Mission() {
         display: 'flex',
         flexDirection: 'column',
         width: '100%',
-        marginTop: '60px',
         overflow: 'hidden',
+        background: '#DCE6E8',
+        position: 'relative',
       }}>
 
         {/* ── TOP ROW: Left Panel | 3D Scene | Right Panel ── */}
@@ -122,24 +136,33 @@ export default function Mission() {
           minWidth: 0,
           overflow: 'hidden',
           position: 'relative',
+          padding: '8px 10px 6px 10px',
+          gap: '10px',
         }}>
 
-          {/* Left Panel — animated slide */}
+          {/* Left Fleet Panel — animated slide */}
           {!fullMapMode && !scriptId && (
             <div style={{
-              width: showLeftPanel ? '320px' : '0px',
-              minWidth: showLeftPanel ? '320px' : '0px',
+              width: showLeftPanel ? '290px' : '0px',
+              minWidth: showLeftPanel ? '290px' : '0px',
               flexShrink: 0,
               height: '100%',
-              borderRight: showLeftPanel ? '1px solid #1e293b' : 'none',
               overflow: 'hidden',
-              transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
             }}>
               <div style={{
-                width: '320px',
+                width: '290px',
                 height: '100%',
                 opacity: showLeftPanel ? 1 : 0,
                 transition: 'opacity 0.2s ease',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                background: 'rgba(235, 243, 245, 0.85)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                border: '1px solid rgba(255, 255, 255, 0.95)',
+                outline: '1px solid rgba(0, 0, 0, 0.07)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
               }}>
                 <LeftPanel />
               </div>
@@ -157,9 +180,9 @@ export default function Mission() {
                 top: '50%',
                 transform: 'translateY(-50%)',
                 zIndex: 500,
-                background: 'rgba(13, 17, 23, 0.85)',
+                background: 'rgba(32, 41, 43, 0.92)',
                 backdropFilter: 'blur(12px)',
-                border: '1px solid rgba(0, 229, 255, 0.3)',
+                border: '1.5px solid #79B9C1',
                 borderRadius: '8px',
                 padding: '10px 6px',
                 cursor: 'pointer',
@@ -167,29 +190,29 @@ export default function Mission() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '8px',
-                color: '#00e5ff',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 0 15px rgba(0, 229, 255, 0.08)',
+                color: '#79B9C1',
+                transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
               }}
               onMouseOver={e => {
-                e.currentTarget.style.borderColor = '#00e5ff'
-                e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 229, 255, 0.2)'
-                e.currentTarget.style.background = 'rgba(13, 17, 23, 0.95)'
+                e.currentTarget.style.borderColor = '#96CCD3'
+                e.currentTarget.style.color = '#FFFFFF'
+                e.currentTarget.style.boxShadow = '0 6px 18px rgba(121, 185, 193, 0.4)'
               }}
               onMouseOut={e => {
-                e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.3)'
-                e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 229, 255, 0.08)'
-                e.currentTarget.style.background = 'rgba(13, 17, 23, 0.85)'
+                e.currentTarget.style.borderColor = '#79B9C1'
+                e.currentTarget.style.color = '#79B9C1'
+                e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.25)'
               }}
             >
               <PanelLeftOpen size={18} />
               <span style={{
                 writingMode: 'vertical-rl',
-                fontFamily: 'JetBrains Mono, monospace',
+                fontFamily: 'var(--font-mono)',
                 fontSize: '9px',
-                fontWeight: 600,
+                fontWeight: 700,
                 letterSpacing: '2px',
-                color: '#94a3b8',
+                color: '#8A9A9E',
               }}>
                 FLEET
               </span>
@@ -203,11 +226,24 @@ export default function Mission() {
             position: 'relative',
             zIndex: 1,
             overflow: 'hidden',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.9)',
+            outline: '1px solid rgba(0, 0, 0, 0.08)',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.5)',
+            background: 'radial-gradient(ellipse at 50% 45%, #E5EFF2 0%, #D8E4E7 60%, #CDD9DC 100%)',
           }}>
             <button
               type="button"
               onClick={() => setShowSim((prev) => !prev)}
               style={simToggleStyle}
+              onMouseOver={e => {
+                e.currentTarget.style.background = '#79B9C1'
+                e.currentTarget.style.color = '#172124'
+              }}
+              onMouseOut={e => {
+                e.currentTarget.style.background = 'rgba(121, 185, 193, 0.15)'
+                e.currentTarget.style.color = '#1a565e'
+              }}
             >
               DRONE SIMULATION
             </button>
@@ -220,11 +256,13 @@ export default function Mission() {
                   top: '52px',
                   width: '600px',
                   maxWidth: 'calc(100% - 40px)',
-                  background: '#0a0a0f',
-                  border: '1px solid #00e5ff',
-                  borderRadius: '10px',
+                  background: 'rgba(235, 243, 245, 0.95)',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255, 255, 255, 0.95)',
+                  borderRadius: '12px',
                   zIndex: 9999,
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 229, 255, 0.12)',
+                  boxShadow: '0 12px 36px rgba(0, 0, 0, 0.2), 0 0 16px rgba(121, 185, 193, 0.25)',
+                  overflow: 'hidden',
                 }}
               >
                 <SimulationPanel onClose={() => setShowSim(false)} />
@@ -235,48 +273,46 @@ export default function Mission() {
             {scriptId && <EdgeCaseOverlay scriptId={scriptId} />}
           </div>
 
-          <div
-            className={`mission-right-panel ${isRightPanelOpen ? '' : 'mission-right-panel--closed'}`}
-          >
-            <SideRightPanel />
-            <SideNotificationPanel />
-            <SideCoordinationPanel />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsRightPanelOpen(prev => !prev)}
-            className={`right-panel-toggle ${isRightPanelOpen ? '' : 'right-panel-toggle--closed'}`}
-            style={{ right: isRightPanelOpen ? '320px' : '0px' }}
-            title={isRightPanelOpen ? 'Hide right panel' : 'Show right panel'}
-            aria-expanded={isRightPanelOpen}
-          >
-            {isRightPanelOpen ? '>' : '<'}
-          </button>
-
-          {/* Right Panel — sits above bottom, not full height */}
-          {showRight && !scriptId && (
+          {/* Right Telemetry Panel — sits above bottom */}
+          {!fullMapMode && !scriptId && (
             <div style={{
-              width: '360px',
-              minWidth: '360px',
+              width: showRight ? '330px' : '0px',
+              minWidth: showRight ? '330px' : '0px',
               flexShrink: 0,
               height: '100%',
-              borderLeft: '1px solid #1e293b',
-              background: '#0a0a0f',
+              overflow: 'hidden',
+              transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
             }}>
-              <RightPanel />
+              <div style={{
+                width: '330px',
+                height: '100%',
+                opacity: showRight ? 1 : 0,
+                transition: 'opacity 0.2s ease',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                background: 'rgba(235, 243, 245, 0.85)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                border: '1px solid rgba(255, 255, 255, 0.95)',
+                outline: '1px solid rgba(0, 0, 0, 0.07)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+              }}>
+                <RightPanel />
+              </div>
             </div>
           )}
         </div>
 
-        {/* ── BOTTOM: Notification Panel (full width, below everything) ── */}
+        {/* ── BOTTOM: Notification Panel / Mission Log strip ── */}
         {showBottomPanel && (
           <div style={{
             position: 'relative',
-            borderTop: '1px solid #1e293b',
-            background: '#0a0a0f',
+            borderTop: '1px solid rgba(0, 0, 0, 0.07)',
+            background: 'rgba(235, 243, 245, 0.95)',
+            backdropFilter: 'blur(12px)',
             zIndex: 100,
             flexShrink: 0,
+            boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.03)',
           }}>
             {/* Toggle Button */}
             <button
@@ -284,23 +320,23 @@ export default function Mission() {
               title={bottomPanelCollapsed ? 'Show Mission Log' : 'Hide Mission Log'}
               style={missionLogToggleStyle}
               onMouseOver={e => {
-                e.currentTarget.style.borderColor = '#00e5ff'
-                e.currentTarget.style.boxShadow = '0 -2px 20px rgba(0, 229, 255, 0.15)'
-                e.currentTarget.style.background = 'rgba(13, 17, 23, 0.98)'
+                e.currentTarget.style.borderColor = '#79B9C1'
+                e.currentTarget.style.boxShadow = '0 -2px 16px rgba(121, 185, 193, 0.35)'
+                e.currentTarget.style.background = '#172124'
               }}
               onMouseOut={e => {
-                e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.3)'
-                e.currentTarget.style.boxShadow = '0 -2px 12px rgba(0, 229, 255, 0.06)'
-                e.currentTarget.style.background = 'rgba(13, 17, 23, 0.9)'
+                e.currentTarget.style.borderColor = 'rgba(121, 185, 193, 0.4)'
+                e.currentTarget.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)'
+                e.currentTarget.style.background = '#20292B'
               }}
             >
               {bottomPanelCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               <span style={{
-                fontFamily: 'JetBrains Mono, monospace',
+                fontFamily: 'var(--font-mono)',
                 fontSize: '9px',
-                fontWeight: 600,
+                fontWeight: 700,
                 letterSpacing: '2px',
-                color: '#94a3b8',
+                color: '#DCE6E8',
               }}>
                 {bottomPanelCollapsed ? 'LOG' : 'HIDE'}
               </span>
@@ -310,7 +346,7 @@ export default function Mission() {
             <div style={{
               maxHeight: bottomPanelCollapsed ? '0px' : '220px',
               overflow: 'hidden',
-              transition: 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
             }}>
               <NotificationPanel />
             </div>

@@ -17,32 +17,32 @@ export default function SurvivorsLog() {
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      background: 'var(--bg-panel)',
-      border: '1px solid var(--border-color)',
+      userSelect: 'none',
     }}>
       {/* Summary Header */}
       <div style={{
-        padding: '16px 20px',
-        borderBottom: '1px solid var(--border-color)',
+        padding: '8px 10px',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '12px',
-        background: 'rgba(0,0,0,0.05)',
+        gap: '6px',
+        background: 'rgba(255, 255, 255, 0.5)',
+        borderRadius: '6px',
+        marginBottom: '8px',
       }}>
-         <StatBox label="TOTAL" value={survivors.length} icon={Users} color="#94a3b8" />
-         <StatBox label="DETECTED" value={detected.length} icon={ShieldAlert} color="#00e5ff" />
-         <StatBox label="RESCUED" value={rescued.length} icon={UserCheck} color="#00ff88" />
-         <StatBox label="PENDING" value={survivors.length - detected.length} icon={Timer} color="#ffb300" />
+         <StatBox label="TOTAL" value={survivors.length} icon={Users} color="#6C7F84" />
+         <StatBox label="DETECTED" value={detected.length} icon={ShieldAlert} color="#79B9C1" />
+         <StatBox label="RESCUED" value={rescued.length} icon={UserCheck} color="#58ba8a" />
+         <StatBox label="PENDING" value={survivors.length - detected.length} icon={Timer} color="#f59e0b" />
       </div>
 
       {/* List Container */}
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '6px',
       }}>
         <AnimatePresence>
           {detected.map((s, idx) => {
@@ -52,52 +52,53 @@ export default function SurvivorsLog() {
              return (
                <motion.div
                  key={s.id}
-                 initial={{ opacity: 0, x: -20 }}
-                 animate={{ opacity: 1, x: 0 }}
-                 transition={{ delay: idx * 0.05 }}
-                 className="corner-brackets"
+                 initial={{ opacity: 0, y: 6 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ delay: idx * 0.04 }}
                  style={{
-                   padding: '14px',
-                   background: isRescued ? 'rgba(0, 255, 136, 0.05)' : 'rgba(0, 229, 255, 0.05)',
-                   border: `1px solid ${isRescued ? 'rgba(0, 255, 136, 0.2)' : 'rgba(0, 229, 255, 0.2)'}`,
+                   padding: '8px 10px',
+                   background: isRescued ? 'rgba(88, 186, 138, 0.12)' : 'rgba(255, 255, 255, 0.65)',
+                   border: `1px solid ${isRescued ? 'rgba(88, 186, 138, 0.4)' : 'rgba(0, 0, 0, 0.06)'}`,
+                   borderRadius: '6px',
                    display: 'flex',
                    flexDirection: 'column',
-                   gap: '10px',
+                   gap: '5px',
                  }}
                >
                  {/* Top Row: Title & Badge */}
                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                     <span style={{ 
-                       fontFamily: 'JetBrains Mono', 
-                       fontSize: '12px', 
-                       fontWeight: 700, 
-                       color: '#e2e8f0',
+                       fontFamily: 'var(--font-primary)', 
+                       fontSize: '9.5px', 
+                       fontWeight: 800, 
+                       color: '#172124',
                        whiteSpace: 'nowrap',
                        overflow: 'hidden',
                        textOverflow: 'ellipsis',
                        maxWidth: '150px'
                     }}>
-                      SURV_#{String(s.id).replace('SURV-', '').slice(-8)}
+                      SURV #{String(s.id).replace('SURV-', '').slice(-8)}
                     </span>
                     <span style={{ 
-                      fontSize: '9px', 
-                      padding: '3px 6px', 
-                      borderRadius: '2px', 
-                      background: isRescued ? '#00ff8820' : '#00e5ff20',
-                      color: isRescued ? '#00ff88' : '#00e5ff',
-                      fontFamily: 'JetBrains Mono',
-                      letterSpacing: '1px'
+                      fontSize: '7px', 
+                      padding: '2px 5px', 
+                      borderRadius: '3px', 
+                      background: isRescued ? 'rgba(88, 186, 138, 0.2)' : 'rgba(121, 185, 193, 0.2)',
+                      color: isRescued ? '#2e7d5a' : '#1a565e',
+                      fontFamily: 'var(--font-primary)',
+                      fontWeight: 800,
+                      letterSpacing: '0.06em'
                     }}>
-                      {isRescued ? 'RESCUE_CONFIRMED' : 'THERMAL_ID'}
+                      {isRescued ? 'RESCUED' : 'DETECTED'}
                     </span>
                  </div>
                  
                  {/* Data Grid */}
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '4px 0' }}>
+                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', padding: '2px 0' }}>
                     <DataPair label="TEMP" value={`${s.body_temp?.toFixed(1) || 37.0}°C`} icon={Heart} />
-                    <DataPair label="CONFID" value={`${s.confidence > 1 ? s.confidence?.toFixed(0) : ((s.confidence || 0) * 100).toFixed(0)}%`} icon={Target} />
-                    <DataPair label="SENSE" value={drone?.callsign || 'UAV'} icon={MapPin} />
-                    <DataPair label="COORD" value={`${(s.real_coords?.[0] ?? s.pos?.[0] ?? 0).toFixed(1)}, ${(s.real_coords?.[1] ?? s.pos?.[2] ?? 0).toFixed(1)}`} icon={MapPin} />
+                    <DataPair label="CONF" value={`${s.confidence > 1 ? s.confidence?.toFixed(0) : ((s.confidence || 0) * 100).toFixed(0)}%`} icon={Target} />
+                    <DataPair label="UAV" value={drone?.callsign || 'UAV'} icon={MapPin} />
+                    <DataPair label="POS" value={`${(s.real_coords?.[0] ?? s.pos?.[0] ?? 0).toFixed(0)}, ${(s.real_coords?.[1] ?? s.pos?.[2] ?? 0).toFixed(0)}`} icon={MapPin} />
                  </div>
 
                  {/* Action Button */}
@@ -106,26 +107,33 @@ export default function SurvivorsLog() {
                        onClick={() => markAsRescued(s.id)}
                        style={{
                           width: '100%',
-                          background: '#00ff88',
-                          color: '#0a0a0f',
-                          border: 'none',
-                          padding: '8px 0',
-                          fontFamily: 'Rajdhani',
-                          fontWeight: 700,
-                          fontSize: '11px',
+                          background: 'rgba(121, 185, 193, 0.2)',
+                          color: '#172124',
+                          border: '1px solid #79B9C1',
+                          borderRadius: '4px',
+                          padding: '4px 0',
+                          fontFamily: 'var(--font-primary)',
+                          fontWeight: 800,
+                          fontSize: '8px',
                           cursor: 'pointer',
-                          letterSpacing: '2px',
-                          boxShadow: '0 0 10px #00ff8840',
-                          transition: 'opacity 0.2s'
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          transition: 'all 0.2s ease'
                        }}
-                       onMouseOver={e => e.currentTarget.style.opacity = 0.8}
-                       onMouseOut={e => e.currentTarget.style.opacity = 1}
+                       onMouseOver={e => {
+                          e.currentTarget.style.background = '#79B9C1'
+                          e.currentTarget.style.color = '#172124'
+                       }}
+                       onMouseOut={e => {
+                          e.currentTarget.style.background = 'rgba(121, 185, 193, 0.2)'
+                          e.currentTarget.style.color = '#172124'
+                       }}
                     >
-                       DISPATCH_RESCUE
+                       DISPATCH RESCUE
                     </button>
                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: '6px' }}>
-                       <UserCheck size={20} color="#00ff88" />
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '2px' }}>
+                       <UserCheck size={14} color="#58ba8a" />
                     </div>
                  )}
                </motion.div>
@@ -134,9 +142,9 @@ export default function SurvivorsLog() {
         </AnimatePresence>
         
         {detected.length === 0 && (
-           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
-              <Users size={64} style={{ marginBottom: '16px' }} />
-              <div style={{ fontFamily: 'JetBrains Mono', fontSize: '12px' }}>AWAITING_FIELD_DETECTION...</div>
+           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.5, padding: '30px 0' }}>
+              <Users size={32} color="#6C7F84" style={{ marginBottom: '8px' }} />
+              <div style={{ fontFamily: 'var(--font-primary)', fontSize: '8.5px', color: '#6C7F84', fontWeight: 600 }}>AWAITING FIELD DETECTION...</div>
            </div>
         )}
       </div>
@@ -147,21 +155,21 @@ export default function SurvivorsLog() {
 function StatBox({ label, value, icon: Icon, color }) {
    return (
       <div style={{ textAlign: 'center' }}>
-         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '4px' }}>
-            <Icon size={12} color={color} />
-            <span style={{ fontSize: '9px', fontFamily: 'JetBrains Mono', color: '#475569', letterSpacing: '1px' }}>{label}</span>
+         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px', marginBottom: '2px' }}>
+            <Icon size={10} color={color} />
+            <span style={{ fontSize: '7px', fontFamily: 'var(--font-primary)', color: '#6C7F84', fontWeight: 700, letterSpacing: '0.06em' }}>{label}</span>
          </div>
-         <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', fontFamily: 'Rajdhani' }}>{value}</div>
+         <div style={{ fontSize: '13px', fontWeight: 800, color: '#172124', fontFamily: 'var(--font-primary)' }}>{value}</div>
       </div>
    )
 }
 
 function DataPair({ label, value, icon: Icon }) {
    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-         <Icon size={10} color="#475569" />
-         <span style={{ fontSize: '9px', color: '#94a3b8', width: '35px' }}>{label}:</span>
-         <span style={{ fontSize: '9px', color: '#e2e8f0', fontWeight: 600 }}>{value}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+         <Icon size={9} color="#6C7F84" />
+         <span style={{ fontSize: '7.5px', color: '#6C7F84', fontWeight: 700, width: '28px' }}>{label}:</span>
+         <span style={{ fontSize: '7.5px', color: '#172124', fontWeight: 800 }}>{value}</span>
       </div>
    )
 }

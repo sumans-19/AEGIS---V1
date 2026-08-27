@@ -1,0 +1,244 @@
+/* ============================================
+   AEROVIEW — Right Sensor Detail Panel
+   ============================================ */
+
+.sensor-detail {
+  background: rgba(235, 243, 245, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  outline: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  user-select: none;
+}
+
+.sensor-detail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px 14px;
+}
+
+.sensor-detail__title {
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1F282B;
+  margin: 0;
+}
+
+.sensor-detail__close {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #55666B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sensor-detail__close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1F282B;
+}
+
+.sensor-detail__content {
+  padding: 0 14px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Module Box (Hardware Render + Description) */
+.sensor-detail__module-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.sensor-detail__graphic-box {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sensor-detail__icon-avatar {
+  width: 48px;
+  height: 38px;
+  border-radius: 4px;
+  background: #20272B;
+  color: #79B9C1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sensor-detail__description {
+  font-family: var(--font-primary);
+  font-size: 8px;
+  font-weight: 500;
+  color: #4A5B60;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Labels */
+.sensor-detail__label {
+  font-family: var(--font-primary);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6C7F84;
+}
+
+/* Status Line */
+.sensor-detail__row--status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.sensor-detail__status-badge {
+  font-family: var(--font-primary);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #589CA4;
+}
+
+/* Live Reading + Sparkline */
+.sensor-detail__reading-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sensor-detail__reading-display {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sensor-detail__value-group {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.sensor-detail__value {
+  font-family: var(--font-primary);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1F282B;
+  line-height: 1;
+}
+
+.sensor-detail__unit {
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 600;
+  color: #55666B;
+}
+
+.sensor-detail__sparkline {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Specs Table */
+.sensor-detail__specs-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sensor-detail__specs-table {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sensor-detail__spec-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.sensor-detail__spec-key {
+  font-family: var(--font-primary);
+  font-size: 8px;
+  font-weight: 500;
+  color: #55666B;
+}
+
+.sensor-detail__spec-val {
+  font-family: var(--font-primary);
+  font-size: 8px;
+  font-weight: 700;
+  color: #1F282B;
+}
+
+/* Location */
+.sensor-detail__location-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sensor-detail__location-text {
+  font-family: var(--font-primary);
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #1F282B;
+}
+
+/* View Sensor Feed Button */
+.sensor-detail__feed-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  font-family: var(--font-primary);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #384A4F;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: auto;
+}
+
+.sensor-detail__feed-btn:hover {
+  background: #FFFFFF;
+  border-color: #79B9C1;
+  color: #172124;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}

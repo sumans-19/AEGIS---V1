@@ -25,48 +25,52 @@ export default function ExportPanel({ onClose }) {
         top: 0,
         right: 0,
         bottom: 0,
-        width: '400px',
-        background: 'rgba(10, 10, 15, 0.95)',
-        backdropFilter: 'blur(20px)',
-        borderLeft: '1px solid var(--border-color)',
+        width: '380px',
+        background: 'rgba(235, 243, 245, 0.96)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderLeft: '1px solid rgba(0, 0, 0, 0.08)',
         zIndex: 500,
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '-20px 0 50px rgba(0,0,0,0.5)',
+        boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.1)',
+        userSelect: 'none',
       }}
     >
       <div style={{
-        padding: '24px',
-        borderBottom: '1px solid var(--border-color)',
+        padding: '16px 20px',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        background: '#20292B',
       }}>
-         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Database color="#00e5ff" size={20} />
-            <span style={{ fontFamily: 'Rajdhani', fontSize: '20px', fontWeight: 700, letterSpacing: '1px', color: '#e2e8f0' }}>EXPORT_&_ANALYSIS</span>
+         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Database color="#79B9C1" size={16} />
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 800, letterSpacing: '0.08em', color: '#FFFFFF' }}>EXPORT // ANALYSIS</span>
          </div>
-         <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
+         <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8A9A9E', cursor: 'pointer', fontSize: '14px' }}>✕</button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
-         <div style={{ padding: '24px' }}>
+         <div style={{ padding: '20px' }}>
             {/* Section 1: Export Current */}
-            <h4 style={sectionHeaderStyle}>MISSION_SNAPSHOT</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '32px' }}>
+            <h4 style={sectionHeaderStyle}>MISSION SNAPSHOT</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '24px' }}>
                <ExportBtn label="JSON" icon={FileJson} onClick={() => exportMission('json')} />
                <ExportBtn label="CSV" icon={FileText} onClick={() => exportMission('csv')} />
                <ExportBtn label="REPORT" icon={Download} onClick={() => exportMission('report')} />
             </div>
 
             {/* Section 2: Merge Missions */}
-            <h4 style={sectionHeaderStyle}>MISSION_AGGREGATOR</h4>
+            <h4 style={sectionHeaderStyle}>MISSION AGGREGATOR</h4>
             <div style={{ 
-               padding: '20px', 
-               border: '2px dashed var(--border-color)', 
-               borderRadius: '4px', 
+               padding: '16px', 
+               border: '2px dashed rgba(0, 0, 0, 0.15)', 
+               borderRadius: '8px', 
                textAlign: 'center',
-               marginBottom: '16px',
+               marginBottom: '14px',
+               background: 'rgba(255, 255, 255, 0.5)',
             }}>
                <input 
                   type="file" 
@@ -76,48 +80,52 @@ export default function ExportPanel({ onClose }) {
                   accept=".json"
                />
                <label htmlFor="file-load" style={{ cursor: 'pointer' }}>
-                  <Upload size={32} color="#00e5ff" style={{ opacity: 0.5, marginBottom: '8px' }} />
-                  <div style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'JetBrains Mono' }}>DROP_JSON_FILES_OR_BROWSE</div>
+                  <Upload size={24} color="#79B9C1" style={{ opacity: 0.8, marginBottom: '6px' }} />
+                  <div style={{ fontSize: '9px', color: '#55666B', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>DROP JSON FILES OR BROWSE</div>
                </label>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
                {files.map(f => (
                   <div key={f.id} style={{
-                     padding: '10px 12px',
-                     background: 'rgba(255,255,255,0.05)',
-                     borderRadius: '2px',
+                     padding: '8px 12px',
+                     background: 'rgba(255, 255, 255, 0.7)',
+                     borderRadius: '6px',
                      display: 'flex',
                      justifyContent: 'space-between',
                      alignItems: 'center',
-                     fontFamily: 'JetBrains Mono',
-                     fontSize: '10px',
+                     fontFamily: 'var(--font-mono)',
+                     fontSize: '9.5px',
+                     border: '1px solid rgba(0, 0, 0, 0.05)',
                   }}>
-                     <span style={{ color: '#e2e8f0' }}>{f.name} ({f.size})</span>
-                     <Trash2 size={14} color="#ff2929" style={{ cursor: 'pointer' }} onClick={() => setFiles(prev => prev.filter(x => x.id !== f.id))} />
+                     <span style={{ color: '#172124', fontWeight: 600 }}>{f.name} ({f.size})</span>
+                     <Trash2 size={13} color="#dc3545" style={{ cursor: 'pointer' }} onClick={() => setFiles(prev => prev.filter(x => x.id !== f.id))} />
                   </div>
                ))}
             </div>
 
             <button disabled={files.length < 2} style={{
                width: '100%',
-               padding: '14px',
-               background: files.length < 2 ? 'rgba(0, 229, 255, 0.1)' : '#00e5ff',
-               color: files.length < 2 ? '#475569' : '#0a0a0f',
+               padding: '10px',
+               background: files.length < 2 ? 'rgba(0, 0, 0, 0.06)' : '#79B9C1',
+               color: files.length < 2 ? '#8A9A9E' : '#172124',
                border: 'none',
-               fontFamily: 'Rajdhani',
-               fontWeight: 700,
-               fontSize: '14px',
-               letterSpacing: '1px',
-               cursor: 'pointer',
+               borderRadius: '6px',
+               fontFamily: 'var(--font-primary)',
+               fontWeight: 800,
+               fontSize: '10px',
+               letterSpacing: '0.08em',
+               cursor: files.length < 2 ? 'not-allowed' : 'pointer',
                display: 'flex',
                alignItems: 'center',
                justifyContent: 'center',
-               gap: '8px',
-               transition: '0.3s',
+               gap: '6px',
+               transition: 'all 0.18s ease',
+               textTransform: 'uppercase',
+               boxShadow: files.length >= 2 ? '0 2px 8px rgba(121, 185, 193, 0.35)' : 'none',
             }}>
-               <GitMerge size={18} />
-               MERGE_AND_ANALYZE
+               <GitMerge size={14} />
+               MERGE & ANALYZE
             </button>
          </div>
       </div>
@@ -133,32 +141,35 @@ function ExportBtn({ label, icon: Icon, onClick }) {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '8px',
-            padding: '16px 8px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid var(--border-color)',
-            color: '#e2e8f0',
+            gap: '6px',
+            padding: '12px 8px',
+            background: 'rgba(255, 255, 255, 0.7)',
+            border: '1px solid rgba(0, 0, 0, 0.08)',
+            borderRadius: '8px',
+            color: '#172124',
             cursor: 'pointer',
-            transition: '0.3s',
-            fontFamily: 'JetBrains Mono',
+            transition: 'all 0.18s ease',
+            fontFamily: 'var(--font-mono)',
             fontSize: '9px',
+            fontWeight: 700,
          }}
-         onMouseOver={e => e.currentTarget.style.borderColor = '#00e5ff'}
-         onMouseOut={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+         onMouseOver={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#79B9C1' }}
+         onMouseOut={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.7)'; e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.08)' }}
       >
-         <Icon size={20} color="#00e5ff" />
+         <Icon size={18} color="#79B9C1" />
          {label}
       </button>
    )
 }
 
 const sectionHeaderStyle = {
-   fontFamily: 'JetBrains Mono',
-   fontSize: '11px',
-   color: '#00e5ff',
-   letterSpacing: '2px',
-   borderBottom: '1px solid rgba(0, 229, 255, 0.2)',
-   paddingBottom: '8px',
-   marginBottom: '20px',
-   fontWeight: 600,
+   fontFamily: 'var(--font-primary)',
+   fontSize: '10px',
+   color: '#1a565e',
+   letterSpacing: '0.08em',
+   borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
+   paddingBottom: '6px',
+   marginBottom: '14px',
+   fontWeight: 800,
+   textTransform: 'uppercase',
 }

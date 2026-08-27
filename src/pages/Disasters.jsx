@@ -4,7 +4,7 @@ import ScenarioGrid from '../components/landing/ScenarioGrid'
 import ThemeToggle from '../components/ThemeToggle'
 import { ArrowLeft, LayoutPanelTop } from 'lucide-react'
 
-export default function Disasters() {
+export default function Disasters({ isEmbedded }) {
   const navigate = useNavigate()
 
   return (
@@ -12,63 +12,70 @@ export default function Disasters() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingBottom: '100px' }}
+      transition={{ duration: 0.4 }}
+      style={{
+        background: 'var(--bg-primary)',
+        flex: 1,
+        height: '100%',
+        overflowY: 'auto',
+        paddingBottom: isEmbedded ? '40px' : '100px',
+      }}
     >
-      {/* Dedicated Header for the Selection Page */}
-      <nav
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 40px',
-          background: 'var(--bg-panel)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid var(--border-color)',
-        }}
-      >
+      {!isEmbedded && (
+        <nav
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 36px',
+            background: '#20292B',
+            backdropFilter: 'blur(16px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+          }}
+        >
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <button
             onClick={() => navigate(-1)}
             style={{
-              background: 'none',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-dim)',
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#DCE6E8',
               cursor: 'pointer',
-              padding: '8px 16px',
+              padding: '6px 14px',
               borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
-              transition: '0.2s',
-              fontFamily: 'JetBrains Mono',
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '1px',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
             }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--cyan)'; e.currentTarget.style.color = 'var(--cyan)'; e.currentTarget.style.background = 'rgba(0,229,255,0.05)' }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = 'none' }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = '#79B9C1'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.background = 'rgba(121, 185, 193, 0.2)' }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)'; e.currentTarget.style.color = '#DCE6E8'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)' }}
           >
-            <ArrowLeft size={16} /> RETURN TO MISSION
+            <ArrowLeft size={15} /> RETURN TO MISSION
           </button>
 
-          <div style={{ width: '1px', height: '24px', background: 'var(--border-color)' }} />
+          <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <LayoutPanelTop size={24} color="var(--cyan)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <LayoutPanelTop size={22} color="#79B9C1" />
             <div>
-              <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: '20px', letterSpacing: '2px', lineHeight: 1 }}>
-                AEGIS <span style={{ color: 'var(--cyan)' }}>REGISTRY</span>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', letterSpacing: '2px', lineHeight: 1, color: '#FFFFFF' }}>
+                AEGIS <span style={{ color: '#79B9C1' }}>REGISTRY</span>
               </div>
               <div style={{
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: '9px',
-                color: 'var(--text-dim)',
-                letterSpacing: '2px',
-                marginTop: '2px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '8px',
+                color: '#8A9A9E',
+                letterSpacing: '1.5px',
+                marginTop: '3px',
               }}>
                 GLOBAL DISASTER NODE DIRECTORY
               </div>
@@ -78,21 +85,22 @@ export default function Disasters() {
 
         <ThemeToggle />
       </nav>
+      )}
 
-      <div style={{ marginTop: '40px' }}>
+      <div style={{ marginTop: '20px' }}>
         <ScenarioGrid />
       </div>
 
       {/* Decorative footer elements */}
       <div style={{ 
         textAlign: 'center', 
-        fontFamily: 'JetBrains Mono', 
-        fontSize: '10px', 
-        color: 'var(--text-dim)',
-        letterSpacing: '2px',
-        opacity: 0.5
+        fontFamily: 'var(--font-mono)', 
+        fontSize: '9.5px', 
+        color: 'var(--text-tertiary)',
+        letterSpacing: '1.5px',
+        opacity: 0.7
       }}>
-        AEGIS-V1 // STANDBY FOR SCENARIO INITIALIZATION
+        AEGIS SWARMSYNC // STANDBY FOR SCENARIO INITIALIZATION
       </div>
     </motion.div>
   )

@@ -47,19 +47,20 @@ function AnimatedCounter({ target, suffix, label, delay }) {
       style={{ textAlign: 'center' }}
     >
       <div style={{
-        fontFamily: 'JetBrains Mono, monospace',
+        fontFamily: 'var(--font-mono)',
         fontSize: '32px',
-        fontWeight: 600,
-        color: '#00e5ff',
+        fontWeight: 700,
+        color: '#1a565e',
         lineHeight: 1,
       }}>
         {count}{suffix}
       </div>
       <div style={{
-        fontFamily: 'JetBrains Mono, monospace',
+        fontFamily: 'var(--font-primary)',
         fontSize: '11px',
-        color: '#475569',
-        letterSpacing: '2px',
+        fontWeight: 700,
+        color: '#6C7F84',
+        letterSpacing: '0.06em',
         marginTop: '8px',
         textTransform: 'uppercase',
       }}>
@@ -117,17 +118,17 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '72px',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            lineHeight: 1.05,
-            letterSpacing: '2px',
-            marginBottom: '24px',
+            fontFamily: 'var(--font-display)',
+            fontSize: '64px',
+            fontWeight: 800,
+            color: '#172124',
+            lineHeight: 1.08,
+            letterSpacing: '0.04em',
+            marginBottom: '20px',
           }}
         >
           WHEN SECONDS DEFINE{' '}
-          <span style={{ color: 'var(--cyan)', textShadow: 'var(--cyan-glow)' }}>SURVIVAL</span>
+          <span style={{ color: '#1a565e', textShadow: '0 2px 12px rgba(121, 185, 193, 0.4)' }}>SURVIVAL</span>
         </motion.h1>
 
         <motion.p
@@ -135,13 +136,13 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
           style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '18px',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.7,
+            fontFamily: 'var(--font-primary)',
+            fontSize: '17px',
+            color: '#55666B',
+            lineHeight: 1.65,
             maxWidth: '700px',
-            margin: '0 auto 40px',
-            fontWeight: 400,
+            margin: '0 auto 36px',
+            fontWeight: 500,
           }}
         >
           AEGIS deploys autonomous AI-powered drone swarms into active disaster zones — 
@@ -149,64 +150,84 @@ export default function Hero() {
         </motion.p>
 
         <motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.6, delay: 0.6 }}
-  style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginBottom: '60px' }}
->
-  <button
-    onClick={() => navigate('/mission?scenario=earthquake')}
-    style={{
-      fontFamily: 'Rajdhani, sans-serif',
-      fontSize: '16px',
-      fontWeight: 700,
-      letterSpacing: '1px',
-      padding: '14px 32px',
-      background: 'var(--cyan)',
-      color: 'var(--bg-primary)',
-      border: 'none',
-      cursor: 'pointer',
-      transition: 'all 0.3s',
-      boxShadow: 'var(--cyan-glow)',
-      borderRadius: '40px',
-    }}
-  >
-    BEGIN SIMULATION →
-  </button>
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          style={{ display: 'flex', gap: '14px', justifyContent: 'center', marginBottom: '50px' }}
+        >
+          <button
+            onClick={() => navigate('/mission?scenario=earthquake')}
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: '13px',
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              padding: '12px 32px',
+              background: '#79B9C1',
+              color: '#172124',
+              border: '1px solid rgba(255, 255, 255, 0.6)',
+              cursor: 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+              boxShadow: '0 4px 16px rgba(121, 185, 193, 0.4)',
+              borderRadius: '30px',
+              textTransform: 'uppercase',
+            }}
+            onMouseOver={e => {
+              e.currentTarget.style.background = '#96CCD3'
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(121, 185, 193, 0.55)'
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.background = '#79B9C1'
+              e.currentTarget.style.transform = 'none'
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(121, 185, 193, 0.4)'
+            }}
+          >
+            BEGIN SIMULATION →
+          </button>
 
-  <button
-    onClick={scrollToScenarios}
-    style={{
-      fontFamily: 'Rajdhani, sans-serif',
-      fontSize: '16px',
-      fontWeight: 700,
-      letterSpacing: '1px',
-      padding: '14px 32px',
-      background: 'transparent',
-      color: 'var(--text-secondary)',
-      border: '2px solid var(--border-color)',
-      cursor: 'pointer',
-      transition: 'all 0.3s',
-      borderRadius: '40px',
-    }}
-  >
-    VIEW SCENARIOS
-  </button>
-</motion.div>
+          <button
+            onClick={scrollToScenarios}
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: '13px',
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              padding: '12px 32px',
+              background: 'rgba(255, 255, 255, 0.8)',
+              color: '#172124',
+              border: '1px solid rgba(0, 0, 0, 0.12)',
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              borderRadius: '30px',
+              textTransform: 'uppercase',
+            }}
+            onMouseOver={e => {
+              e.currentTarget.style.background = '#FFFFFF'
+              e.currentTarget.style.borderColor = '#79B9C1'
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)'
+              e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.12)'
+            }}
+          >
+            VIEW SCENARIOS
+          </button>
+        </motion.div>
 
-{/* Stat Counters */}
-<div style={{
-  display: 'flex',
-  gap: '60px',
-  justifyContent: 'center',
-  paddingTop: '30px',
-  borderTop: '1px solid var(--border-color)',
-}}>
-  <AnimatedCounter target={2.3} suffix="s" label="Avg deployment time" delay={800} />
-  <AnimatedCounter target={94.7} suffix="%" label="Survivor detection accuracy" delay={1000} />
-  <AnimatedCounter target={5} suffix="" label="Drones per active zone" delay={1200} />
-</div>
-</div>
+        {/* Stat Counters */}
+        <div style={{
+          display: 'flex',
+          gap: '60px',
+          justifyContent: 'center',
+          paddingTop: '24px',
+          borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+        }}>
+          <AnimatedCounter target={2.3} suffix="s" label="Avg deployment time" delay={800} />
+          <AnimatedCounter target={94.7} suffix="%" label="Survivor detection accuracy" delay={1000} />
+          <AnimatedCounter target={5} suffix="" label="Drones per active zone" delay={1200} />
+        </div>
+      </div>
     </section>
   )
 }

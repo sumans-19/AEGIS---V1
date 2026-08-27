@@ -25,31 +25,31 @@ const features = [
 export default function About() {
   return (
     <section id="about" style={{
-      padding: '120px 40px',
+      padding: '100px 40px',
       background: 'var(--bg-secondary)',
       transition: 'background 0.5s ease',
     }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <motion.div
-// ... Keep motion wrapper ...
-          style={{ textAlign: 'center', marginBottom: '80px' }}
+          style={{ textAlign: 'center', marginBottom: '60px' }}
         >
           <div style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '12px',
-            color: 'var(--cyan)',
-            letterSpacing: '5px',
-            marginBottom: '16px',
-            fontWeight: 700,
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+            color: '#1a565e',
+            letterSpacing: '0.15em',
+            marginBottom: '12px',
+            fontWeight: 800,
+            textTransform: 'uppercase',
           }}>
-            // SYSTEM OVERVIEW
+            // SYSTEM ARCHITECTURE
           </div>
           <h2 style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '48px',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            letterSpacing: '4px',
+            fontFamily: 'var(--font-display)',
+            fontSize: '40px',
+            fontWeight: 800,
+            color: '#172124',
+            letterSpacing: '0.04em',
           }}>
             HOW AEGIS OPERATES
           </h2>
@@ -58,7 +58,7 @@ export default function About() {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '32px',
+          gap: '24px',
         }}>
           {features.map((feature, idx) => (
             <motion.div
@@ -67,37 +67,42 @@ export default function About() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: idx * 0.15 }}
-              className="corner-brackets"
               style={{
                 position: 'relative',
-                padding: '48px 36px',
-                background: 'var(--bg-panel)',
-                border: '1px solid var(--border-color)',
+                padding: '40px 32px',
+                background: 'rgba(235, 243, 245, 0.85)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255, 255, 255, 0.95)',
+                outline: '1px solid rgba(0, 0, 0, 0.07)',
                 overflow: 'hidden',
-                transition: 'all 0.3s ease',
-                borderRadius: '8px',
+                transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                borderRadius: '12px',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.03), inset 0 1px 0 #FFFFFF',
               }}
               onMouseOver={e => {
-                e.currentTarget.style.borderColor = 'var(--cyan)'
-                e.currentTarget.style.boxShadow = 'var(--cyan-glow)'
+                e.currentTarget.style.borderColor = 'rgba(121, 185, 193, 0.8)'
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(121, 185, 193, 0.25), inset 0 1px 0 #FFFFFF'
                 e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.background = '#FFFFFF'
               }}
               onMouseOut={e => {
-                e.currentTarget.style.borderColor = 'var(--border-color)'
-                e.currentTarget.style.boxShadow = 'none'
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.95)'
+                e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.03), inset 0 1px 0 #FFFFFF'
                 e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.background = 'rgba(235, 243, 245, 0.85)'
               }}
             >
               {/* Background Number */}
               <div style={{
                 position: 'absolute',
                 top: '-10px',
-                right: '10px',
-                fontFamily: 'Rajdhani, sans-serif',
-                fontSize: '140px',
-                fontWeight: 700,
-                color: 'var(--cyan)',
-                opacity: 0.08,
+                right: '12px',
+                fontFamily: 'var(--font-display)',
+                fontSize: '120px',
+                fontWeight: 800,
+                color: '#79B9C1',
+                opacity: 0.12,
                 lineHeight: 1,
                 pointerEvents: 'none',
                 userSelect: 'none',
@@ -106,26 +111,26 @@ export default function About() {
               </div>
 
               <feature.icon
-                size={34}
-                style={{ color: 'var(--cyan)', marginBottom: '24px' }}
+                size={30}
+                style={{ color: '#1a565e', marginBottom: '20px' }}
               />
 
               <h3 style={{
-                fontFamily: 'Rajdhani, sans-serif',
-                fontSize: '24px',
-                fontWeight: 700,
-                color: 'var(--cyan)',
-                letterSpacing: '3px',
-                marginBottom: '16px',
+                fontFamily: 'var(--font-display)',
+                fontSize: '20px',
+                fontWeight: 800,
+                color: '#172124',
+                letterSpacing: '0.06em',
+                marginBottom: '12px',
               }}>
                 {feature.title}
               </h3>
 
               <p style={{
-                fontFamily: 'Rajdhani, sans-serif',
-                fontSize: '16px',
-                color: 'var(--text-secondary)',
-                lineHeight: 1.7,
+                fontFamily: 'var(--font-primary)',
+                fontSize: '14.5px',
+                color: '#55666B',
+                lineHeight: 1.65,
                 fontWeight: 500,
               }}>
                 {feature.description}

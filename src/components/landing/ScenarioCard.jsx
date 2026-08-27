@@ -78,21 +78,23 @@ export default function ScenarioCard({ scenario, index }) {
       onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="corner-brackets"
       style={{
         position: 'relative',
-        padding: '28px 24px',
+        padding: '24px 22px',
         background: hovered && scenario.clickable
-          ? `linear-gradient(135deg, ${scenario.accent}15 0%, var(--bg-panel) 100%)`
-          : 'var(--bg-panel)',
-        border: `1px solid ${hovered && scenario.clickable ? scenario.accent : 'var(--border-color)'}`,
+          ? '#FFFFFF'
+          : 'rgba(235, 243, 245, 0.85)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: `1px solid ${hovered && scenario.clickable ? 'rgba(121, 185, 193, 0.8)' : 'rgba(255, 255, 255, 0.95)'}`,
+        outline: '1px solid rgba(0, 0, 0, 0.07)',
         cursor: scenario.clickable ? 'pointer' : 'not-allowed',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         transform: hovered && scenario.clickable ? 'translateY(-4px)' : 'translateY(0)',
-        boxShadow: hovered && scenario.clickable ? `0 0 20px ${scenario.accent}25` : 'none',
+        boxShadow: hovered && scenario.clickable ? '0 8px 24px rgba(121, 185, 193, 0.25), inset 0 1px 0 #FFFFFF' : '0 4px 12px rgba(0, 0, 0, 0.03), inset 0 1px 0 #FFFFFF',
         opacity: scenario.clickable ? 1 : 0.6,
         overflow: 'hidden',
-        borderRadius: '8px',
+        borderRadius: '12px',
       }}
     >
       {/* Accent line at top */}
@@ -101,37 +103,38 @@ export default function ScenarioCard({ scenario, index }) {
         top: 0,
         left: 0,
         right: 0,
-        height: '2px',
+        height: '2.5px',
         background: `linear-gradient(90deg, transparent, ${scenario.accent}, transparent)`,
         opacity: hovered ? 1 : 0.4,
         transition: 'opacity 0.3s',
       }} />
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
         <ScenarioIcon type={scenario.icon} color={scenario.accent} />
 
         {/* Status badge */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          padding: '4px 10px',
-          background: `${scenario.statusColor}20`,
+          gap: '5px',
+          padding: '3px 8px',
+          background: `${scenario.statusColor}18`,
           border: `1px solid ${scenario.statusColor}40`,
-          fontSize: '10px',
-          fontFamily: 'JetBrains Mono, monospace',
-          color: scenario.statusColor,
-          letterSpacing: '1px',
-          fontWeight: 700,
-          borderRadius: '20px',
+          fontSize: '8.5px',
+          fontFamily: 'var(--font-primary)',
+          color: scenario.statusColor === '#00ff88' ? '#2e7d5a' : scenario.statusColor,
+          letterSpacing: '0.06em',
+          fontWeight: 800,
+          borderRadius: '12px',
+          textTransform: 'uppercase',
         }}>
           <div
             className={scenario.status === 'SIMULATION READY' ? 'pulse-dot' : ''}
             style={{
-              width: 6,
-              height: 6,
+              width: 5,
+              height: 5,
               borderRadius: '50%',
-              background: scenario.statusColor,
+              background: scenario.statusColor === '#00ff88' ? '#58ba8a' : scenario.statusColor,
             }}
           />
           {scenario.status}
@@ -139,31 +142,31 @@ export default function ScenarioCard({ scenario, index }) {
       </div>
 
       <h3 style={{
-        fontFamily: 'Rajdhani, sans-serif',
-        fontSize: '22px',
-        fontWeight: 700,
-        color: 'var(--text-primary)',
-        letterSpacing: '2px',
-        marginBottom: '6px',
+        fontFamily: 'var(--font-display)',
+        fontSize: '18px',
+        fontWeight: 800,
+        color: '#172124',
+        letterSpacing: '0.06em',
+        marginBottom: '4px',
       }}>
         {scenario.title}
       </h3>
 
       <div style={{
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: '11px',
-        color: scenario.accent,
-        letterSpacing: '1px',
-        marginBottom: '16px',
-        fontWeight: 600,
+        fontFamily: 'var(--font-mono)',
+        fontSize: '10px',
+        color: '#1a565e',
+        letterSpacing: '0.04em',
+        marginBottom: '12px',
+        fontWeight: 700,
       }}>
         {scenario.location}
       </div>
 
       <p style={{
-        fontFamily: 'Rajdhani, sans-serif',
-        fontSize: '14px',
-        color: 'var(--text-secondary)',
+        fontFamily: 'var(--font-primary)',
+        fontSize: '13px',
+        color: '#55666B',
         lineHeight: 1.6,
         fontWeight: 500,
       }}>

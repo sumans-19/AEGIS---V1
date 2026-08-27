@@ -1,47 +1,65 @@
+import React from "react";
 import { Html } from "@react-three/drei";
 
 export default function DroneLabel({ drone }) {
   const rawAction = drone.action || drone.last_decision;
-  const action = typeof rawAction === "string" ? rawAction : rawAction?.action || "CONTINUE";
+  const actionStr = typeof rawAction === "string" ? rawAction : rawAction?.action || "NOMINAL";
+  const cleanAction = actionStr.replace(/_/g, " ");
   const reason = typeof rawAction === "object" ? rawAction.reason : "";
+  const isEmergency = reason && reason !== "All systems nominal";
 
   return (
     <Html
-      position={[0, 8, 0]}
+      position={[0, 4.5, 0]}
       center
+      distanceFactor={45}
       occlude={false}
-      style={{ pointerEvents: "none" }}
+      style={{ pointerEvents: "none", userSelect: "none" }}
     >
       <div
         style={{
-          background: "rgba(0, 10, 20, 0.85)",
-          padding: "6px 10px",
-          borderRadius: "8px",
-          border: "1px solid #00ffff",
-          color: "#ffffff",
-          fontSize: "11px",
-          minWidth: "120px",
+          background: "rgba(23, 33, 36, 0.88)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          padding: "3px 8px",
+          borderRadius: "6px",
+          border: `1px solid ${isEmergency ? '#dc3545' : '#79B9C1'}`,
+          boxShadow: isEmergency
+            ? "0 2px 8px rgba(220, 53, 69, 0.4)"
+            : "0 2px 8px rgba(121, 185, 193, 0.3)",
+          color: "#FFFFFF",
+          fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)",
+          fontSize: "9px",
+          lineHeight: 1.2,
           textAlign: "center",
           whiteSpace: "nowrap",
-          boxShadow: "0 0 8px rgba(0,255,255,0.4)"
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "1px",
         }}
       >
-        {/* DRONE NAME */}
-        <div style={{ color: "#00ffff", fontWeight: "bold", fontSize: "12px" }}>
-          {drone.callsign}
+        {/* DRONE CALLSIGN */}
+        <div style={{
+          color: "#79B9C1",
+          fontWeight: 800,
+          fontSize: "9.5px",
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+        }}>
+          {drone.callsign || `DRONE-${drone.id}`}
         </div>
-        {/* ACTION */}
-        <div>{action}</div>
-        {/* ONLY SHOW REASON IF FAILURE */}
-        {reason && reason !== "All systems nominal" && (
-          <div style={{ color: "#ff4d4d", fontSize: "10px" }}>{reason}</div>
-        )}
-        {/* ASSIST */}
-        {drone.nearby && (
-          <div style={{ color: "#00ffcc", fontSize: "10px" }}>
-            Assist: {drone.nearby}
-          </div>
-        )}
+
+        {/* STATUS / ACTION */}
+        <div style={{
+          fontSize: "7.5px",
+          fontWeight: 600,
+          color: isEmergency ? "#ff8080" : "#DCE6E8",
+          letterSpacing: "0.02em",
+          textTransform: "uppercase",
+        }}>
+          {isEmergency ? reason : cleanAction}
+        </div>
       </div>
     </Html>
   );

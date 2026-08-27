@@ -1,17 +1,17 @@
 import { useSimStore } from '../../store/useSimStore'
 
 const STATUS_COLORS = {
-  IDLE: '#64748b',
-  SCANNING: '#00e5ff',
-  DEPLOYING: '#a855f7',
-  RETURNING: '#ff6b2b',
-  SEARCHING: '#ffb300',
-  CHARGING: '#00ff88',
-  HOVER: '#94a3b8',
+  IDLE: '#6C7F84',
+  SCANNING: '#79B9C1',
+  DEPLOYING: '#3b82f6',
+  RETURNING: '#f59e0b',
+  SEARCHING: '#79B9C1',
+  CHARGING: '#58ba8a',
+  HOVER: '#6C7F84',
 }
 
 const DRONE_COLORS = [
-  '#00e5ff', '#ff6b2b', '#00ff88', '#a855f7', '#ffb300',
+  '#79B9C1', '#f59e0b', '#58ba8a', '#8b5cf6', '#D4A844',
 ]
 
 export default function DroneCard({ drone }) {
@@ -19,60 +19,67 @@ export default function DroneCard({ drone }) {
   const setSelectedDrone = useSimStore(s => s.setSelectedDrone)
   const isSelected = selectedDrone === drone.id
 
-  const statusColor = STATUS_COLORS[drone.status] || 'var(--text-dim)'
+  const statusColor = STATUS_COLORS[drone.status] || '#6C7F84'
   const droneColor = DRONE_COLORS[(drone.id - 1) % DRONE_COLORS.length]
-  const batteryColor = drone.battery < 20 ? 'var(--red)' : drone.battery < 50 ? 'var(--orange)' : 'var(--green)'
+  const batteryColor = drone.battery < 20 ? '#dc3545' : drone.battery < 50 ? '#f59e0b' : '#79B9C1'
 
   return (
     <div
       onClick={() => setSelectedDrone(isSelected ? null : drone.id)}
       style={{
-        padding: '12px 14px',
-        marginBottom: '8px',
-        background: isSelected ? 'var(--cyan-dim)' : 'var(--bg-card)',
-        border: `1px solid ${isSelected ? 'var(--cyan)' : 'var(--border-color)'}`,
+        padding: '10px 12px',
+        background: isSelected ? '#B9DCE1' : 'rgba(235, 243, 245, 0.85)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        border: `1px solid ${isSelected ? '#79B9C1' : 'rgba(255, 255, 255, 0.95)'}`,
+        outline: '1px solid rgba(0, 0, 0, 0.07)',
+        borderRadius: '10px',
         cursor: 'pointer',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: isSelected ? 'var(--cyan-glow)' : 'none',
-        borderRadius: '6px',
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+        boxShadow: isSelected ? '0 4px 14px rgba(121, 185, 193, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85)' : '0 4px 12px rgba(0, 0, 0, 0.03), inset 0 1px 0 #FFFFFF',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
       }}
       onMouseOver={e => {
         if (!isSelected) {
-          e.currentTarget.style.borderColor = 'var(--cyan-dim)'
-          e.currentTarget.style.transform = 'translateY(-1px)'
+          e.currentTarget.style.background = '#FFFFFF'
+          e.currentTarget.style.borderColor = 'rgba(121, 185, 193, 0.7)'
+          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.06), inset 0 1px 0 #FFFFFF'
         }
       }}
       onMouseOut={e => {
         if (!isSelected) {
-          e.currentTarget.style.borderColor = 'var(--border-color)'
+          e.currentTarget.style.background = 'rgba(235, 243, 245, 0.85)'
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.95)'
           e.currentTarget.style.transform = 'none'
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.03), inset 0 1px 0 #FFFFFF'
         }
       }}
     >
       {/* Top row: Name + Status */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: '15px',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            letterSpacing: '1px',
+            fontFamily: 'var(--font-primary)',
+            fontSize: '9.5px',
+            fontWeight: 800,
+            color: '#172124',
+            letterSpacing: '0.04em',
           }}>
             {drone.name}
           </span>
+          <div style={{
+            width: 5, height: 5, borderRadius: '50%', background: droneColor, boxShadow: `0 0 5px ${droneColor}`
+          }} />
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '10px',
-            color: 'var(--text-dim)',
-            marginLeft: '8px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px'
+            fontFamily: 'var(--font-primary)',
+            fontSize: '8px',
+            fontWeight: 700,
+            color: '#55666B',
+            letterSpacing: '0.06em',
           }}>
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%', background: droneColor, boxShadow: `0 0 6px ${droneColor}`
-            }} />
             {drone.callsign}
           </span>
         </div>
@@ -81,18 +88,20 @@ export default function DroneCard({ drone }) {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          fontSize: '9px',
-          fontFamily: 'JetBrains Mono, monospace',
-          color: statusColor,
-          letterSpacing: '0.5px',
-          fontWeight: 700,
+          gap: '4px',
+          fontSize: '7.5px',
+          fontFamily: 'var(--font-primary)',
+          color: '#384A4F',
+          letterSpacing: '0.08em',
+          fontWeight: 800,
+          textTransform: 'uppercase',
         }}>
           <div className="pulse-dot" style={{
-            width: 6,
-            height: 6,
+            width: 5,
+            height: 5,
             borderRadius: '50%',
             background: statusColor,
+            boxShadow: `0 0 5px ${statusColor}`,
           }} />
           {drone.status}
         </div>
@@ -101,18 +110,18 @@ export default function DroneCard({ drone }) {
       {/* Battery bar */}
       <div style={{
         width: '100%',
-        height: '4px',
-        background: 'var(--bg-panel)',
-        border: '1px solid var(--border-color)',
-        marginBottom: '8px',
+        height: '3.5px',
+        background: 'rgba(0, 0, 0, 0.08)',
+        borderRadius: '2px',
         overflow: 'hidden',
-        borderRadius: '4px'
       }}>
         <div style={{
           width: `${drone.battery}%`,
           height: '100%',
           background: batteryColor,
-          transition: 'width 0.3s, background 0.3s',
+          borderRadius: '2px',
+          boxShadow: `0 0 4px ${batteryColor}80`,
+          transition: 'width 0.3s ease',
         }} />
       </div>
 
@@ -120,15 +129,16 @@ export default function DroneCard({ drone }) {
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: '10px',
-        color: 'var(--text-secondary)',
-        letterSpacing: '0.5px',
-        fontWeight: 500,
+        alignItems: 'baseline',
+        fontFamily: 'var(--font-primary)',
+        fontSize: '7px',
+        color: '#6C7F84',
+        fontWeight: 700,
+        paddingTop: '1px',
       }}>
-        <span>ALT {Math.round(drone.pos?.[1] || 0)}m</span>
-        <span>SPD {Math.round(drone.speed || 0)}m/s</span>
-        <span style={{ color: batteryColor, fontWeight: 700 }}>{Math.round(drone.battery || 0)}%</span>
+        <span>ALT <strong style={{ color: '#172124', fontSize: '8.5px' }}>{Math.round(drone.pos?.[1] || 0)}m</strong></span>
+        <span>SPD <strong style={{ color: '#172124', fontSize: '8.5px' }}>{Math.round(drone.speed || 0)}m/s</strong></span>
+        <span>BAT <strong style={{ color: drone.battery < 20 ? '#dc3545' : '#1a565e', fontSize: '8.5px' }}>{Math.round(drone.battery || 0)}%</strong></span>
       </div>
     </div>
   )

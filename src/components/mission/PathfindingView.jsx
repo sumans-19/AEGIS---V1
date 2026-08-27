@@ -31,11 +31,11 @@ function seededRandom(seed) {
 
 // Per-drone color palette (matches callsigns)
 const DRONE_COLORS = {
-  1: '#00e5ff',   // FALCON — cyan
-  2: '#ff6b2b',   // HAWK — orange
-  3: '#00ff88',   // OSPREY — green
-  4: '#e040fb',   // KESTREL — pink
-  5: '#f9e23c',   // MERLIN — yellow
+  1: '#00e5ff',   // Arjun — cyan
+  2: '#ff6b2b',   // Bhima — orange
+  3: '#00ff88',   // Karna — green
+  4: '#e040fb',   // Krishna — pink
+  5: '#f9e23c',   // Ram — yellow
 }
 
 const CALLSIGN_COLORS = {

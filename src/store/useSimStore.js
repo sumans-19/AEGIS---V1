@@ -11,11 +11,11 @@ const STORE_BASE_PADS = [
 ]
 
 const INITIAL_DRONES = [
-  { id: 1, name: 'DRONE-01', callsign: 'FALCON', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[0].x, STORE_BASE_PADS[0].y, STORE_BASE_PADS[0].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
-  { id: 2, name: 'DRONE-02', callsign: 'HAWK', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[1].x, STORE_BASE_PADS[1].y, STORE_BASE_PADS[1].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
-  { id: 3, name: 'DRONE-03', callsign: 'OSPREY', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[2].x, STORE_BASE_PADS[2].y, STORE_BASE_PADS[2].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
-  { id: 4, name: 'DRONE-04', callsign: 'KESTREL', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[3].x, STORE_BASE_PADS[3].y, STORE_BASE_PADS[3].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
-  { id: 5, name: 'DRONE-05', callsign: 'MERLIN', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[4].x, STORE_BASE_PADS[4].y, STORE_BASE_PADS[4].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 1, name: 'Arjun', callsign: 'Arjun', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[0].x, STORE_BASE_PADS[0].y, STORE_BASE_PADS[0].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 2, name: 'Bhima', callsign: 'Bhima', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[1].x, STORE_BASE_PADS[1].y, STORE_BASE_PADS[1].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 3, name: 'Karna', callsign: 'Karna', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[2].x, STORE_BASE_PADS[2].y, STORE_BASE_PADS[2].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 4, name: 'Krishna', callsign: 'Krishna', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[3].x, STORE_BASE_PADS[3].y, STORE_BASE_PADS[3].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 5, name: 'Ram', callsign: 'Ram', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[4].x, STORE_BASE_PADS[4].y, STORE_BASE_PADS[4].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
 ]
 
 export const useSimStore = create(

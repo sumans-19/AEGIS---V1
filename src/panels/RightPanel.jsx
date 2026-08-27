@@ -1,7 +1,7 @@
 import { useSimStore } from '../store/useSimStore'
 
-const textStyle = { color: '#94a3b8', fontSize: '13px', margin: '4px 0' }
-const alertStyle = { color: '#ff2929', fontSize: '12px', margin: '6px 0 0' }
+const textStyle = { color: '#55666B', fontSize: '12px', margin: '4px 0', fontFamily: 'var(--font-primary)', fontWeight: 600 }
+const alertStyle = { color: '#dc3545', fontSize: '11px', margin: '6px 0 0', fontWeight: 800, fontFamily: 'var(--font-primary)' }
 
 /** Format 0–100 metrics; scale fractional values (e.g. 0.984 → 98.4). */
 function formatMetric(value, decimals = 1) {
@@ -39,7 +39,6 @@ export default function RightPanel() {
 
   try {
     if (typeof rawAction === 'string') {
-      // Try parsing stringified dict
       const parsed = JSON.parse(rawAction.replace(/'/g, '"'))
 
       actionText = parsed.action || rawAction
@@ -49,13 +48,12 @@ export default function RightPanel() {
       reasonText = rawAction.reason || ''
     }
   } catch (e) {
-    // fallback if parsing fails
     actionText = rawAction
   }
 
   return (
-    <section style={{ padding: '16px' }}>
-      <h2 style={{ color: '#00e5ff', fontSize: '12px', letterSpacing: '2px' }}>
+    <section style={{ padding: '16px', fontFamily: 'var(--font-primary)' }}>
+      <h2 style={{ color: '#1a565e', fontSize: '11px', letterSpacing: '0.08em', fontWeight: 800, textTransform: 'uppercase' }}>
         TELEMETRY PANEL
       </h2>
       <p style={textStyle}>Battery: {formatMetric(batteryRaw, 1)}%</p>
@@ -64,10 +62,10 @@ export default function RightPanel() {
       <p style={textStyle}>Propeller: {Number(propeller).toFixed(0)}%</p>
       <p style={textStyle}>CPU: {formatMetric(cpuTemp, 1)}°C</p>
       <p style={textStyle}>Motor: {formatMetric(motorTemp, 1)}°C</p>
-      <div style={{ marginTop: '12px' }}>
-        <div>AI ACTION: {actionText}</div>
+      <div style={{ marginTop: '10px' }}>
+        <div style={{ color: '#172124', fontWeight: 800, fontSize: '12px' }}>AI ACTION: {actionText}</div>
         {reasonText && (
-          <div style={{ color: '#94a3b8', fontSize: '11px' }}>
+          <div style={{ color: '#55666B', fontSize: '10.5px', marginTop: '2px' }}>
             Reason: {reasonText}
           </div>
         )}
