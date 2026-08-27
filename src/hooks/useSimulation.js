@@ -57,11 +57,14 @@ export function useSimulation() {
 
       // ═══ PHASE: SEARCHING ═══
       if (store.missionPhase === 'SEARCHING') {
-        // ── Battery drain ──
-        store.drones.forEach(drone => {
-          const newBattery = Math.max(5, drone.battery - 0.003)
-          useSimStore.getState().updateDrone(drone.id, { battery: newBattery })
-        })
+        // ── Battery drain (Throttled to 1s) ──
+        if (now - (deployChecked.current_battery_time || 0) > 1.0) {
+          deployChecked.current_battery_time = now
+          store.drones.forEach(drone => {
+            const newBattery = Math.max(5, drone.battery - 0.03) // 10x drain per update since we update 10x less often
+            useSimStore.getState().updateDrone(drone.id, { battery: newBattery })
+          })
+        }
 
         // ── Survivor detection (proximity-based) ──
         if (now - lastDetectionCheck.current > 0.5) {

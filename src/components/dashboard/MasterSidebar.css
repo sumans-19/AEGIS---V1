@@ -93,67 +93,27 @@
   color: inherit;
 }
 
-/* System Status at bottom */
+/* System Status at bottom - Endless Pulse */
 .master-sidebar__status {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 8px 6px 0 6px;
+  padding: 16px 0 16px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex: 1; /* Pushes the nav up and fills remaining space */
 }
 
-.master-sidebar__status-title {
-  font-family: var(--font-primary);
-  font-size: 6.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #8A9A9E;
-  margin-bottom: 3px;
-}
-
-.master-sidebar__status-row {
+.master-sidebar__waveform-animated {
+  width: 100%;
+  height: 24px;
+  overflow: hidden;
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 2px;
+  opacity: 0.9;
 }
 
-.master-sidebar__status-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #58ba8a;
-  box-shadow: 0 0 5px rgba(88, 186, 138, 0.8);
-  flex-shrink: 0;
-}
-
-.master-sidebar__status-label {
-  font-family: var(--font-primary);
-  font-size: 6.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.master-sidebar__status-value {
-  font-family: var(--font-primary);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #79B9C1;
-  line-height: 1.1;
-}
-
-.master-sidebar__waveform {
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-}
-
-.master-sidebar__waveform svg {
-  display: block;
+.master-sidebar__waveform-animated svg {
+  width: 100%;
+  height: 100%;
 }

@@ -77,12 +77,17 @@ export default function DroneModel({ drone, index }) {
       groupRef.current.rotation.y = Math.atan2(dir.x, dir.z)
     }
 
-    // ── Store position back ──
-    useSimStore.getState().updateDrone(drone.id, {
-      altitude: getDroneAltitude(pos) || 0,
-      speed: getDroneSpeed(drone) || 0,
-      pos: [pos.x, pos.y, pos.z],
-    })
+    // ── Store position back (THROTTLED) ──
+    // Updating Zustand state in useFrame causes massive re-renders. Throttle to 5Hz.
+    const nowMs = performance.now()
+    if (!groupRef.current._lastUpdate || nowMs - groupRef.current._lastUpdate > 200) {
+      groupRef.current._lastUpdate = nowMs
+      useSimStore.getState().updateDrone(drone.id, {
+        altitude: getDroneAltitude(pos) || 0,
+        speed: getDroneSpeed(drone) || 0,
+        pos: [pos.x, pos.y, pos.z],
+      })
+    }
 
     // ── Rotor animation ──
     const isFlying = ['DEPLOYING', 'SEARCHING', 'RETURNING', 'ALL_FOUND'].includes(missionPhase)

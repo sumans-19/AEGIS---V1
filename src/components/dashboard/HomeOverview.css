@@ -1,570 +1,364 @@
 /* ==========================================================================
-   AEGIS — Premium High-End Aerospace Fleet Showcase & Fluid Design System
-   Realistic Multi-Layered 3D Drone Visuals, Dynamic Glass Cards & Holo HUDs
+   AEGIS — Professional Light Spine Dashboard
+   Precise, flat, technical layout matching the 3D Drone HUD aesthetic.
    ========================================================================== */
+
+:root {
+  /* Exact background matching to the Drone Page */
+  --light-bg: #E8F0F2; 
+  
+  /* The exact box UI styles from user's devtools screenshot */
+  --glass-bg: rgba(235, 243, 245, 0.85);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.95);
+  --glass-outline: 1px solid rgba(0, 0, 0, 0.07);
+  --glass-shadow: 0 4px 14px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+
+  --light-cyan: #79B9C1;
+  --light-cyan-fade: rgba(121, 185, 193, 0.2);
+  --light-text: #20292B; 
+  --light-muted: #7A8E91; 
+}
 
 .home-overview {
   flex: 1;
+  width: 100%;
+  height: 100vh;
   overflow-y: auto;
-  background: var(--bg-primary, #E8EFF1);
-  height: 100%;
+  overflow-x: hidden;
+  background: var(--light-bg);
   font-family: var(--font-primary, 'Inter', sans-serif);
-  color: #172124;
-  user-select: none;
+  color: var(--light-text);
   position: relative;
+  scroll-behavior: smooth;
 }
 
-.home-overview::-webkit-scrollbar {
-  width: 6px;
-}
-
-.home-overview::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.03);
-}
-
-.home-overview::-webkit-scrollbar-thumb {
-  background: rgba(121, 185, 193, 0.4);
-  border-radius: 3px;
-}
-
-.home-overview::-webkit-scrollbar-thumb:hover {
-  background: #79B9C1;
-}
-
-.overview-wrap {
-  max-width: 1440px;
+/* ── 2-COLUMN GRID LAYOUT ────────────────────────────────── */
+.obsidian-layout {
+  position: relative;
+  width: 100%;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 24px 32px 80px;
-  display: flex;
-  flex-direction: column;
-  gap: 36px;
-}
-
-/* ── 1. HERO COMMAND HUB ──────────────────────────────────── */
-.hero-hub {
-  position: relative;
-  background: linear-gradient(135deg, rgba(235, 243, 245, 0.96) 0%, rgba(215, 228, 230, 0.92) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-radius: 24px;
-  padding: 34px 40px;
-  box-shadow: 0 14px 36px rgba(121, 185, 193, 0.15), 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 2px 0 #FFFFFF;
+  padding: 60px 40px 120px 40px;
   display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
-  gap: 28px;
-  align-items: center;
-  overflow: visible;
+  grid-template-columns: 1fr 100px 1fr; /* 100px central gap for tighter tech look */
+  gap: 0;
+  z-index: 10;
 }
 
-.hero-hub__left {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-}
 
-.hero-hub__pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(88, 186, 138, 0.15);
-  border: 1px solid rgba(88, 186, 138, 0.4);
-  padding: 4px 14px;
-  border-radius: 20px;
-  font-family: var(--font-mono, monospace);
-  font-size: 9.5px;
-  font-weight: 800;
-  color: #2e7d5a;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  width: fit-content;
-}
-
-.hero-hub__title {
-  font-family: var(--font-display, 'Space Grotesk', sans-serif);
-  font-size: 38px;
-  font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: 0.02em;
-  color: #172124;
-  margin: 0 0 14px 0;
-}
-
-.hero-hub__title span {
-  color: #1a565e;
-  text-shadow: 0 2px 12px rgba(121, 185, 193, 0.5);
-}
-
-.hero-hub__desc {
-  font-size: 14.5px;
-  line-height: 1.6;
-  color: #55666B;
-  margin: 0 0 24px 0;
-  font-weight: 500;
-  max-width: 620px;
-}
-
-.hero-hub__btns {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.hub-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-family: var(--font-primary, sans-serif);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  border: none;
-}
-
-.hub-btn--primary {
-  background: #79B9C1;
-  color: #172124;
-  box-shadow: 0 6px 20px rgba(121, 185, 193, 0.45), inset 0 2px 0 rgba(255, 255, 255, 0.8);
-}
-
-.hub-btn--primary:hover {
-  background: #8FCBD1;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 26px rgba(121, 185, 193, 0.6);
-}
-
-.hub-btn--secondary {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  color: #172124;
-}
-
-.hub-btn--secondary:hover {
-  background: #FFFFFF;
-  border-color: #79B9C1;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-}
-
-/* Radar Container */
-.hero-hub__radar-box {
-  position: relative;
-  z-index: 2;
-  background: #172124;
-  border-radius: 18px;
-  padding: 16px;
-  border: 1.5px solid rgba(121, 185, 193, 0.4);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 0 24px rgba(121, 185, 193, 0.15);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.hero-hub__radar-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-/* ── 2. PREMIUM 3D AEROSPACE DRONE CARDS ─────────────────── */
-.fleet-deck-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
-}
-
-.drone-card-deck {
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 240, 243, 0.85) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 20px 16px;
-  box-shadow: 0 8px 24px rgba(121, 185, 193, 0.18), 0 2px 6px rgba(0, 0, 0, 0.03), inset 0 2px 0 #FFFFFF;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  cursor: pointer;
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.drone-card-deck:hover {
-  background: #FFFFFF;
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 16px 36px rgba(121, 185, 193, 0.35), inset 0 2px 0 #FFFFFF;
-}
-
-.drone-card-deck__role-tag {
-  font-family: var(--font-mono, monospace);
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 3px 10px;
-  border-radius: 12px;
-  text-transform: uppercase;
-}
-
-/* 3D Drone Display Stage */
-.drone-stage {
-  position: relative;
-  width: 100%;
-  height: 110px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.drone-stage__halo {
+/* ── THE LIGHT SPINE (Central Animated Line) ───────── */
+.spine-container {
   position: absolute;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  border: 1px dashed rgba(121, 185, 193, 0.4);
-  animation: rotateCompass 30s linear infinite;
+  top: 80px; 
+  bottom: 120px; 
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
   pointer-events: none;
-}
-
-@keyframes rotateCompass {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.drone-stage__svg {
-  position: relative;
-  z-index: 2;
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.25));
-  transition: transform 0.3s ease;
-}
-
-.drone-card-deck:hover .drone-stage__svg {
-  transform: scale(1.08) translateY(-2px);
-}
-
-/* Drone Information Block */
-.drone-card-deck__info {
-  width: 100%;
+  z-index: 0;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.drone-card-deck__title-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.drone-card-deck__name {
-  font-family: var(--font-display, sans-serif);
-  font-size: 16px;
-  font-weight: 800;
-  color: #172124;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.drone-card-deck__callsign {
-  font-family: var(--font-mono, monospace);
-  font-size: 9px;
-  font-weight: 700;
-  color: #55666B;
-  letter-spacing: 0.04em;
-}
-
-/* Telemetry Grid inside Card */
-.drone-telemetry-grid {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  background: rgba(235, 243, 245, 0.6);
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.drone-tele-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.drone-tele-label {
-  font-size: 7px;
-  font-weight: 800;
-  color: #7A8E94;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.drone-tele-val {
-  font-family: var(--font-mono, monospace);
-  font-size: 11px;
-  font-weight: 800;
-  color: #172124;
-}
-
-/* Hover Action Button */
-.drone-card-deck__action-btn {
-  width: 100%;
-  padding: 7px 0;
-  border-radius: 8px;
-  background: rgba(121, 185, 193, 0.15);
-  border: 1px solid rgba(121, 185, 193, 0.4);
-  color: #1a565e;
-  font-family: var(--font-primary, sans-serif);
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 4px;
-  transition: all 0.2s ease;
 }
 
-.drone-card-deck:hover .drone-card-deck__action-btn {
-  background: #79B9C1;
-  color: #172124;
-  box-shadow: 0 4px 12px rgba(121, 185, 193, 0.4);
+.spine-track {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px; /* Thinner, precise line */
+  background: var(--light-cyan-fade);
 }
 
-/* ── 3. SCENARIOS GRID ───────────────────────────────────── */
-.scenario-splash-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+.spine-fill {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  background: var(--light-cyan);
+  transition: height 0.1s linear;
 }
 
-.scenario-splash-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 240, 243, 0.85) 100%);
+/* ── MINI DRONE CURSOR ── */
+.spine-drone-cursor {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: top 0.1s linear;
+  z-index: 30;
+  animation: droneHover 2.5s ease-in-out infinite;
+}
+
+@keyframes droneHover {
+  0%, 100% { margin-top: 0px; }
+  50% { margin-top: -6px; }
+}
+
+.quadcopter-cursor {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.05)); /* reduced shadow */
+}
+
+.quadcopter-propeller {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(121, 185, 193, 0.2);
+  border-top: 2px solid var(--light-cyan);
+  border-bottom: 2px solid var(--light-cyan);
+  background: rgba(255, 255, 255, 0.95);
+  animation: propSpin 0.15s linear infinite;
+}
+
+@keyframes propSpin {
+  100% { transform: rotate(360deg); }
+}
+
+.prop-tl { top: 0px; left: 0px; }
+.prop-tr { top: 0px; right: 0px; animation-direction: reverse; }
+.prop-bl { bottom: 0px; left: 0px; animation-direction: reverse; }
+.prop-br { bottom: 0px; right: 0px; }
+
+
+/* Nodes anchored to the cards */
+.spine-node {
+  position: absolute;
+  top: 40px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--light-card);
+  border: 2px solid var(--light-cyan-fade);
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+.spine-node.active {
+  background: var(--light-card);
+  border-color: var(--light-cyan);
+  box-shadow: 0 0 0 3px rgba(121, 185, 193, 0.1);
+}
+
+/* Branches connecting card to spine */
+.spine-branch {
+  position: absolute;
+  top: 44px;
+  height: 1px;
+  width: 50px; 
+  background: var(--light-cyan-fade);
+  transition: all 0.3s ease;
+  z-index: 0;
+}
+.spine-node.active ~ .spine-branch, .spine-branch.active { 
+  background: var(--light-cyan); 
+}
+
+.obsidian-col-left .spine-branch { right: -50px; }
+.obsidian-col-left .spine-node { right: -50px; transform: translate(50%, -50%); }
+
+.obsidian-col-right .spine-branch { left: -50px; }
+.obsidian-col-right .spine-node { left: -50px; transform: translate(-50%, -50%); }
+
+
+/* Hero */
+.obsidian-hero {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 0 100px 0;
+  position: relative;
+  z-index: 20;
+}
+
+.obsidian-col-left {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding-top: 100px;
+}
+.obsidian-col-right {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ── FLAT TECHNICAL CARDS (Matching Drone Page) ──────────── */
+.obsidian-card {
+  background: var(--glass-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 24px 26px;
-  box-shadow: 0 6px 20px rgba(121, 185, 193, 0.15), inset 0 2px 0 #FFFFFF;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  border: var(--glass-border);
+  outline: var(--glass-outline);
+  border-radius: 12px;
+  padding: 24px; 
+  box-shadow: var(--glass-shadow);
   position: relative;
+  transition: all 0.2s ease;
+}
+.obsidian-card:hover {
+  box-shadow: var(--glass-shadow-hover);
 }
 
-.scenario-splash-card:hover {
-  background: #FFFFFF;
-  transform: translateY(-5px);
-  box-shadow: 0 14px 36px rgba(121, 185, 193, 0.4), inset 0 2px 0 #FFFFFF;
-  border-color: #79B9C1;
-}
-
-.scenario-splash-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-family: var(--font-mono, monospace);
-  font-size: 8.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.scenario-splash-title {
-  font-family: var(--font-display, sans-serif);
-  font-size: 18px;
-  font-weight: 800;
-  color: #172124;
-  letter-spacing: 0.03em;
-  margin: 14px 0 2px 0;
-}
-
-.scenario-splash-loc {
-  font-family: var(--font-mono, monospace);
-  font-size: 9.5px;
+.card-header {
+  font-family: var(--font-primary, sans-serif);
+  font-size: 13px;
   font-weight: 700;
-  color: #1a565e;
-  margin-bottom: 14px;
+  color: var(--light-text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.scenario-splash-metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  background: rgba(235, 243, 245, 0.7);
-  padding: 12px 14px;
+/* ── STYLED ICONS ── */
+.icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-bg);
+  border: var(--glass-border);
+  outline: var(--glass-outline);
+  color: var(--light-text);
+  box-shadow: var(--glass-shadow);
+}
+.icon-box.cyan {
+  background: rgba(216, 234, 239, 0.85); /* Slightly cyan tinted glass */
+  border: var(--glass-border);
+  outline: var(--glass-outline);
+  color: var(--light-text);
+  box-shadow: var(--glass-shadow);
+}
+
+/* ── SPECIFIC COMPONENTS ──────────────────────────────────── */
+
+/* Holo Radar */
+.obsidian-radar-container {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: var(--glass-border);
+  outline: var(--glass-outline);
+  box-shadow: var(--glass-shadow);
   margin-bottom: 16px;
 }
 
-.scenario-splash-stat {
-  display: flex;
-  flex-direction: column;
-}
-
-.scenario-splash-stat-label {
-  font-size: 7.5px;
-  font-weight: 800;
-  color: #55666B;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.scenario-splash-stat-val {
-  font-family: var(--font-mono, monospace);
-  font-size: 12px;
-  font-weight: 800;
-  color: #172124;
-}
-
-/* ── 4. FLOWING NEURAL AI STREAM CONTAINER ───────────────── */
-.neural-flow-container {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 240, 243, 0.85) 100%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 26px 30px;
-  box-shadow: 0 6px 20px rgba(121, 185, 193, 0.15), inset 0 2px 0 #FFFFFF;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.neural-nodes-row {
+/* Stats Grids */
+.stats-grid {
   display: grid;
-  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
-  align-items: center;
 }
-
-.neural-node-card {
-  background: #FFFFFF;
-  border: 1.5px solid rgba(121, 185, 193, 0.3);
-  border-radius: 14px;
-  padding: 16px 14px;
-  box-shadow: 0 4px 14px rgba(121, 185, 193, 0.15);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  transition: all 0.22s ease;
-}
-
-.neural-node-card:hover {
-  border-color: #79B9C1;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 22px rgba(121, 185, 193, 0.35);
-}
-
-.neural-node-step {
-  font-family: var(--font-mono, monospace);
-  font-size: 8.5px;
-  font-weight: 800;
-  color: #79B9C1;
-}
-
-.neural-node-name {
-  font-family: var(--font-display, sans-serif);
-  font-size: 14px;
-  font-weight: 800;
-  color: #172124;
-}
-
-.neural-node-metric {
-  font-family: var(--font-mono, monospace);
-  font-size: 10px;
-  font-weight: 800;
-  color: #1a565e;
-}
-
-.neural-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #79B9C1;
-  animation: pulseArrow 1.8s infinite ease-in-out;
-}
-
-@keyframes pulseArrow {
-  0%, 100% { transform: translateX(0); opacity: 0.5; }
-  50% { transform: translateX(5px); opacity: 1; }
-}
-
-/* ── 5. FLUID CONTINGENCY STRESS REACTOR ────────────────── */
-.reactor-box {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 240, 243, 0.85) 100%);
+.stat-box {
+  background: var(--glass-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  padding: 26px 30px;
-  box-shadow: 0 6px 20px rgba(121, 185, 193, 0.15), inset 0 2px 0 #FFFFFF;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 26px;
-  align-items: center;
+  border: var(--glass-border);
+  outline: var(--glass-outline);
+  box-shadow: var(--glass-shadow);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s;
 }
-
-.reactor-btn-pad {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+.stat-box:hover {
+  background: rgba(255, 255, 255, 0.95);
 }
+.stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--light-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.stat-value {
+  font-size: 18px;
+  color: var(--light-text);
+  margin-top: 6px;
+  font-weight: 700;
+}
+.stat-value.cyan { color: var(--light-cyan); }
 
-.reactor-pad {
-  background: rgba(235, 243, 245, 0.8);
-  border: 1.5px solid rgba(0, 0, 0, 0.07);
-  border-radius: 14px;
-  padding: 16px 14px;
-  cursor: pointer;
-  transition: all 0.24s ease;
+/* Drone List */
+.drone-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: var(--glass-border);
+  outline: var(--glass-outline);
+  box-shadow: var(--glass-shadow);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.drone-row:hover { 
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--glass-shadow-hover);
 }
 
-.reactor-pad:hover {
-  background: #FFFFFF;
-  border-color: #79B9C1;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(121, 185, 193, 0.3);
+/* Scenarios Grid */
+.scen-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.scen-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: var(--glass-border);
+  outline: var(--glass-outline);
+  box-shadow: var(--glass-shadow);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.scen-card:hover {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--glass-shadow-hover);
 }
 
-.reactor-pad--active {
-  background: #FFFFFF;
-  border-color: #79B9C1;
-  box-shadow: 0 8px 24px rgba(121, 185, 193, 0.4);
+.scen-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--light-text);
+  margin-bottom: 4px;
+}
+.scen-sub {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--light-muted);
+  letter-spacing: 0.05em;
 }
 
-@media (max-width: 1200px) {
-  .hero-hub { grid-template-columns: 1fr; }
-  .fleet-deck-grid { grid-template-columns: repeat(3, 1fr); }
-  .scenario-splash-grid { grid-template-columns: repeat(2, 1fr); }
-  .neural-nodes-row { grid-template-columns: 1fr; }
-  .reactor-box { grid-template-columns: 1fr; }
+/* Typography Overrides */
+h1.hero-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px 0;
+  color: var(--light-text);
 }
-
-@media (max-width: 768px) {
-  .overview-wrap { padding: 18px 14px; }
-  .hero-hub { padding: 22px 18px; }
-  .hero-hub__title { font-size: 26px; }
-  .fleet-deck-grid { grid-template-columns: repeat(2, 1fr); }
-  .scenario-splash-grid { grid-template-columns: 1fr; }
-  .reactor-btn-pad { grid-template-columns: 1fr; }
+p.hero-desc {
+  font-size: 16px;
+  color: var(--light-muted);
+  max-width: 650px;
+  margin: 0 auto;
+  line-height: 1.6;
 }

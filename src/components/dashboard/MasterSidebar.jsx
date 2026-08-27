@@ -16,9 +16,6 @@ const NAV_ITEMS = [
 ];
 
 export default function MasterSidebar({ activeTab, onTabChange }) {
-  const wavePoints = useMemo(() => [
-    '0,7', '4,7', '8,2', '12,12', '16,0', '20,14', '24,7', '28,7', '32,4', '36,10', '40,7', '48,7'
-  ].join(' '), []);
 
   return (
     <aside className="master-sidebar">
@@ -43,25 +40,44 @@ export default function MasterSidebar({ activeTab, onTabChange }) {
         })}
       </nav>
 
-      {/* Bottom System Status Section */}
+      {/* Bottom System Status Section - ECG Pulse */}
       <div className="master-sidebar__status">
-        <span className="master-sidebar__status-title">SYSTEM STATUS</span>
-        <div className="master-sidebar__status-row">
-          <span className="master-sidebar__status-dot" />
-          <span className="master-sidebar__status-label">SWARM MESH</span>
-        </div>
-        <span className="master-sidebar__status-value">NOMINAL</span>
-
-        {/* Real-time Heartbeat Waveform */}
-        <div className="master-sidebar__waveform">
-          <svg width="48" height="14" viewBox="0 0 48 14" fill="none">
-            <polyline
-              points={wavePoints}
-              fill="none"
-              stroke="#79B9C1"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <div className="master-sidebar__waveform-animated">
+          <svg viewBox="0 0 100 20" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
+            <defs>
+              <linearGradient id="ecgGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+                <stop offset="60%" stopColor="rgba(255,255,255,0)" />
+                <stop offset="95%" stopColor="rgba(255,255,255,1)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+              </linearGradient>
+              <mask id="ecgMask">
+                <rect x="-100" y="0" width="100" height="20" fill="url(#ecgGrad)">
+                  <animate attributeName="x" from="-100" to="100" dur="2s" repeatCount="indefinite" />
+                </rect>
+              </mask>
+            </defs>
+            
+            {/* Faint background trace */}
+            <path 
+              d="M 0 10 L 20 10 L 23 3 L 28 17 L 33 10 L 70 10 L 73 3 L 78 17 L 83 10 L 100 10" 
+              fill="none" 
+              stroke="#79B9C1" 
+              strokeWidth="1.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              opacity="0.15"
+            />
+            
+            {/* Bright sweeping trace */}
+            <path 
+              d="M 0 10 L 20 10 L 23 3 L 28 17 L 33 10 L 70 10 L 73 3 L 78 17 L 83 10 L 100 10" 
+              fill="none" 
+              stroke="#79B9C1" 
+              strokeWidth="1.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              mask="url(#ecgMask)"
             />
           </svg>
         </div>
