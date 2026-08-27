@@ -4,20 +4,29 @@
    ========================================================================== */
 
 :root {
-  /* Exact background matching to the Drone Page */
+  /* Main background remains light */
   --light-bg: #E8F0F2; 
   
-  /* The exact box UI styles from user's devtools screenshot */
-  --glass-bg: rgba(235, 243, 245, 0.85);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.95);
-  --glass-outline: 1px solid rgba(0, 0, 0, 0.07);
-  --glass-shadow: 0 4px 14px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --glass-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+  /* The exact box UI styles from ComponentsStrip */
+  --glass-bg: #222B2F;
+  --glass-border: 1px solid rgba(255, 255, 255, 0.25); /* White highlighted border */
+  --glass-outline: none;
+  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.15); /* Deep shadow with inner white highlight */
+  
+  --glass-bg-hover: #2D383D; 
+  --glass-border-hover: 1px solid rgba(255, 255, 255, 0.45); /* Brighter white on hover */
+  --glass-shadow-hover: 0 15px 40px rgba(0, 0, 0, 0.4), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+
+  --glass-active-bg: rgba(121, 185, 193, 0.28); /* Richer, professional cyan tint */
+  --glass-active-text: #FFFFFF; /* White text for readability on dark background */
+  --glass-active-border: 1px solid rgba(121, 185, 193, 0.85); /* Brighter, crisp cyan border */
+  --glass-active-shadow: 0 8px 24px rgba(121, 185, 193, 0.25), inset 0 1px 3px rgba(121, 185, 193, 0.4); /* Stronger ambient glow */
 
   --light-cyan: #79B9C1;
   --light-cyan-fade: rgba(121, 185, 193, 0.2);
-  --light-text: #20292B; 
-  --light-muted: #7A8E91; 
+  --light-text: #9DB0B4; 
+  --light-text-hover: #FFFFFF;
+  --light-muted: #798C90; 
 }
 
 .home-overview {
@@ -41,7 +50,8 @@
   margin: 0 auto;
   padding: 60px 40px 120px 40px;
   display: grid;
-  grid-template-columns: 1fr 100px 1fr; /* 100px central gap for tighter tech look */
+  grid-template-columns: 1fr 100px 1fr;
+  /* 100px central gap for tighter tech look */
   gap: 0;
   z-index: 10;
 }
@@ -50,8 +60,8 @@
 /* ── THE LIGHT SPINE (Central Animated Line) ───────── */
 .spine-container {
   position: absolute;
-  top: 80px; 
-  bottom: 120px; 
+  top: 80px;
+  bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
   width: 100px;
@@ -65,7 +75,8 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 1px; /* Thinner, precise line */
+  width: 1px;
+  /* Thinner, precise line */
   background: var(--light-cyan-fade);
 }
 
@@ -88,7 +99,8 @@
 }
 
 @keyframes droneHover {
-  0%, 100% { margin-top: 0px; }
+  0%,
+  100% { margin-top: 0px; }
   50% { margin-top: -6px; }
 }
 
@@ -96,7 +108,7 @@
   position: relative;
   width: 32px;
   height: 32px;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.05)); /* reduced shadow */
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.05));
 }
 
 .quadcopter-propeller {
@@ -120,7 +132,6 @@
 .prop-bl { bottom: 0px; left: 0px; animation-direction: reverse; }
 .prop-br { bottom: 0px; right: 0px; }
 
-
 /* Nodes anchored to the cards */
 .spine-node {
   position: absolute;
@@ -128,13 +139,14 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--light-card);
+  background: var(--glass-bg);
   border: 2px solid var(--light-cyan-fade);
   z-index: 10;
   transition: all 0.3s ease;
 }
+
 .spine-node.active {
-  background: var(--light-card);
+  background: var(--glass-bg);
   border-color: var(--light-cyan);
   box-shadow: 0 0 0 3px rgba(121, 185, 193, 0.1);
 }
@@ -144,18 +156,19 @@
   position: absolute;
   top: 44px;
   height: 1px;
-  width: 50px; 
+  width: 50px;
   background: var(--light-cyan-fade);
   transition: all 0.3s ease;
   z-index: 0;
 }
-.spine-node.active ~ .spine-branch, .spine-branch.active { 
-  background: var(--light-cyan); 
+
+.spine-node.active~.spine-branch,
+.spine-branch.active {
+  background: var(--light-cyan);
 }
 
 .obsidian-col-left .spine-branch { right: -50px; }
 .obsidian-col-left .spine-node { right: -50px; transform: translate(50%, -50%); }
-
 .obsidian-col-right .spine-branch { left: -50px; }
 .obsidian-col-right .spine-node { left: -50px; transform: translate(-50%, -50%); }
 
@@ -176,6 +189,7 @@
   gap: 32px;
   padding-top: 100px;
 }
+
 .obsidian-col-right {
   grid-column: 3;
   display: flex;
@@ -186,18 +200,13 @@
 /* ── FLAT TECHNICAL CARDS (Matching Drone Page) ──────────── */
 .obsidian-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: var(--glass-border);
-  outline: var(--glass-outline);
   border-radius: 12px;
-  padding: 24px; 
+  padding: 24px;
   box-shadow: var(--glass-shadow);
   position: relative;
   transition: all 0.2s ease;
-}
-.obsidian-card:hover {
-  box-shadow: var(--glass-shadow-hover);
+  color: var(--light-text);
 }
 
 .card-header {
@@ -223,16 +232,16 @@
   justify-content: center;
   background: var(--glass-bg);
   border: var(--glass-border);
-  outline: var(--glass-outline);
   color: var(--light-text);
   box-shadow: var(--glass-shadow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .icon-box.cyan {
-  background: rgba(216, 234, 239, 0.85); /* Slightly cyan tinted glass */
-  border: var(--glass-border);
-  outline: var(--glass-outline);
-  color: var(--light-text);
-  box-shadow: var(--glass-shadow);
+  background: var(--glass-active-bg);
+  border: var(--glass-active-border);
+  color: var(--glass-active-text);
+  box-shadow: var(--glass-active-shadow);
 }
 
 /* ── SPECIFIC COMPONENTS ──────────────────────────────────── */
@@ -243,11 +252,8 @@
   justify-content: center;
   padding: 24px;
   background: var(--glass-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border-radius: 12px;
   border: var(--glass-border);
-  outline: var(--glass-outline);
   box-shadow: var(--glass-shadow);
   margin-bottom: 16px;
 }
@@ -258,34 +264,44 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
 .stat-box {
   background: var(--glass-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: var(--glass-border);
-  outline: var(--glass-outline);
   box-shadow: var(--glass-shadow);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 16px;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--light-text);
 }
+
 .stat-box:hover {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--glass-bg-hover);
+  border: var(--glass-border-hover);
+  color: var(--light-text-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow-hover);
 }
+
 .stat-label {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--light-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
 }
+
 .stat-value {
   font-size: 18px;
   color: var(--light-text);
   margin-top: 6px;
   font-weight: 700;
+  transition: color 0.2s;
 }
-.stat-value.cyan { color: var(--light-cyan); }
+
+.stat-value.cyan {
+  color: var(--light-cyan);
+}
 
 /* Drone List */
 .drone-row {
@@ -294,20 +310,38 @@
   align-items: center;
   padding: 16px;
   background: var(--glass-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: var(--glass-border);
-  outline: var(--glass-outline);
   box-shadow: var(--glass-shadow);
-  border-radius: 12px;
+  border-radius: 10px;
   margin-bottom: 10px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--light-text);
 }
-.drone-row:hover { 
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: var(--glass-shadow-hover);
+
+.drone-row:hover {
+  background: var(--glass-active-bg);
+  border: var(--glass-active-border);
+  color: var(--glass-active-text);
+  box-shadow: var(--glass-active-shadow);
+  transform: translateY(-2px);
 }
+.drone-row:active {
+  transform: scale(0.98) translateY(0);
+}
+
+.drone-row:hover .stat-label, 
+.drone-row:hover .stat-value.cyan,
+.drone-row:hover .stat-value,
+.drone-row:hover .icon-box {
+  color: var(--glass-active-text) !important;
+}
+.drone-row:hover .icon-box {
+  background: transparent;
+  border-color: rgba(0,0,0,0.1);
+  box-shadow: none;
+}
+
 
 /* Scenarios Grid */
 .scen-grid {
@@ -315,49 +349,66 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
 .scen-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: var(--glass-border);
-  outline: var(--glass-outline);
   box-shadow: var(--glass-shadow);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 16px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
+  color: var(--light-text);
 }
+
 .scen-card:hover {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: var(--glass-shadow-hover);
+  background: var(--glass-active-bg);
+  border: var(--glass-active-border);
+  color: var(--glass-active-text);
+  box-shadow: var(--glass-active-shadow);
+  transform: translateY(-2px);
+}
+.scen-card:active {
+  transform: scale(0.98) translateY(0);
+}
+
+.scen-card:hover .scen-title,
+.scen-card:hover .scen-sub {
+  color: var(--glass-active-text);
 }
 
 .scen-title {
   font-size: 13px;
   font-weight: 700;
-  color: var(--light-text);
   margin-bottom: 4px;
+  transition: color 0.2s;
 }
+
 .scen-sub {
   font-size: 10px;
   font-weight: 600;
-  color: var(--light-muted);
   letter-spacing: 0.05em;
+  transition: color 0.2s;
 }
 
 /* Typography Overrides */
 h1.hero-title {
-  font-family: var(--font-display, sans-serif);
-  font-size: 64px;
+  font-family: 'Space Grotesk', 'Outfit', 'Montserrat', sans-serif;
+  font-size: 68px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   margin: 0 0 20px 0;
-  color: var(--light-text);
+  background: linear-gradient(135deg, #172124 0%, #3A4E54 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.04));
 }
+
 p.hero-desc {
   font-size: 16px;
-  color: var(--light-muted);
+  color: #5A6D73; /* Darker muted text for light background */
   max-width: 650px;
   margin: 0 auto;
   line-height: 1.6;

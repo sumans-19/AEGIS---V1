@@ -135,10 +135,7 @@ export default function HomeOverview({ onNavigate }) {
 
         {/* ── HERO ── */}
         <div className="obsidian-hero">
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 20px', background: 'var(--light-card)', border: '1px solid var(--light-cyan-fade)', borderRadius: 100, marginBottom: 24, fontSize: 12, fontWeight: 700, color: 'var(--light-cyan)', letterSpacing: '0.1em' }}>
-            <Hexagon size={14} strokeWidth={2.5} /> AEGIS CORE ACTIVE
-          </div>
-          <h1 className="hero-title">Command Interface</h1>
+          <h1 className="hero-title">AEGIS Interface</h1>
           <p className="hero-desc">
             Autonomous Emergency & Guardian Intervention Swarm. Next-generation decentralized drone platform utilizing 3D LiDAR SLAM, edge neural biometric heat classification, and A* repulsion fields.
           </p>
