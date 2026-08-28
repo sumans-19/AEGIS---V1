@@ -4,7 +4,7 @@ import MasterHeader from '../components/dashboard/MasterHeader';
 import MasterSidebar from '../components/dashboard/MasterSidebar';
 import HomeOverview from '../components/dashboard/HomeOverview';
 import DroneInspectionView from '../components/dashboard/DroneInspectionView';
-import ThermalReconPanel from '../components/dashboard/ThermalReconPanel';
+import SensorsView from '../components/dashboard/SensorsView';
 import Mission from './Mission';
 import AIDashboard from './AIDashboard';
 import Disasters from './Disasters';
@@ -105,7 +105,7 @@ export default function MasterDashboard() {
             )}
 
             {activeTab === 'sensors' && (
-              <ThermalReconPanel />
+              <SensorsView />
             )}
 
             {activeTab === 'mission' && (

@@ -95,17 +95,44 @@ const QuadcopterIcon = () => (
 export default function HomeOverview({ onNavigate }) {
   const setScenario = useSimStore(s => s.setScenario);
   const setSelectedDrone = useSimStore(s => s.setSelectedDrone);
-  
+
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [dronePos, setDronePos] = useState({ x: 50, y: 0 });
+  const [waypoints, setWaypoints] = useState([]);
+
   const scrollContainerRef = useRef(null);
+  const pathRef = useRef(null);
 
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
     const maxScroll = scrollHeight - clientHeight;
     const progress = maxScroll > 0 ? (scrollTop / maxScroll) : 0;
-    setScrollProgress(Math.min(1, Math.max(0, progress)));
+    const clampedProgress = Math.min(1, Math.max(0, progress));
+    setScrollProgress(clampedProgress);
+
+    if (pathRef.current) {
+      const len = pathRef.current.getTotalLength();
+      const pt = pathRef.current.getPointAtLength(len * clampedProgress);
+      setDronePos({ x: pt.x, y: pt.y });
+    }
   };
+
+  useEffect(() => {
+    // Initialize drone position and calculate precision waypoints
+    if (pathRef.current) {
+      const len = pathRef.current.getTotalLength();
+      const pt = pathRef.current.getPointAtLength(0);
+      setDronePos({ x: pt.x, y: pt.y });
+
+      const thresholds = [0.05, 0.15, 0.40, 0.50, 0.70];
+      const calculatedWaypoints = thresholds.map(pct => {
+        const point = pathRef.current.getPointAtLength(len * pct);
+        return { x: point.x, y: point.y, pct };
+      });
+      setWaypoints(calculatedWaypoints);
+    }
+  }, []);
 
   const handleLaunchScenario = (scenId) => {
     setScenario(scenId);
@@ -119,16 +146,61 @@ export default function HomeOverview({ onNavigate }) {
 
   return (
     <div className="home-overview" onScroll={handleScroll} ref={scrollContainerRef}>
-      
+
       <div className="obsidian-layout">
-        
-        {/* ── THE LIGHT SPINE (Central Line) ── */}
-        {/* Placed inside obsidian-layout to guarantee full height coverage */}
+
+        {/* ── THE CURVED SPINE (Central Line) ── */}
         <div className="spine-container">
-          <div className="spine-track" />
-          <div className="spine-fill" style={{ height: `${scrollProgress * 100}%` }} />
-          
-          <div className="spine-drone-cursor" style={{ top: `${scrollProgress * 100}%` }}>
+
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            style={{ width: '100%', height: '100%', overflow: 'visible', position: 'absolute' }}
+          >
+            {/* Dynamic Mask to perfectly sync the fill to the drone's Y coordinate */}
+            <mask id="drone-mask">
+              <rect x="0" y="0" width="100" height={`${dronePos.y}`} fill="white" />
+            </mask>
+
+            {/* Base Path (Faded) */}
+            <path
+              d="M 50 0 C 50 15, 80 20, 80 35 S 20 50, 20 65 S 80 80, 80 95 S 50 98, 50 100"
+              fill="none"
+              stroke="var(--light-cyan-fade)"
+              strokeWidth="1.5"
+              vectorEffect="non-scaling-stroke"
+            />
+            {/* Highlighted Path (Perfectly masked by drone position) */}
+            <path
+              ref={pathRef}
+              d="M 50 0 C 50 15, 80 20, 80 35 S 20 50, 20 65 S 80 80, 80 95 S 50 98, 50 100"
+              fill="none"
+              stroke="var(--light-cyan)"
+              strokeWidth="2.5"
+              vectorEffect="non-scaling-stroke"
+              mask="url(#drone-mask)"
+            />
+          </svg>
+
+          {/* Render Premium Waypoints */}
+          {waypoints.map((wp, i) => {
+            const isActive = scrollProgress >= wp.pct;
+            const isLeft = i === 0 || i === 2 || i === 4;
+            return (
+              <div 
+                key={i} 
+                className={`spine-waypoint ${isLeft ? 'left' : 'right'} ${isActive ? 'active' : ''}`}
+                style={{ left: `${wp.x}%`, top: `${wp.y}%` }}
+              >
+                <div className="waypoint-branch" />
+                <div className="waypoint-ring" />
+                <div className="waypoint-core" />
+              </div>
+            );
+          })}
+
+
+          <div className="spine-drone-cursor" style={{ top: `${dronePos.y}%`, left: `${dronePos.x}%` }}>
             <QuadcopterIcon />
           </div>
         </div>
@@ -143,13 +215,11 @@ export default function HomeOverview({ onNavigate }) {
 
         {/* ── LEFT COLUMN ── */}
         <div className="obsidian-col-left">
-          
+
           {/* Card 1: Radar */}
-          <div className="obsidian-card">
-            <div className={`spine-node ${scrollProgress > 0.05 ? 'active' : ''}`} />
-            <div className={`spine-branch ${scrollProgress > 0.05 ? 'active' : ''}`} />
+          <div className={`obsidian-card ${scrollProgress > 0.05 ? 'active' : ''}`}>
             <div className="card-header">
-              <div className="icon-box"><Scan size={18} strokeWidth={2.5} /></div> 
+              <div className="icon-box"><Scan size={18} strokeWidth={2.5} /></div>
               Tactical Holo-Radar
             </div>
             <div className="obsidian-radar-container">
@@ -168,11 +238,9 @@ export default function HomeOverview({ onNavigate }) {
           </div>
 
           {/* Card 2: Contingency Reactor */}
-          <div className="obsidian-card">
-            <div className={`spine-node ${scrollProgress > 0.40 ? 'active' : ''}`} />
-            <div className={`spine-branch ${scrollProgress > 0.40 ? 'active' : ''}`} />
+          <div className={`obsidian-card ${scrollProgress > 0.40 ? 'active' : ''}`}>
             <div className="card-header">
-              <div className="icon-box"><Power size={18} strokeWidth={2.5} /></div> 
+              <div className="icon-box"><Power size={18} strokeWidth={2.5} /></div>
               Contingency Reactor
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -199,11 +267,9 @@ export default function HomeOverview({ onNavigate }) {
           </div>
 
           {/* Card 3: Scenarios Grid */}
-          <div className="obsidian-card">
-            <div className={`spine-node ${scrollProgress > 0.70 ? 'active' : ''}`} />
-            <div className={`spine-branch ${scrollProgress > 0.70 ? 'active' : ''}`} />
+          <div className={`obsidian-card ${scrollProgress > 0.70 ? 'active' : ''}`}>
             <div className="card-header">
-              <div className="icon-box"><Globe size={18} strokeWidth={2.5} /></div> 
+              <div className="icon-box"><Globe size={18} strokeWidth={2.5} /></div>
               Mission Theaters
             </div>
             <div className="scen-grid">
@@ -226,13 +292,11 @@ export default function HomeOverview({ onNavigate }) {
 
         {/* ── RIGHT COLUMN ── */}
         <div className="obsidian-col-right">
-          
+
           {/* Card 4: Neural Pipeline */}
-          <div className="obsidian-card">
-            <div className={`spine-node ${scrollProgress > 0.15 ? 'active' : ''}`} />
-            <div className={`spine-branch ${scrollProgress > 0.15 ? 'active' : ''}`} />
+          <div className={`obsidian-card ${scrollProgress > 0.15 ? 'active' : ''}`}>
             <div className="card-header">
-              <div className="icon-box"><CircuitBoard size={18} strokeWidth={2.5} /></div> 
+              <div className="icon-box"><CircuitBoard size={18} strokeWidth={2.5} /></div>
               Neural Edge Pipeline
             </div>
             <div className="stats-grid">
@@ -256,11 +320,9 @@ export default function HomeOverview({ onNavigate }) {
           </div>
 
           {/* Card 5: Drone Fleet */}
-          <div className="obsidian-card">
-            <div className={`spine-node ${scrollProgress > 0.50 ? 'active' : ''}`} />
-            <div className={`spine-branch ${scrollProgress > 0.50 ? 'active' : ''}`} />
+          <div className={`obsidian-card ${scrollProgress > 0.50 ? 'active' : ''}`}>
             <div className="card-header">
-              <div className="icon-box"><Hexagon size={18} strokeWidth={2.5} /></div> 
+              <div className="icon-box"><Hexagon size={18} strokeWidth={2.5} /></div>
               Active Swarm Fleet
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>

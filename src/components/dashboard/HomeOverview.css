@@ -5,28 +5,35 @@
 
 :root {
   /* Main background remains light */
-  --light-bg: #E8F0F2; 
-  
+  --light-bg: #E8F0F2;
+
   /* The exact box UI styles from ComponentsStrip */
   --glass-bg: #222B2F;
-  --glass-border: 1px solid rgba(255, 255, 255, 0.25); /* White highlighted border */
+  --glass-border: 1px solid rgba(255, 255, 255, 0.25);
+  /* White highlighted border */
   --glass-outline: none;
-  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.15); /* Deep shadow with inner white highlight */
-  
-  --glass-bg-hover: #2D383D; 
-  --glass-border-hover: 1px solid rgba(255, 255, 255, 0.45); /* Brighter white on hover */
+  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+  /* Deep shadow with inner white highlight */
+
+  --glass-bg-hover: #2D383D;
+  --glass-border-hover: 1px solid rgba(255, 255, 255, 0.45);
+  /* Brighter white on hover */
   --glass-shadow-hover: 0 15px 40px rgba(0, 0, 0, 0.4), inset 0 1px 3px rgba(255, 255, 255, 0.3);
 
-  --glass-active-bg: rgba(121, 185, 193, 0.28); /* Richer, professional cyan tint */
-  --glass-active-text: #FFFFFF; /* White text for readability on dark background */
-  --glass-active-border: 1px solid rgba(121, 185, 193, 0.85); /* Brighter, crisp cyan border */
-  --glass-active-shadow: 0 8px 24px rgba(121, 185, 193, 0.25), inset 0 1px 3px rgba(121, 185, 193, 0.4); /* Stronger ambient glow */
+  --glass-active-bg: rgba(121, 185, 193, 0.28);
+  /* Richer, professional cyan tint */
+  --glass-active-text: #FFFFFF;
+  /* White text for readability on dark background */
+  --glass-active-border: 1px solid rgba(121, 185, 193, 0.85);
+  /* Brighter, crisp cyan border */
+  --glass-active-shadow: 0 8px 24px rgba(121, 185, 193, 0.25), inset 0 1px 3px rgba(121, 185, 193, 0.4);
+  /* Stronger ambient glow */
 
   --light-cyan: #79B9C1;
   --light-cyan-fade: rgba(121, 185, 193, 0.2);
-  --light-text: #9DB0B4; 
+  --light-text: #9DB0B4;
   --light-text-hover: #FFFFFF;
-  --light-muted: #798C90; 
+  --light-muted: #798C90;
 }
 
 .home-overview {
@@ -64,44 +71,33 @@
   bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
-  width: 100px;
+  width: 160px;
+  /* Wider to allow the curve to breathe */
   pointer-events: none;
   z-index: 0;
   display: flex;
   justify-content: center;
 }
 
-.spine-track {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  /* Thinner, precise line */
-  background: var(--light-cyan-fade);
-}
-
-.spine-fill {
-  position: absolute;
-  top: 0;
-  width: 2px;
-  background: var(--light-cyan);
-  transition: height 0.1s linear;
-}
-
 /* ── MINI DRONE CURSOR ── */
 .spine-drone-cursor {
   position: absolute;
-  left: 50%;
   transform: translate(-50%, -50%);
-  transition: top 0.1s linear;
+  transition: top 0.1s linear, left 0.1s linear;
   z-index: 30;
   animation: droneHover 2.5s ease-in-out infinite;
 }
 
 @keyframes droneHover {
+
   0%,
-  100% { margin-top: 0px; }
-  50% { margin-top: -6px; }
+  100% {
+    margin-top: 0px;
+  }
+
+  50% {
+    margin-top: -6px;
+  }
 }
 
 .quadcopter-cursor {
@@ -124,54 +120,136 @@
 }
 
 @keyframes propSpin {
-  100% { transform: rotate(360deg); }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-.prop-tl { top: 0px; left: 0px; }
-.prop-tr { top: 0px; right: 0px; animation-direction: reverse; }
-.prop-bl { bottom: 0px; left: 0px; animation-direction: reverse; }
-.prop-br { bottom: 0px; right: 0px; }
+.prop-tl {
+  top: 0px;
+  left: 0px;
+}
 
-/* Nodes anchored to the cards */
-.spine-node {
+.prop-tr {
+  top: 0px;
+  right: 0px;
+  animation-direction: reverse;
+}
+
+.prop-bl {
+  bottom: 0px;
+  left: 0px;
+  animation-direction: reverse;
+}
+
+.prop-br {
+  bottom: 0px;
+  right: 0px;
+}
+
+/* ── PREMIUM NEURAL WAYPOINTS ── */
+.spine-waypoint {
   position: absolute;
-  top: 40px;
-  width: 10px;
-  height: 10px;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+}
+
+.waypoint-core {
+  position: absolute;
+  inset: 4px;
   border-radius: 50%;
   background: var(--glass-bg);
-  border: 2px solid var(--light-cyan-fade);
-  z-index: 10;
+  border: 1.5px solid var(--light-cyan-fade);
   transition: all 0.3s ease;
+  z-index: 2;
 }
 
-.spine-node.active {
-  background: var(--glass-bg);
-  border-color: var(--light-cyan);
-  box-shadow: 0 0 0 3px rgba(121, 185, 193, 0.1);
-}
-
-/* Branches connecting card to spine */
-.spine-branch {
+.waypoint-ring {
   position: absolute;
-  top: 44px;
-  height: 1px;
-  width: 50px;
-  background: var(--light-cyan-fade);
-  transition: all 0.3s ease;
-  z-index: 0;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  transition: all 0.5s ease;
+  z-index: 1;
 }
 
-.spine-node.active~.spine-branch,
-.spine-branch.active {
+.spine-waypoint.active .waypoint-core {
   background: var(--light-cyan);
+  border-color: #FFF;
+  box-shadow: 0 0 12px var(--light-cyan);
 }
 
-.obsidian-col-left .spine-branch { right: -50px; }
-.obsidian-col-left .spine-node { right: -50px; transform: translate(50%, -50%); }
-.obsidian-col-right .spine-branch { left: -50px; }
-.obsidian-col-right .spine-node { left: -50px; transform: translate(-50%, -50%); }
+.spine-waypoint.active .waypoint-ring {
+  border-color: rgba(121, 185, 193, 0.4);
+  animation: pulseRing 2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+}
 
+@keyframes pulseRing {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* ── GLOWING BRANCHES & DATA FLOW ── */
+.waypoint-branch {
+  position: absolute;
+  top: 50%;
+  height: 1.5px;
+  width: 140px;
+  background: linear-gradient(90deg, var(--light-cyan-fade), transparent);
+  transition: all 0.4s ease;
+  z-index: -1;
+  opacity: 0.2;
+}
+
+.spine-waypoint.active .waypoint-branch {
+  opacity: 1;
+}
+
+.spine-waypoint.left .waypoint-branch {
+  right: 50%;
+  background: linear-gradient(270deg, var(--light-cyan), transparent);
+}
+
+.spine-waypoint.right .waypoint-branch {
+  left: 50%;
+  background: linear-gradient(90deg, var(--light-cyan), transparent);
+}
+
+/* Data Flow Glow Dot */
+.waypoint-branch::after {
+  content: '';
+  position: absolute;
+  top: -1.5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #FFF;
+  box-shadow: 0 0 8px var(--light-cyan);
+  opacity: 0;
+}
+
+.spine-waypoint.left.active .waypoint-branch::after {
+  animation: dataFlowLeft 2s infinite;
+}
+.spine-waypoint.right.active .waypoint-branch::after {
+  animation: dataFlowRight 2s infinite;
+}
+
+@keyframes dataFlowLeft {
+  0% { right: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { right: 100%; opacity: 0; }
+}
+
+@keyframes dataFlowRight {
+  0% { left: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
 
 /* Hero */
 .obsidian-hero {
@@ -326,19 +404,21 @@
   box-shadow: var(--glass-active-shadow);
   transform: translateY(-2px);
 }
+
 .drone-row:active {
   transform: scale(0.98) translateY(0);
 }
 
-.drone-row:hover .stat-label, 
+.drone-row:hover .stat-label,
 .drone-row:hover .stat-value.cyan,
 .drone-row:hover .stat-value,
 .drone-row:hover .icon-box {
   color: var(--glass-active-text) !important;
 }
+
 .drone-row:hover .icon-box {
   background: transparent;
-  border-color: rgba(0,0,0,0.1);
+  border-color: rgba(0, 0, 0, 0.1);
   box-shadow: none;
 }
 
@@ -369,6 +449,7 @@
   box-shadow: var(--glass-active-shadow);
   transform: translateY(-2px);
 }
+
 .scen-card:active {
   transform: scale(0.98) translateY(0);
 }
@@ -408,7 +489,8 @@ h1.hero-title {
 
 p.hero-desc {
   font-size: 16px;
-  color: #5A6D73; /* Darker muted text for light background */
+  color: #5A6D73;
+  /* Darker muted text for light background */
   max-width: 650px;
   margin: 0 auto;
   line-height: 1.6;

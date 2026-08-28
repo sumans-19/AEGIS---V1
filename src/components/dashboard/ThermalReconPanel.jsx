@@ -9,7 +9,7 @@ const THERMAL_STREAM_URL = import.meta.env.VITE_THERMAL_STREAM_URL || "http://lo
 const HEALTH_URL = import.meta.env.VITE_THERMAL_HEALTH_URL || "http://localhost:5000/health";
 const TARGETS_URL = import.meta.env.VITE_THERMAL_TARGETS_URL || "http://localhost:5000/targets";
 
-export default function ThermalReconPanel() {
+export default function ThermalReconPanel({ onBack }) {
   const [streamStatus, setStreamStatus] = useState('connecting'); // connecting, live, error
   const [sysTime, setSysTime] = useState('');
   const [liveTargets, setLiveTargets] = useState([]);
@@ -91,6 +91,11 @@ export default function ThermalReconPanel() {
       {/* ── HEADER ── */}
       <div className="thermal-header">
         <div className="thermal-header__left">
+          {onBack && (
+            <button className="thermal-btn-back" onClick={onBack}>
+              BACK TO HUB
+            </button>
+          )}
           <Camera size={18} className="thermal-header__icon" />
           <h2>DRONE RECONNAISSANCE</h2>
           <span className="thermal-header__id">UNIT-01 [AERO-X]</span>

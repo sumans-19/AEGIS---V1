@@ -1,0 +1,228 @@
+/* ==========================================================================
+   AEGIS — Sensors Hub (Light Blueprint Theme)
+   ========================================================================== */
+
+.sensors-hub {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  padding: 40px;
+  overflow-y: auto;
+  font-family: var(--font-primary, 'Inter', sans-serif);
+}
+
+/* ── GRID ── */
+.sensors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 20px;
+  justify-content: center;
+}
+
+/* ── LIGHT CARD ── */
+.light-card {
+  background: #EDF3F4; /* Pale cyan/gray base from mockup */
+  border: 1px solid #8CA3A6; /* Darker border as requested */
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 #FFFFFF;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.light-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 #FFFFFF;
+}
+
+/* ── HEADER ── */
+.light-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.light-card__header h3 {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #243135;
+}
+
+.icon-close {
+  color: #7A9699;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.icon-close:hover {
+  color: #243135;
+}
+
+/* ── ICON, IMAGE & DESCRIPTION BOX ── */
+.light-card__info-box {
+  background: #F8FBFB;
+  border: 1px solid #E1EBEB;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.info-box__image {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1));
+}
+
+.light-card__info-box p {
+  margin: 0;
+  font-size: 11px;
+  color: #4C656A;
+  line-height: 1.3;
+  font-weight: 500;
+  flex: 1;
+}
+
+/* ── SHARED LABELS ── */
+.label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #7A9699;
+  text-transform: uppercase;
+}
+
+/* ── STATUS ROW ── */
+.light-card__status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: -4px; /* Pull up closer to the box above */
+}
+
+.status-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #6BA5AD;
+}
+
+/* ── LIVE READING ── */
+.light-card__reading-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reading-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reading-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: #243135;
+  line-height: 1;
+}
+
+.reading-value .unit {
+  font-size: 14px;
+  font-weight: 700;
+  color: #7A9699;
+  margin-left: 4px;
+}
+
+.sparkline {
+  margin-right: -10px; /* Slight right shift to align with edge */
+}
+
+/* ── SPECIFICATIONS ── */
+.light-card__specs-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.specs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.spec-label {
+  color: #627C81;
+  font-weight: 600;
+}
+
+.spec-value {
+  color: #243135;
+  font-weight: 800;
+}
+
+/* ── LOCATION ── */
+.light-card__location-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.location-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: #243135;
+}
+
+/* ── ACTION BUTTON ── */
+.btn-view-feed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  background: #FFFFFF;
+  border: 1px solid #8CA3A6; /* Darker border */
+  border-radius: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #3F5257;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+
+.btn-view-feed:hover {
+  background: #F8FBFB;
+  border-color: #6BA5AD;
+  color: #1C262B;
+}
