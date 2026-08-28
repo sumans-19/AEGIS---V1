@@ -17,10 +17,19 @@ export default function MasterDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const normalizeTab = (t) => {
+    if (!t) return 'overview';
+    const clean = t.trim().toLowerCase().replace(/\s+/g, '-');
+    if (clean === 'drone' || clean === 'drone-3d' || clean === 'drone3d' || clean === '3d-drone') return 'drone-3d';
+    if (clean === 'sensor' || clean === 'sensors' || clean === 'sensors-hub') return 'sensors';
+    if (clean === 'ai' || clean === 'ai-decisions' || clean === 'ai-dashboard') return 'ai-decisions';
+    return clean;
+  };
+
   // Determine initial tab from path or query param
   const getInitialTab = () => {
     const tabParam = searchParams.get('tab');
-    if (tabParam) return tabParam;
+    if (tabParam) return normalizeTab(tabParam);
     if (location.pathname === '/mission') return 'mission';
     if (location.pathname === '/ai-dashboard') return 'ai-decisions';
     if (location.pathname === '/disasters') return 'disasters';
@@ -33,11 +42,12 @@ export default function MasterDashboard() {
   // Sync tab with URL search parameter
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && tabParam !== activeTab) {
-      setActiveTab(tabParam);
-    } else if (!tabParam && location.pathname === '/mission' && activeTab !== 'mission') {
+    if (tabParam) {
+      const norm = normalizeTab(tabParam);
+      if (norm !== activeTab) setActiveTab(norm);
+    } else if (location.pathname === '/mission' && activeTab !== 'mission') {
       setActiveTab('mission');
-    } else if (!tabParam && location.pathname === '/ai-dashboard' && activeTab !== 'ai-decisions') {
+    } else if (location.pathname === '/ai-dashboard' && activeTab !== 'ai-decisions') {
       setActiveTab('ai-decisions');
     }
   }, [searchParams, location.pathname]);

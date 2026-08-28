@@ -40,6 +40,23 @@ const SparklineChart = () => (
 );
 
 export default function SensorsHub({ onSelectSensor }) {
+  const [ultrasonicDist, setUltrasonicDist] = React.useState('238.9');
+
+  React.useEffect(() => {
+    const fetchDist = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/proximity-data");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.distance_cm) setUltrasonicDist(data.distance_cm.toFixed(1));
+        }
+      } catch (e) {}
+    };
+    fetchDist();
+    const interval = setInterval(fetchDist, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const sensors = [
     {
       id: 'dht11',
@@ -78,19 +95,19 @@ export default function SensorsHub({ onSelectSensor }) {
     {
       id: 'ultrasonic',
       title: 'PROXIMITY RADAR',
-      description: 'High-precision ultrasonic obstacle detection and ground proximity sensing.',
+      description: 'High-precision ultrasonic obstacle detection and real-time shape fusion.',
       icon: Waves,
       image: '/assets/sensors/ultrasonic.png',
       status: 'ACTIVE',
-      reading: '12.8',
-      unit: 'm',
+      reading: ultrasonicDist,
+      unit: 'cm',
       specs: [
-        { label: 'Range', value: '2cm ~ 4m' },
+        { label: 'Range', value: '2cm ~ 400cm' },
         { label: 'Angle', value: '< 15°' },
         { label: 'Frequency', value: '40 kHz' },
         { label: 'Resolution', value: '3 mm' }
       ],
-      location: 'Front - Chassis Face'
+      location: 'Front - Gimbal Face'
     },
     {
       id: 'thermal',

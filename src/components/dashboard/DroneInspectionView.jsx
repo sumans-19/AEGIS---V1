@@ -6,6 +6,7 @@ import ModelOptions from '../Panels/ModelOptions';
 import SensorDetail from '../Panels/SensorDetail';
 import ComponentsStrip from '../BottomBar/ComponentsStrip';
 import { useSensorData } from '../../hooks/useSensorData';
+import { SENSOR_VIEW_TARGETS } from '../../data/sensorData';
 
 export default function DroneInspectionView() {
   const [modelOptions, setModelOptions] = useState({
@@ -26,8 +27,10 @@ export default function DroneInspectionView() {
     if (controlsRef.current) {
       const controls = controlsRef.current;
       const startPos = controls.object.position.clone();
+      const startTarget = controls.target.clone();
       const endPos = { x: preset.position[0], y: preset.position[1], z: preset.position[2] };
-      const duration = 600;
+      const endTarget = { x: preset.target[0], y: preset.target[1], z: preset.target[2] };
+      const duration = 650;
       const startTime = Date.now();
 
       const animate = () => {
@@ -40,7 +43,11 @@ export default function DroneInspectionView() {
           startPos.y + (endPos.y - startPos.y) * ease,
           startPos.z + (endPos.z - startPos.z) * ease,
         );
-        controls.target.set(preset.target[0], preset.target[1], preset.target[2]);
+        controls.target.set(
+          startTarget.x + (endTarget.x - startTarget.x) * ease,
+          startTarget.y + (endTarget.y - startTarget.y) * ease,
+          startTarget.z + (endTarget.z - startTarget.z) * ease,
+        );
         controls.update();
 
         if (t < 1) requestAnimationFrame(animate);
@@ -55,6 +62,46 @@ export default function DroneInspectionView() {
 
   const handleSensorSelect = useCallback((sensorId) => {
     selectSensor(sensorId);
+
+    if (controlsRef.current) {
+      const controls = controlsRef.current;
+      const startPos = controls.object.position.clone();
+      const startTarget = controls.target.clone();
+
+      let targetPos = [2.5, 2.0, 3.2];
+      let targetLookAt = [0, 0, 0];
+
+      if (sensorId && SENSOR_VIEW_TARGETS[sensorId]) {
+        targetPos = SENSOR_VIEW_TARGETS[sensorId].position;
+        targetLookAt = SENSOR_VIEW_TARGETS[sensorId].target;
+      }
+
+      const endPos = { x: targetPos[0], y: targetPos[1], z: targetPos[2] };
+      const endTarget = { x: targetLookAt[0], y: targetLookAt[1], z: targetLookAt[2] };
+      const duration = 750;
+      const startTime = Date.now();
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+
+        controls.object.position.set(
+          startPos.x + (endPos.x - startPos.x) * ease,
+          startPos.y + (endPos.y - startPos.y) * ease,
+          startPos.z + (endPos.z - startPos.z) * ease,
+        );
+        controls.target.set(
+          startTarget.x + (endTarget.x - startTarget.x) * ease,
+          startTarget.y + (endTarget.y - startTarget.y) * ease,
+          startTarget.z + (endTarget.z - startTarget.z) * ease,
+        );
+        controls.update();
+
+        if (t < 1) requestAnimationFrame(animate);
+      };
+      animate();
+    }
   }, [selectSensor]);
 
   const currentSelectedSensor = selectedSensor

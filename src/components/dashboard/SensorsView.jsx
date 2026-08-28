@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import SensorsHub from './SensorsHub';
 import ThermalReconPanel from './ThermalReconPanel';
+import UltrasonicRadarPanel from './UltrasonicRadarPanel';
 
 export default function SensorsView() {
   const [activeSensor, setActiveSensor] = useState(null);
 
   const handleSelectSensor = (sensorId) => {
-    if (sensorId === 'thermal') {
+    if (sensorId === 'thermal' || sensorId === 'ultrasonic') {
       setActiveSensor(sensorId);
     } else {
-      // Currently, only thermal has a detailed view
-      console.log(`Sensor ${sensorId} selected, but no detailed view is implemented yet.`);
+      console.log(`Sensor ${sensorId} selected.`);
     }
   };
 
@@ -22,6 +22,8 @@ export default function SensorsView() {
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
       {activeSensor === 'thermal' ? (
         <ThermalReconPanel onBack={handleBackToHub} />
+      ) : activeSensor === 'ultrasonic' ? (
+        <UltrasonicRadarPanel onBack={handleBackToHub} />
       ) : (
         <SensorsHub onSelectSensor={handleSelectSensor} />
       )}

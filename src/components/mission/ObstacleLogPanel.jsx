@@ -59,17 +59,17 @@ export default function ObstacleLogPanel({ drone }) {
     <div style={{
       width: '100%',
       height: '100%',
-      background: '#080c10',
+      background: 'transparent',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      fontFamily: 'JetBrains Mono, monospace',
+      fontFamily: 'var(--font-mono, JetBrains Mono, monospace)',
     }}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div style={{
         padding: '8px 12px',
-        borderBottom: '1px solid #1e293b',
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -77,7 +77,7 @@ export default function ObstacleLogPanel({ drone }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <AlertTriangle size={12} color={droneId ? DRONE_COLORS[droneId] : '#ff6b2b'} />
-          <span style={{ fontSize: '9px', color: '#e2e8f0', letterSpacing: '1px' }}>
+          <span style={{ fontSize: '9px', color: '#1F282B', letterSpacing: '1px', fontWeight: 'bold' }}>
             OBSTACLE_LOG // {droneId ? DRONE_CALLSIGNS[droneId] : 'ALL DRONES'}
           </span>
         </div>
@@ -101,15 +101,15 @@ export default function ObstacleLogPanel({ drone }) {
             title="Clear log"
             onClick={() => droneId ? clearLogs(droneId) : [1,2,3,4,5].forEach(id => clearLogs(id))}
             style={{
-              background: 'none', border: '1px solid #1e293b',
-              color: '#475569', cursor: 'pointer',
+              background: 'none', border: '1px solid rgba(0,0,0,0.1)',
+              color: '#6C7F84', cursor: 'pointer',
               padding: '2px 6px', borderRadius: '3px',
               display: 'flex', alignItems: 'center', gap: '4px',
               fontSize: '8px',
               transition: 'all 0.15s',
             }}
             onMouseOver={e => { e.currentTarget.style.borderColor = '#ff4500'; e.currentTarget.style.color = '#ff4500' }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#475569' }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; e.currentTarget.style.color = '#6C7F84' }}
           >
             <Trash2 size={9} /> CLEAR
           </button>
@@ -119,22 +119,22 @@ export default function ObstacleLogPanel({ drone }) {
       {/* ── Count Badge ────────────────────────────────────────────────── */}
       <div style={{
         padding: '5px 12px',
-        borderBottom: '1px solid #1e293b',
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
         flexShrink: 0,
       }}>
-        <span style={{ fontSize: '8px', color: '#475569' }}>TOTAL EVENTS:</span>
+        <span style={{ fontSize: '8px', color: '#6C7F84' }}>TOTAL EVENTS:</span>
         <span style={{
           fontSize: '10px', fontWeight: 700,
-          color: entries.length > 0 ? '#ff6b2b' : '#334155',
+          color: entries.length > 0 ? '#ff6b2b' : '#6C7F84',
         }}>
           {entries.length}
         </span>
         {entries.length > 0 && (
           <span style={{
-            fontSize: '7px', color: '#64748b',
+            fontSize: '7px', color: '#6C7F84',
             marginLeft: 'auto',
           }}>
             HIGH: {entries.filter(e => e.severity === 'HIGH').length} &nbsp;
@@ -184,8 +184,8 @@ export default function ObstacleLogPanel({ drone }) {
                 key={entry.id || i}
                 style={{
                   padding: '7px 12px',
-                  borderBottom: '1px solid rgba(30,41,59,0.6)',
-                  background: i === 0 ? 'rgba(255,107,43,0.04)' : 'transparent',
+                  borderBottom: '1px solid rgba(0,0,0,0.05)',
+                  background: i === 0 ? 'rgba(255,107,43,0.06)' : 'transparent',
                   transition: 'background 0.3s',
                   animation: i === 0 ? 'aegisObstacleFadeIn 0.4s ease' : 'none',
                 }}
@@ -221,8 +221,9 @@ export default function ObstacleLogPanel({ drone }) {
 
                 {/* Message */}
                 <div style={{
-                  fontSize: '8px', color: '#94a3b8',
+                  fontSize: '8px', color: '#2C3E44',
                   lineHeight: 1.5, paddingLeft: '12px',
+                  fontWeight: 600,
                 }}>
                   {entry.message}
                 </div>
@@ -230,11 +231,11 @@ export default function ObstacleLogPanel({ drone }) {
                 {/* Position */}
                 {entry.pos && (
                   <div style={{
-                    fontSize: '7px', color: '#334155',
+                    fontSize: '7px', color: '#6C7F84',
                     paddingLeft: '12px', marginTop: '3px',
                     display: 'flex', gap: '8px',
                   }}>
-                    <span style={{ color: '#475569' }}>POS:</span>
+                    <span style={{ color: '#8A9A9E' }}>POS:</span>
                     <span>X:{entry.pos[0]} Y:{entry.pos[1]} Z:{entry.pos[2]}</span>
                   </div>
                 )}
@@ -246,12 +247,13 @@ export default function ObstacleLogPanel({ drone }) {
 
       {/* ── Footer hint ────────────────────────────────────────────────── */}
       <div style={{
-        borderTop: '1px solid #1e293b',
+        borderTop: '1px solid rgba(0,0,0,0.05)',
         padding: '5px 12px',
         fontSize: '7px',
-        color: '#1e293b',
+        color: '#8A9A9E',
         flexShrink: 0,
         letterSpacing: '0.5px',
+        fontWeight: 'bold'
       }}>
         OBSTACLE DETECTION // A* REROUTE ENGINE // AEGIS-V1
       </div>
@@ -278,7 +280,7 @@ function DroneTabs({ logs }) {
   return (
     <div style={{
       display: 'flex',
-      borderBottom: '1px solid #1e293b',
+      borderBottom: '1px solid rgba(0,0,0,0.05)',
       flexShrink: 0,
       overflowX: 'auto',
     }}>
@@ -295,16 +297,16 @@ function DroneTabs({ logs }) {
               flexDirection: 'column',
               alignItems: 'center',
               gap: '2px',
-              borderRight: '1px solid #1e293b',
-              background: count > 0 ? `${color}08` : 'transparent',
+              borderRight: '1px solid rgba(0,0,0,0.05)',
+              background: count > 0 ? `${color}15` : 'transparent',
             }}
           >
-            <span style={{ fontSize: '7px', color, letterSpacing: '0.5px' }}>
+            <span style={{ fontSize: '7px', color: count > 0 ? color : '#6C7F84', letterSpacing: '0.5px', fontWeight: 'bold' }}>
               {CALLSIGNS[i].slice(0, 3)}
             </span>
             <span style={{
               fontSize: '10px', fontWeight: 700,
-              color: count > 0 ? color : '#1e293b',
+              color: count > 0 ? color : '#C1D4D7',
             }}>
               {count}
             </span>

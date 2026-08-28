@@ -31,11 +31,11 @@ function seededRandom(seed) {
 
 // Per-drone color palette (matches callsigns)
 const DRONE_COLORS = {
-  1: '#00e5ff',   // Arjun — cyan
-  2: '#ff6b2b',   // Bhima — orange
-  3: '#00ff88',   // Karna — green
-  4: '#e040fb',   // Krishna — pink
-  5: '#f9e23c',   // Ram — yellow
+  1: '#00e5ff',   // FALCON — cyan
+  2: '#ff6b2b',   // HAWK — orange
+  3: '#00ff88',   // OSPREY — green
+  4: '#e040fb',   // KESTREL — pink
+  5: '#f9e23c',   // MERLIN — yellow
 }
 
 const CALLSIGN_COLORS = {
@@ -151,6 +151,9 @@ export default function PathfindingView() {
     const ctx = canvas.getContext('2d')
 
     let tick = 0
+    let lastStateKey = ''
+    let lastGrid = null
+    let cachedAStar = { path: [], closedSet: new Set(), openNodes: new Set() }
 
     const draw = () => {
       tick++
@@ -160,7 +163,7 @@ export default function PathfindingView() {
       // Use live backend grid (updated every 3s) or fall back to client-generated grid
       const grid = (backendGrid?.cost_grid) || buildCostGrid()
 
-      ctx.fillStyle = '#080c10'
+      ctx.fillStyle = '#EBEFF0'
       ctx.fillRect(0, 0, width, height)
 
       const selectedDrone = useSimStore.getState().drones.find(d => d.id === selectedDroneId)
@@ -181,7 +184,14 @@ export default function PathfindingView() {
       const goalR = Math.min(GRID_ROWS - 1, Math.max(0, Math.floor(10 + Math.sin(t * 0.3) * 7)))
       const goalC = Math.min(GRID_COLS - 1, Math.max(0, Math.floor(10 + Math.cos(t * 0.25) * 7)))
 
-      const { path, closedSet, openNodes } = runAStar(grid, startR, startC, goalR, goalC)
+      const stateKey = `${startR},${startC},${goalR},${goalC}`
+      if (stateKey !== lastStateKey || grid !== lastGrid) {
+        cachedAStar = runAStar(grid, startR, startC, goalR, goalC)
+        lastStateKey = stateKey
+        lastGrid = grid
+      }
+
+      const { path, closedSet, openNodes } = cachedAStar
 
       const droneColor = DRONE_COLORS[selectedDroneId] || '#00e5ff'
 
@@ -212,7 +222,7 @@ export default function PathfindingView() {
           ctx.fillRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1)
 
           // Grid lines
-          ctx.strokeStyle = 'rgba(30, 41, 59, 0.8)'
+          ctx.strokeStyle = 'rgba(44, 62, 68, 0.15)'
           ctx.lineWidth = 0.5
           ctx.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1)
 
@@ -227,8 +237,8 @@ export default function PathfindingView() {
           // Grid coord labels (top-left quadrant as example)
           if (r % 4 === 0 && c % 4 === 0) {
             const col = String.fromCharCode(65 + c)
-            ctx.fillStyle = 'rgba(71, 85, 105, 0.7)'
-            ctx.font = '4px JetBrains Mono'
+            ctx.fillStyle = 'rgba(44, 62, 68, 0.6)'
+            ctx.font = '4px var(--font-mono, JetBrains Mono)'
             ctx.textAlign = 'left'
             ctx.fillText(`${col}${r + 1}`, x + 2, y + 6)
           }
@@ -362,14 +372,14 @@ export default function PathfindingView() {
         `COST: ${grid[startR]?.[startC] ?? '?'}→${grid[goalR]?.[goalC] ?? '?'}`,
       ]
       const iw = 110, ih = infoLines.length * 12 + 10
-      ctx.fillStyle = 'rgba(8,12,16,0.85)'
+      ctx.fillStyle = 'rgba(235, 243, 245, 0.85)'
       ctx.fillRect(width - iw - 4, 4, iw, ih)
       ctx.strokeStyle = droneColor + '60'
       ctx.lineWidth = 0.5
       ctx.strokeRect(width - iw - 4, 4, iw, ih)
       infoLines.forEach((line, i) => {
-        ctx.fillStyle = i === 0 ? droneColor : '#94a3b8'
-        ctx.font = `${i === 0 ? 'bold ' : ''}8px JetBrains Mono`
+        ctx.fillStyle = i === 0 ? droneColor : '#2C3E44'
+        ctx.font = `${i === 0 ? 'bold ' : ''}8px var(--font-mono, JetBrains Mono)`
         ctx.textAlign = 'left'
         ctx.fillText(line, width - iw, 16 + i * 12)
       })
@@ -387,11 +397,11 @@ export default function PathfindingView() {
   const selectedDrone = drones.find(d => d.id === selectedDroneId) || drones[0]
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#080c10', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ width: '100%', height: '100%', background: 'transparent', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{
         padding: '8px 12px',
-        borderBottom: '1px solid #1e293b',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -399,7 +409,7 @@ export default function PathfindingView() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Network size={13} color={droneColor} />
-          <span style={{ fontFamily: 'JetBrains Mono', fontSize: '9px', color: '#e2e8f0', letterSpacing: '1px' }}>
+          <span style={{ fontFamily: 'var(--font-mono, JetBrains Mono)', fontSize: '9px', color: '#1F282B', letterSpacing: '1px' }}>
             A*_PATHFINDING // {selectedDrone?.callsign || 'N/A'}
           </span>
         </div>

@@ -8,20 +8,16 @@ import OrbitRings from './OrbitRings';
 import { IconInfo } from '../Common/Icons';
 import './DroneViewport.css';
 
-// Hotspot placements corresponding to physical components on the new drone
+// Hotspot placements corresponding to physical components on the drone
 const HOTSPOTS = [
-  { id: 'gps',          name: 'GPS',         position: [ 0.0,  0.68, -0.10] },
-  { id: 'camera',       name: 'GIMBAL',       position: [ 0.0, -0.14,  0.72] },
-  { id: 'thermal',      name: 'THERMAL',      position: [ 0.0, -0.16,  0.86] },
-  { id: 'lidar',        name: 'LIDAR',        position: [ 0.0,  0.22,  0.88] },
-  { id: 'altitude',     name: 'ALTITUDE',     position: [ 0.0, -0.12, -0.15] },
-  { id: 'smoke',        name: 'SMOKE',        position: [ 0.40, 0.24,  0.40] },
-  { id: 'imu_fl',       name: 'MOTOR FL',     position: [ 1.48, 0.38,  1.48] },
-  { id: 'imu_fr',       name: 'MOTOR FR',     position: [-1.48, 0.38,  1.48] },
-  { id: 'bat_rl',       name: 'MOTOR RL',     position: [ 1.48, 0.38, -1.48] },
-  { id: 'bat_rr',       name: 'MOTOR RR',     position: [-1.48, 0.38, -1.48] },
-  { id: 'canopy_left',  name: 'SENSOR L',     position: [ 0.38, 0.34,  0.10] },
-  { id: 'canopy_right', name: 'SENSOR R',     position: [-0.38, 0.34,  0.10] },
+  { id: 'gps',          name: 'GPS MODULE',      position: [ 0.0,  0.60, -0.15] },
+  { id: 'imu',          name: 'IMU SENSOR',      position: [ 0.0,  0.46,  0.10] },
+  { id: 'thermal',      name: 'THERMAL CAMERA',  position: [ 0.0, -0.24,  0.84] },
+  { id: 'lidar',        name: 'OBSTACLE LIDAR',  position: [ 0.0,  0.16,  0.98] },
+  { id: 'altitude',     name: 'ALTITUDE SENSOR', position: [ 0.0, -0.22,  0.00] },
+  { id: 'smoke',        name: 'SMOKE SENSOR',    position: [ 0.42, 0.28,  0.38] },
+  { id: 'battery',      name: 'BATTERY PACK',    position: [ 0.0,  0.46, -0.48] },
+  { id: 'camera',       name: 'FPV CAMERA',      position: [ 0.0, -0.06,  1.04] },
 ];
 
 // Play/Pause SVG Icons
@@ -96,7 +92,7 @@ export default function DroneViewport({
         style={{ width: '100%', height: '100%' }}
         camera={{ position: [2.5, 2.0, 3.2], fov: 44 }}
         dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false }}
         onPointerMissed={() => onSensorSelect && onSensorSelect(null)}
       >
         {/* Studio lighting — soft product render appearance matching reference */}
@@ -115,12 +111,13 @@ export default function DroneViewport({
 
           {showSensorZones && HOTSPOTS.map(spot => {
             const matchedSensor = sensors.find(s => s.id === spot.id) || sensors[2];
-            const isSelected = selectedSensor?.id === spot.id || (selectedSensor?.id === 'thermal' && spot.id === 'thermal');
+            const isSelected = selectedSensor?.id === spot.id;
             return (
               <SensorHotspot
                 key={spot.id}
                 position={spot.position}
                 name={spot.name}
+                sensor={matchedSensor}
                 isActive={isSelected}
                 onClick={() => onSensorSelect(matchedSensor.id)}
                 showLabels={showLabels}

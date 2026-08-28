@@ -1,9 +1,9 @@
 /* ==========================================================================
-   AEGIS — Drone Thermal Reconnaissance Interface
+   AEGIS — Ultrasonic Proximity Radar Interface
    Styled to match the Light Blueprint / 3D Drone Control Cards Theme
    ========================================================================== */
 
-.thermal-panel {
+.ultrasonic-panel {
   flex: 1;
   width: 100%;
   height: 100%;
@@ -16,7 +16,7 @@
 }
 
 /* ── HEADER (High-Contrast Crisp Blueprint Design) ── */
-.thermal-header {
+.ultrasonic-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -25,17 +25,17 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.thermal-header__left {
+.ultrasonic-header__left {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.thermal-header__icon {
+.ultrasonic-header__icon {
   color: #2D636B;
 }
 
-.thermal-header h2 {
+.ultrasonic-header h2 {
   margin: 0;
   font-family: 'Space Grotesk', 'Outfit', sans-serif;
   font-size: 20px;
@@ -44,7 +44,7 @@
   color: #172124; /* Crisp dark readable text */
 }
 
-.thermal-header__id {
+.ultrasonic-header__id {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 11px;
   font-weight: 800;
@@ -57,7 +57,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.thermal-btn-back {
+.ultrasonic-btn-back {
   background: #FFFFFF;
   border: 1px solid rgba(0, 0, 0, 0.1);
   color: #2E3E42;
@@ -76,7 +76,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), inset 0 1px 0 #FFFFFF;
 }
 
-.thermal-btn-back:hover {
+.ultrasonic-btn-back:hover {
   background: #F4F9FA;
   border-color: #79B9C1;
   color: #172124;
@@ -140,7 +140,7 @@
 }
 
 /* ── MAIN CONTENT (GRID 7fr 3fr) ── */
-.thermal-content {
+.ultrasonic-content {
   flex: 1;
   display: grid;
   grid-template-columns: 7fr 3fr;
@@ -149,7 +149,7 @@
 }
 
 @media (max-width: 1024px) {
-  .thermal-content {
+  .ultrasonic-content {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     overflow-y: auto;
@@ -157,7 +157,7 @@
 }
 
 /* ── VIEWPORT (MATCHING CINEMATIC DRONE CARDS) ── */
-.thermal-viewport-container {
+.ultrasonic-viewport-container {
   background: #000000;
   border-radius: 14px;
   overflow: hidden;
@@ -166,7 +166,7 @@
   border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
-.thermal-viewport {
+.ultrasonic-viewport {
   width: 100%;
   height: 100%;
   position: relative;
@@ -176,16 +176,16 @@
   justify-content: center;
 }
 
-.thermal-viewport__video {
+.ultrasonic-viewport__video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: contrast(1.1) brightness(0.95);
+  filter: contrast(1.08) brightness(0.98);
   z-index: 1;
 }
 
 /* Offline State */
-.thermal-viewport__offline {
+.ultrasonic-viewport__offline {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -196,7 +196,7 @@
   z-index: 2;
 }
 
-.thermal-viewport__offline h3 {
+.ultrasonic-viewport__offline h3 {
   margin: 0;
   font-family: 'Space Grotesk', sans-serif;
   font-size: 22px;
@@ -205,7 +205,7 @@
   color: #D95858;
 }
 
-.thermal-btn-retry {
+.ultrasonic-btn-retry {
   margin-top: 14px;
   background: rgba(217, 88, 88, 0.12);
   border: 1px solid rgba(217, 88, 88, 0.4);
@@ -218,13 +218,13 @@
   transition: all 0.2s;
 }
 
-.thermal-btn-retry:hover {
+.ultrasonic-btn-retry:hover {
   background: rgba(217, 88, 88, 0.25);
   transform: translateY(-2px);
 }
 
 /* ── HUD OVERLAYS ── */
-.thermal-overlay__vignette {
+.ultrasonic-overlay__vignette {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.75);
@@ -232,7 +232,7 @@
   z-index: 5;
 }
 
-.thermal-overlay__grid {
+.ultrasonic-overlay__grid {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background-image: 
@@ -245,7 +245,7 @@
   -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 80%);
 }
 
-.thermal-overlay__scanline {
+.ultrasonic-overlay__scanline {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
@@ -256,35 +256,58 @@
   animation: scanSweep 4s linear infinite;
 }
 
-.thermal-overlay__reticle {
+@keyframes scanSweep {
+  0% { transform: translateY(-10px); opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { transform: translateY(800px); opacity: 0; }
+}
+
+.ultrasonic-overlay__reticle {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 40px; height: 40px;
+  width: 50px; height: 50px;
   pointer-events: none;
   z-index: 8;
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
-.reticle-center {
+.ultrasonic-reticle-center {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 4px; height: 4px;
+  width: 6px; height: 6px;
   background: #79B9C1;
   border-radius: 50%;
+  box-shadow: 0 0 8px #79B9C1;
 }
 
-.reticle-h {
+.ultrasonic-reticle-ring {
   position: absolute;
-  top: 50%; left: -20px; right: -20px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px; height: 44px;
+  border: 1px dashed rgba(121, 185, 193, 0.65);
+  border-radius: 50%;
+  animation: radarSpin 8s linear infinite;
+}
+
+@keyframes radarSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.ultrasonic-reticle-h {
+  position: absolute;
+  top: 50%; left: -25px; right: -25px;
   height: 1px;
   background: linear-gradient(90deg, transparent, #79B9C1, transparent);
 }
 
-.reticle-v {
+.ultrasonic-reticle-v {
   position: absolute;
-  left: 50%; top: -20px; bottom: -20px;
+  left: 50%; top: -25px; bottom: -25px;
   width: 1px;
   background: linear-gradient(180deg, transparent, #79B9C1, transparent);
 }
@@ -321,8 +344,38 @@
 .hud-bottom-left { bottom: 24px; left: 48px; }
 .hud-bottom-right { bottom: 24px; right: 48px; align-items: flex-end; }
 
+/* In-Stream Rangefinder HUD Badge */
+.hud-range-badge {
+  position: absolute;
+  top: 24px;
+  left: 140px;
+  z-index: 12;
+  background: rgba(18, 26, 28, 0.88);
+  border: 1px solid rgba(121, 185, 193, 0.4);
+  border-radius: 6px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.hud-range-title {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #79B9C1;
+}
+
+.hud-range-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
 /* ── MISSION TELEMETRY PANEL (Exact 3D Drone Blueprint Card Style) ── */
-.thermal-mission-panel {
+.ultrasonic-mission-panel {
   background: rgba(235, 243, 245, 0.85); /* Exact 3D Drone Card Base */
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);

@@ -327,11 +327,7 @@ export function getDronePosition(drone, timeOffset = 0) {
 
     case 'DEPLOYING': {
       const path = deployPaths[drone.id]
-      // Recovery: If we are in DEPLOYING phase but lost our start time (e.g. HMR), reset it.
-      const startTime = deployStartTime || (now - 0.1)
-      if (!deployStartTime) {
-        useSimStore.setState({ deployStartTime: startTime })
-      }
+      const startTime = deployStartTime || now
 
       if (!path) {
         const pad = BASE_PADS[(drone.id - 1) % 5]

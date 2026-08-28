@@ -40,8 +40,8 @@ export default function RecoveryMonitoringPanel({ activeEdgeCase }) {
     color = "#f59e0b"
     bg = "rgba(245, 158, 11, 0.1)"
     logs = [
-      "> Emergency synchronization initiated", 
-      "> Nearest drone selected (Drone 4)", 
+      "> Emergency synchronization initiated",
+      "> Nearest drone selected (Drone 4)",
       "> Transferring collected intelligence..."
     ]
   } else if (edgeCaseStep === 5) {
@@ -65,8 +65,8 @@ export default function RecoveryMonitoringPanel({ activeEdgeCase }) {
     color = "#00e5ff"
     bg = "rgba(0, 229, 255, 0.1)"
     logs = [
-      "> Mission completed successfully", 
-      "> No rescue data lost", 
+      "> Mission completed successfully",
+      "> No rescue data lost",
       "> Fault-tolerant edge coordination successful"
     ]
   }
@@ -87,14 +87,14 @@ export default function RecoveryMonitoringPanel({ activeEdgeCase }) {
           top: '80px',
           right: '24px',
           width: '380px',
-          background: 'rgba(5, 9, 15, 0.95)',
+          background: 'rgba(235, 243, 245, 0.95)',
           border: `1px solid ${color}`,
           borderRadius: '8px',
           padding: '20px',
-          boxShadow: `0 10px 40px rgba(0,0,0,0.5), 0 0 20px ${bg}`,
-          fontFamily: 'JetBrains Mono, monospace',
+          boxShadow: `0 10px 40px rgba(0,0,0,0.2), 0 0 20px ${bg}`,
+          fontFamily: 'var(--font-mono, JetBrains Mono, monospace)',
           zIndex: 9000,
-          backdropFilter: 'blur(10px)',
+          backdropFilter: 'blur(12px)',
           cursor: 'grab',
         }}
         whileDrag={{ cursor: 'grabbing', scale: 1.02 }}
@@ -104,7 +104,7 @@ export default function RecoveryMonitoringPanel({ activeEdgeCase }) {
             {icon}
           </div>
           <div>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#e2e8f0', letterSpacing: '1px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1F282B', letterSpacing: '1px' }}>
               {title}
             </div>
             <div style={{ fontSize: '11px', color: color }}>
@@ -114,26 +114,26 @@ export default function RecoveryMonitoringPanel({ activeEdgeCase }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          
+
           {/* Transfer Visualization */}
           {showTransferBars && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '6px', border: `1px solid ${color}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: edgeCaseStep >= 6 ? '#475569' : '#f43f5e' }}>
-                 <HardDrive size={16} />
-                 <span style={{ fontSize: '12px' }}>SRC: DRONE-3</span>
+                <HardDrive size={16} />
+                <span style={{ fontSize: '12px' }}>SRC: DRONE-3</span>
               </div>
-              
+
               {edgeCaseStep === 4 ? (
-                 <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 0.8 }}>
-                   <DownloadCloud size={18} color="#f59e0b" />
-                 </motion.div>
+                <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 0.8 }}>
+                  <DownloadCloud size={18} color="#f59e0b" />
+                </motion.div>
               ) : edgeCaseStep >= 5 ? (
-                 <CheckCircle2 size={18} color="#10b981" />
+                <CheckCircle2 size={18} color="#10b981" />
               ) : null}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#00e5ff' }}>
-                 <span style={{ fontSize: '12px' }}>DEST: DRONE-4</span>
-                 <HardDrive size={16} />
+                <span style={{ fontSize: '12px' }}>DEST: DRONE-4</span>
+                <HardDrive size={16} />
               </div>
             </div>
           )}
@@ -143,30 +143,30 @@ export default function RecoveryMonitoringPanel({ activeEdgeCase }) {
             <>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '10px', color: '#94a3b8' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Map size={12}/> TERRAIN MAP DATA</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Map size={12} /> TERRAIN MAP DATA</div>
                   <div>{edgeCaseStep === 4 ? 'SYNCING...' : '482.0 / 482.0 MB'}</div>
                 </div>
                 <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <motion.div 
+                  <motion.div
                     initial={{ width: edgeCaseStep === 4 ? '0%' : '100%' }}
                     animate={{ width: edgeCaseStep === 4 ? '60%' : '100%' }}
                     transition={{ duration: edgeCaseStep === 4 ? 2 : 0.5 }}
-                    style={{ height: '100%', background: '#00e5ff' }} 
+                    style={{ height: '100%', background: '#00e5ff' }}
                   />
                 </div>
               </div>
 
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '10px', color: '#94a3b8' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Database size={12}/> SURVIVOR METADATA</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Database size={12} /> SURVIVOR METADATA</div>
                   <div>{edgeCaseStep === 4 ? 'SYNCING...' : '14 / 14 ENTRIES'}</div>
                 </div>
                 <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <motion.div 
+                  <motion.div
                     initial={{ width: edgeCaseStep === 4 ? '0%' : '100%' }}
                     animate={{ width: edgeCaseStep === 4 ? '40%' : '100%' }}
                     transition={{ duration: edgeCaseStep === 4 ? 2.5 : 0.5 }}
-                    style={{ height: '100%', background: '#a855f7' }} 
+                    style={{ height: '100%', background: '#a855f7' }}
                   />
                 </div>
               </div>
@@ -174,18 +174,19 @@ export default function RecoveryMonitoringPanel({ activeEdgeCase }) {
           )}
 
           {/* Event Logs */}
-          <div style={{ 
-            marginTop: '8px', 
-            background: bg, 
+          <div style={{
+            marginTop: '8px',
+            background: bg,
             borderLeft: `2px solid ${color}`,
             padding: '12px',
             fontSize: '11px',
-            color: '#e2e8f0',
+            color: '#2C3E44',
             lineHeight: 1.6,
+            fontWeight: 600,
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {logs.map((log, i) => (
-                <motion.div 
+                <motion.div
                   key={i}
                   initial={{ opacity: 0, x: -5 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -252,20 +253,20 @@ function Drone3MapPanel({ step }) {
         top: '80px',
         left: '24px',
         width: '260px',
-        background: 'rgba(5, 9, 15, 0.92)',
+        background: 'rgba(235, 243, 245, 0.95)',
         border: `1px solid ${borderColor}`,
         borderRadius: '8px',
         padding: '16px',
-        boxShadow: `0 10px 30px rgba(0,0,0,0.5), 0 0 15px ${glowColor}`,
-        fontFamily: 'JetBrains Mono, monospace',
+        boxShadow: `0 10px 30px rgba(0,0,0,0.2), 0 0 15px ${glowColor}`,
+        fontFamily: 'var(--font-mono, JetBrains Mono, monospace)',
         zIndex: 9000,
-        backdropFilter: 'blur(10px)',
+        backdropFilter: 'blur(12px)',
         cursor: 'grab',
       }}
       whileDrag={{ cursor: 'grabbing', scale: 1.02 }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#e2e8f0', letterSpacing: '0.5px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1F282B', letterSpacing: '0.5px' }}>
           DRONE 3: ACTIVE SEARCH
         </span>
         <span style={{
@@ -405,8 +406,8 @@ function Drone4MapPanel({ step }) {
       drag
       dragMomentum={false}
       initial={{ opacity: 0, x: -20 }}
-      animate={{ 
-        opacity: 1, 
+      animate={{
+        opacity: 1,
         x: 0,
         y: isMerged ? -280 : 0
       }}
@@ -416,20 +417,20 @@ function Drone4MapPanel({ step }) {
         top: '360px',
         left: '24px',
         width: '260px',
-        background: 'rgba(5, 9, 15, 0.92)',
+        background: 'rgba(235, 243, 245, 0.95)',
         border: `1px solid ${borderColor}`,
         borderRadius: '8px',
         padding: '16px',
-        boxShadow: `0 10px 30px rgba(0,0,0,0.5), 0 0 15px ${glowColor}`,
-        fontFamily: 'JetBrains Mono, monospace',
+        boxShadow: `0 10px 30px rgba(0,0,0,0.2), 0 0 15px ${glowColor}`,
+        fontFamily: 'var(--font-mono, JetBrains Mono, monospace)',
         zIndex: 9000,
-        backdropFilter: 'blur(10px)',
+        backdropFilter: 'blur(12px)',
         cursor: 'grab',
       }}
       whileDrag={{ cursor: 'grabbing', scale: 1.02 }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#e2e8f0', letterSpacing: '0.5px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#1F282B', letterSpacing: '0.5px' }}>
           {title}
         </span>
         <span style={{
@@ -535,7 +536,7 @@ function Drone4MapPanel({ step }) {
 
           {/* Drone 4 active trajectory path */}
           <path
-            d={hasContinuation 
+            d={hasContinuation
               ? "M 205,120 L 205,25 L 180,25 L 180,120 L 155,120 L 155,45 L 105,45 L 105,120"
               : "M 205,120 L 205,25 L 180,25 L 180,120 L 155,120 L 155,45"
             }
@@ -593,7 +594,8 @@ function Drone4MapPanel({ step }) {
 
 // Utility SVGs & Styles
 const RadarStyles = () => (
-  <style dangerouslySetInnerHTML={{__html: `
+  <style dangerouslySetInnerHTML={{
+    __html: `
     @keyframes radar-ping {
       0% { r: 3px; opacity: 1; stroke-width: 1px; }
       100% { r: 12px; opacity: 0; stroke-width: 0.5px; }

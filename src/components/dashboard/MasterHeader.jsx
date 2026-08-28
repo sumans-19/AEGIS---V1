@@ -107,14 +107,17 @@ export default function MasterHeader({ activeTab = 'overview' }) {
 
         <div className="master-header__right">
           {/* Active Scenario Badge */}
-          <div className="master-header__info-group">
-            <span className="master-header__info-label">SCENARIO</span>
-            <span className="master-header__info-value" style={{ color: '#172124' }}>
-              {scenario ? scenario.toUpperCase() : 'EARTHQUAKE'}
-            </span>
-          </div>
-
-          <div className="master-header__divider" />
+          {activeTab === 'mission' && (
+            <>
+              <div className="master-header__info-group">
+                <span className="master-header__info-label">SCENARIO</span>
+                <span className="master-header__info-value" style={{ color: '#172124' }}>
+                  {scenario ? scenario.toUpperCase() : 'EARTHQUAKE'}
+                </span>
+              </div>
+              <div className="master-header__divider" />
+            </>
+          )}
 
           {/* Active Drone Fleet Nodes */}
           <div className="master-header__info-group">

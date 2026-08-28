@@ -30,8 +30,8 @@ export function useSimulation() {
       const currentTime = store.simulationTime
       const now = performance.now() / 1000
 
-      // ── Increment simulation time ──
-      useSimStore.getState().incrementTime(0.1)
+      // ── Increment simulation time (4Hz) ──
+      useSimStore.getState().incrementTime(0.25)
 
       // ═══ PHASE: DEPLOYING ═══
       if (store.missionPhase === 'DEPLOYING' && !deployChecked.current) {
@@ -161,7 +161,7 @@ export function useSimulation() {
         }
       }
 
-    }, 100)
+    }, 250)
 
     return () => clearInterval(interval)
   }, [simulationRunning, missionPhase])

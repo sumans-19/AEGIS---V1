@@ -13,7 +13,7 @@ export default function App() {
   }, [theme])
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/" element={<MasterDashboard />} />
         <Route path="/mission" element={<MasterDashboard />} />

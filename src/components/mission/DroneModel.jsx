@@ -77,16 +77,22 @@ export default function DroneModel({ drone, index }) {
       groupRef.current.rotation.y = Math.atan2(dir.x, dir.z)
     }
 
-    // ── Store position back (THROTTLED) ──
-    // Updating Zustand state in useFrame causes massive re-renders. Throttle to 5Hz.
+    // ── Store position back (THROTTLED to 1Hz) ──
+    // Updating Zustand state in useFrame causes massive re-renders. Throttle to 1Hz.
     const nowMs = performance.now()
-    if (!groupRef.current._lastUpdate || nowMs - groupRef.current._lastUpdate > 200) {
+    if (!groupRef.current._lastUpdate || nowMs - groupRef.current._lastUpdate > 1000) {
       groupRef.current._lastUpdate = nowMs
-      useSimStore.getState().updateDrone(drone.id, {
-        altitude: getDroneAltitude(pos) || 0,
-        speed: getDroneSpeed(drone) || 0,
-        pos: [pos.x, pos.y, pos.z],
-      })
+      const storeDrone = useSimStore.getState().drones.find(d => d.id === drone.id)
+      if (storeDrone) {
+        const lastP = storeDrone.pos
+        if (!lastP || Math.abs(lastP[0] - pos.x) > 0.5 || Math.abs(lastP[2] - pos.z) > 0.5) {
+          useSimStore.getState().updateDrone(drone.id, {
+            altitude: getDroneAltitude(pos) || 0,
+            speed: getDroneSpeed(drone) || 0,
+            pos: [pos.x, pos.y, pos.z],
+          })
+        }
+      }
     }
 
     // ── Rotor animation ──
@@ -222,15 +228,9 @@ export default function DroneModel({ drone, index }) {
                     <meshBasicMaterial color="#fff" transparent opacity={0.15} side={THREE.DoubleSide} depthWrite={false} />
                   </mesh>
                 </mesh>
-                <pointLight
-                  color={i === 0 || i === 1 ? "#ff0000" : "#00ff00"}
-                  distance={2}
-                  intensity={1}
-                  position={[0, -0.1, 0]}
-                />
                 <mesh position={[0, -0.05, 0]}>
-                  <sphereGeometry args={[0.04, 8, 8]} />
-                  <meshBasicMaterial color={i === 0 || i === 1 ? "#ff0000" : "#00ff00"} />
+                  <sphereGeometry args={[0.05, 8, 8]} />
+                  <meshBasicMaterial color={i === 0 || i === 1 ? "#ff2222" : "#00ff66"} />
                 </mesh>
               </group>
             )
@@ -253,21 +253,7 @@ export default function DroneModel({ drone, index }) {
           </group>
         </group>
 
-        {/* Drone Label (Color Only) */}
-        <Html position={[0, 4, 0]} center zIndexRange={[100, 0]}>
-          <div style={{
-            width: 8, 
-            height: 8, 
-            background: primaryColor, 
-            boxShadow: `0 0 10px ${primaryColor}`,
-            borderRadius: '50%',
-            opacity: isSelected ? 1 : 0.7,
-            transform: isSelected ? 'scale(1.5)' : 'scale(1)',
-            transition: 'all 0.2s',
-          }} />
-        </Html>
-
-        <pointLight ref={lightRef} color={scanColor} distance={30} intensity={4} position={[0, -2, 0]} />
+        <pointLight ref={lightRef} color={scanColor} distance={20} intensity={2.5} position={[0, -2, 0]} />
       </group>
 
       {/* Scan visuals (only when flying) */}

@@ -51,10 +51,21 @@ export default function ThermalView() {
     const ctx = canvas.getContext('2d')
     let tick = 0
 
-    // Pre-bake static noise field
-    const noiseField = Array.from({ length: 80 }, (_, i) =>
-      Array.from({ length: 80 }, (_, j) => seededRandom(i * 80 + j))
-    )
+    // Pre-bake static noise canvas once
+    const noiseCanvas = document.createElement('canvas')
+    noiseCanvas.width = 160
+    noiseCanvas.height = 120
+    const nctx = noiseCanvas.getContext('2d')
+    nctx.clearRect(0, 0, 160, 120)
+    for (let ny = 0; ny < 40; ny++) {
+      for (let nx = 0; nx < 40; nx++) {
+        const val = seededRandom(ny * 40 + nx)
+        if (val > 0.82) {
+          nctx.fillStyle = `hsl(${20 + val * 30}, 90%, ${30 + val * 40}%)`
+          nctx.fillRect(nx * 4, ny * 3, 4, 3)
+        }
+      }
+    }
 
     const draw = () => {
       tick++
@@ -80,20 +91,8 @@ export default function ThermalView() {
       ctx.fillRect(0, 0, width, height)
 
       // ── 2. AMBIENT THERMAL NOISE LAYER ────────────────
-      // Static noise baked into background — gives "sensor grain" look
-      ctx.globalAlpha = 0.03
-      for (let ny = 0; ny < 80; ny++) {
-        for (let nx = 0; nx < 80; nx++) {
-          const val = noiseField[ny][nx]
-          const bx = (nx / 80) * width
-          const by = (ny / 80) * height
-          const pw = width / 80, ph = height / 80
-          if (val > 0.82) {
-            ctx.fillStyle = `hsl(${20 + val * 30}, 90%, ${30 + val * 40}%)`
-            ctx.fillRect(bx, by, pw, ph)
-          }
-        }
-      }
+      ctx.globalAlpha = 0.04
+      ctx.drawImage(noiseCanvas, 0, 0, width, height)
       ctx.globalAlpha = 1
 
       // ── 3. SCENE ──────────────────────────────────────

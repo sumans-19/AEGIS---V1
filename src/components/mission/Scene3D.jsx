@@ -129,32 +129,33 @@ function DroneBasePlatform() {
           {/* Pad circle */}
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[3, 3.5, 32]} />
-            <meshBasicMaterial color="#00e5ff" transparent opacity={0.5} />
+            <meshBasicMaterial color="#00e5ff" transparent opacity={0.6} />
           </mesh>
           {/* Inner circle */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
             <ringGeometry args={[1.5, 1.8, 32]} />
-            <meshBasicMaterial color="#00e5ff" transparent opacity={0.3} />
+            <meshBasicMaterial color="#00e5ff" transparent opacity={0.4} />
           </mesh>
           {/* H mark horizontal */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
             <planeGeometry args={[2, 0.4]} />
-            <meshBasicMaterial color="#00e5ff" transparent opacity={0.6} />
+            <meshBasicMaterial color="#00e5ff" transparent opacity={0.7} />
           </mesh>
           {/* H mark vertical left */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.7, 0.02, 0]}>
             <planeGeometry args={[0.4, 3]} />
-            <meshBasicMaterial color="#00e5ff" transparent opacity={0.6} />
+            <meshBasicMaterial color="#00e5ff" transparent opacity={0.7} />
           </mesh>
           {/* H mark vertical right */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.7, 0.02, 0]}>
             <planeGeometry args={[0.4, 3]} />
-            <meshBasicMaterial color="#00e5ff" transparent opacity={0.6} />
+            <meshBasicMaterial color="#00e5ff" transparent opacity={0.7} />
           </mesh>
-          {/* Pad light */}
-          <pointLight color="#00e5ff" intensity={2} distance={8} position={[0, 1, 0]} />
         </group>
       ))}
+
+      {/* Unified Platform Illumination Light */}
+      <pointLight color="#00e5ff" intensity={4} distance={35} position={[0, 8, 0]} />
 
       {/* Control Tower */}
       <mesh position={[0, 5.5, -18]} castShadow>
@@ -171,7 +172,7 @@ function DroneBasePlatform() {
         <meshStandardMaterial color="#0a1628" emissive="#001830" emissiveIntensity={2} />
       </mesh>
       {/* Tower beacon */}
-      <pointLight position={[0, 13.5, -18]} color="#ff0000" intensity={5} distance={30} />
+      <pointLight position={[0, 13.5, -18]} color="#ff0000" intensity={3} distance={25} />
       <mesh position={[0, 13, -18]}>
         <sphereGeometry args={[0.3, 8, 8]} />
         <meshBasicMaterial color="#ff0000" />
@@ -184,9 +185,8 @@ function DroneBasePlatform() {
             <cylinderGeometry args={[0.1, 0.1, 1.5, 8]} />
             <meshStandardMaterial color="#555" />
           </mesh>
-          <pointLight color="#ffb300" intensity={2} distance={12} position={[0, 1, 0]} />
           <mesh position={[0, 0.8, 0]}>
-            <sphereGeometry args={[0.15, 8, 8]} />
+            <sphereGeometry args={[0.2, 8, 8]} />
             <meshBasicMaterial color="#ffb300" />
           </mesh>
         </group>
@@ -207,6 +207,7 @@ function DroneBasePlatform() {
 function RegionSelectMode({ onRegionSelected }) {
   const [firstCorner, setFirstCorner] = useState(null)
   const [hover, setHover] = useState(null)
+  const lastUpdate = useRef(0)
 
   return (
     <group>
@@ -233,7 +234,13 @@ function RegionSelectMode({ onRegionSelected }) {
           }
         }}
         onPointerMove={(e) => {
-          if (firstCorner) setHover({ x: e.point.x, z: e.point.z })
+          if (firstCorner) {
+            const now = Date.now()
+            if (now - lastUpdate.current > 50) {
+              setHover({ x: e.point.x, z: e.point.z })
+              lastUpdate.current = now
+            }
+          }
         }}
       >
         <planeGeometry args={[500, 500]} />
@@ -459,7 +466,11 @@ export default function Scene3D({ drones = [] }) {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <Canvas shadows gl={{ antialias: true, logarithmicDepthBuffer: true }}>
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        gl={{ antialias: true, powerPreference: 'high-performance' }}
+      >
         <PerspectiveCamera makeDefault position={[-80, 100, -80]} fov={50} />
         {!povMode && (
           <OrbitControls
@@ -483,7 +494,7 @@ export default function Scene3D({ drones = [] }) {
           turbidity={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).turbidity}
           rayleigh={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).rayleigh}
         />
-        <Stars radius={200} depth={80} count={8000} factor={4} saturation={0} fade speed={0.5} />
+        <Stars radius={200} depth={80} count={4000} factor={4} saturation={0} fade speed={0.5} />
 
         {/* Natural lighting */}
         <hemisphereLight
@@ -498,7 +509,8 @@ export default function Scene3D({ drones = [] }) {
           position={[50, 80, 30]}
           intensity={theme === 'dark' ? 0.8 : 1.8}
           castShadow
-          shadow-mapSize={[4096, 4096]}
+          shadow-mapSize={[2048, 2048]}
+          shadow-bias={-0.0005}
           shadow-camera-left={-250}
           shadow-camera-right={250}
           shadow-camera-top={250}

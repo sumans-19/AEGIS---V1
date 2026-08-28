@@ -1,5 +1,5 @@
 import { useSimStore } from '../../store/useSimStore'
-import { Camera, Thermometer, Map, Users, Network, Radio } from 'lucide-react'
+import { Camera, Thermometer, Map, Users, Network, Radio, ShieldAlert } from 'lucide-react'
 
 const TABS = [
   { id: 'droneview', label: 'CAM', icon: Camera },
@@ -8,6 +8,7 @@ const TABS = [
   { id: 'areamap', label: 'MAP', icon: Map },
   { id: 'survivors', label: 'LOG', icon: Users },
   { id: 'pathfinding', label: 'A*', icon: Network },
+  { id: 'obstaclelog', label: 'OBS', icon: ShieldAlert },
 ]
 
 export default function SidebarTabs() {

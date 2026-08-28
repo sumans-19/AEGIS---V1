@@ -349,7 +349,19 @@ export default function DroneModel({ wireframe = false, xray = false, propellers
     RL: [-0.32, 0.04, -0.32],
   };
 
-  const { shellWhite, panelGrey, seamDark, camBlack, lensGlass, tealLed, legDark, motorDark, motorSilver } = materials;
+  const {
+    shellWhite,
+    panelGrey,
+    seamDark,
+    carbonFiber,
+    propMat,
+    camBlack,
+    lensGlass,
+    tealLed,
+    legDark,
+    motorDark,
+    motorSilver,
+  } = materials;
 
   return (
     <group position={[0, 0.10, 0]} rotation={[0, Math.PI * 0.02, 0]}>
@@ -543,51 +555,193 @@ export default function DroneModel({ wireframe = false, xray = false, propellers
         </React.Fragment>
       ))}
 
-      {/* ---- TOP ANTENNA BUMPS (Dual UHF/WiFi Antennas) ---- */}
-      {[-0.12, 0.12].map((x, i) => (
-        <group key={`antenna-${i}`} position={[x, 0.38, 0.22]}>
-          {/* Antenna Base Pad */}
-          <mesh material={seamDark}>
-            <cylinderGeometry args={[0.022, 0.028, 0.016, 12]} />
-          </mesh>
-          {/* Antenna Stub Mast */}
-          <mesh position={[0, 0.035, 0]} material={motorDark}>
-            <cylinderGeometry args={[0.008, 0.010, 0.055, 8]} />
-          </mesh>
-          {/* Antenna Tip */}
-          <mesh position={[0, 0.065, 0]} material={motorSilver}>
-            <sphereGeometry args={[0.010, 8, 6]} />
-          </mesh>
-        </group>
-      ))}
+      {/* =========================================================
+          HIGH-FIDELITY REALISTIC SENSOR HARDWARE MODULES
+         ========================================================= */}
 
-      {/* ---- UNDER-BELLY SENSOR MODULES ---- */}
-      {/* Forward-Looking IR Sensor */}
-      <mesh position={[0, -0.10, 0.30]} material={camBlack}>
-        <boxGeometry args={[0.10, 0.030, 0.10]} />
-      </mesh>
-      <mesh position={[0, -0.115, 0.30]} material={lensGlass}>
-        <circleGeometry args={[0.032, 16]} />
-      </mesh>
-      {/* Downward Altitude/Optical Flow Sensor */}
-      <mesh position={[0, -0.10, -0.15]} material={camBlack}>
-        <cylinderGeometry args={[0.040, 0.040, 0.022, 16]} />
-      </mesh>
-      <mesh position={[0, -0.115, -0.15]} material={lensGlass}>
-        <circleGeometry args={[0.030, 16]} />
-      </mesh>
+      {/* 1. TOP GPS MODULE & FOLDING MAST */}
+      <group position={[0, 0.44, -0.15]}>
+        {/* CNC Aluminum Mast Base Hinge */}
+        <mesh material={seamDark}>
+          <boxGeometry args={[0.07, 0.035, 0.07]} />
+        </mesh>
+        <mesh position={[0, 0.02, 0]} material={motorSilver}>
+          <cylinderGeometry args={[0.025, 0.030, 0.025, 16]} />
+        </mesh>
+        {/* Carbon Fiber Mast Rod */}
+        <mesh position={[0, 0.08, 0]} material={carbonFiber}>
+          <cylinderGeometry args={[0.012, 0.012, 0.12, 16]} />
+        </mesh>
+        {/* GPS Puck Saucer Antenna Base */}
+        <mesh position={[0, 0.14, 0]} material={motorDark}>
+          <cylinderGeometry args={[0.095, 0.085, 0.028, 32]} />
+        </mesh>
+        {/* GPS Top Ceramic Patch Housing */}
+        <mesh position={[0, 0.155, 0]} material={shellWhite}>
+          <cylinderGeometry args={[0.085, 0.095, 0.018, 32]} />
+        </mesh>
+        {/* Center Ceramic GNSS Square */}
+        <mesh position={[0, 0.166, 0]} material={motorSilver}>
+          <boxGeometry args={[0.07, 0.005, 0.07]} />
+        </mesh>
+        {/* Active 360° GNSS Status Ring */}
+        <mesh position={[0, 0.145, 0]} material={tealLed}>
+          <torusGeometry args={[0.092, 0.004, 8, 32]} />
+        </mesh>
+      </group>
 
-      {/* ---- FORWARD OBSTACLE AVOIDANCE SENSOR PODS ---- */}
-      {[-0.18, 0.18].map((x, i) => (
-        <group key={`obs-sensor-${i}`} position={[x, -0.02, 0.82]}>
-          <mesh material={seamDark}>
-            <boxGeometry args={[0.06, 0.04, 0.03]} />
+      {/* 2. IMU FLIGHT CONTROLLER AVIONICS CORE (Visible Deck Port) */}
+      <group position={[0, 0.425, 0.10]}>
+        {/* Raised Avionics Deck Port Plate */}
+        <mesh material={seamDark}>
+          <boxGeometry args={[0.18, 0.020, 0.18]} />
+        </mesh>
+        {/* 4 Corner Silicone Vibration Dampening Standoffs */}
+        {[[-0.07, -0.07], [0.07, -0.07], [-0.07, 0.07], [0.07, 0.07]].map(([x, z], i) => (
+          <mesh key={`imu-standoff-${i}`} position={[x, 0.015, z]} material={motorSilver}>
+            <cylinderGeometry args={[0.010, 0.010, 0.018, 12]} />
           </mesh>
-          <mesh position={[0, 0, 0.018]} material={camBlack}>
-            <circleGeometry args={[0.014, 12]} />
+        ))}
+        {/* Black FR4 Printed Circuit Board */}
+        <mesh position={[0, 0.022, 0]} material={camBlack}>
+          <boxGeometry args={[0.14, 0.006, 0.14]} />
+        </mesh>
+        {/* 9-Axis Gyro IC Chip (Surface Mount) */}
+        <mesh position={[0, 0.028, 0]} material={motorSilver}>
+          <boxGeometry args={[0.045, 0.008, 0.045]} />
+        </mesh>
+        {/* Gold Solder Contacts */}
+        <mesh position={[0.035, 0.026, 0]} material={panelGrey}>
+          <boxGeometry args={[0.010, 0.004, 0.035]} />
+        </mesh>
+        {/* IMU Active Telemetry Status Blinker */}
+        <mesh position={[0.045, 0.028, 0.045]} material={tealLed}>
+          <boxGeometry args={[0.010, 0.006, 0.010]} />
+        </mesh>
+      </group>
+
+      {/* 3. FRONT NOSE OBSTACLE LIDAR & ULTRASONIC RADAR BUMPER */}
+      <group position={[0, 0.14, 0.96]}>
+        {/* Mounting Bumper Bracket */}
+        <mesh material={seamDark}>
+          <boxGeometry args={[0.22, 0.055, 0.06]} />
+        </mesh>
+        {/* Twin Ultrasonic Transducer Cans (HC-SR04 Style Silver Cylinders) */}
+        {[-0.065, 0.065].map((x, i) => (
+          <group key={`sonar-can-${i}`} position={[x, 0, 0.030]} rotation={[Math.PI / 2, 0, 0]}>
+            {/* Outer Beveled Aluminum Barrel */}
+            <mesh material={motorSilver}>
+              <cylinderGeometry args={[0.028, 0.028, 0.035, 24]} />
+            </mesh>
+            {/* Dark Acoustic Mesh Face */}
+            <mesh position={[0, 0.018, 0]} material={camBlack}>
+              <circleGeometry args={[0.024, 20]} />
+            </mesh>
+            {/* Inner Transducer Core */}
+            <mesh position={[0, 0.019, 0]} material={tealLed}>
+              <circleGeometry args={[0.008, 16]} />
+            </mesh>
+          </group>
+        ))}
+        {/* Center Laser LiDAR Scanner Turret */}
+        <mesh position={[0, 0.030, 0]} material={camBlack}>
+          <cylinderGeometry args={[0.032, 0.036, 0.030, 20]} />
+        </mesh>
+        <mesh position={[0, 0.042, 0]} material={tealLed}>
+          <torusGeometry args={[0.030, 0.003, 6, 20]} />
+        </mesh>
+      </group>
+
+      {/* 4. SMOKE / GAS SNIFFER & PARTICULATE SENSOR (Right Wing Port) */}
+      <group position={[0.42, 0.22, 0.38]}>
+        {/* Sensor Housing Pylon Base */}
+        <mesh material={seamDark}>
+          <boxGeometry args={[0.08, 0.05, 0.08]} />
+        </mesh>
+        {/* MQ-Type Stainless Steel Wire Mesh Sensor Bonnet */}
+        <mesh position={[0.02, 0.035, 0]} material={motorSilver}>
+          <cylinderGeometry args={[0.028, 0.028, 0.040, 20]} />
+        </mesh>
+        {/* Internal Heated Catalytic Element */}
+        <mesh position={[0.02, 0.035, 0]} material={tealLed}>
+          <sphereGeometry args={[0.014, 12, 10]} />
+        </mesh>
+        {/* Air Intake Scoop Gills */}
+        <mesh position={[0.045, 0, 0]} rotation={[0, Math.PI / 2, 0]} material={camBlack}>
+          <planeGeometry args={[0.05, 0.025]} />
+        </mesh>
+      </group>
+
+      {/* 5. 6S LIPO BATTERY MODULE & QUICK-RELEASE POWER DECK */}
+      <group position={[0, 0.40, -0.48]}>
+        {/* Carbon-Wrapped 6-Cell Battery Pack */}
+        <mesh material={carbonFiber}>
+          <boxGeometry args={[0.26, 0.11, 0.38]} />
+        </mesh>
+        {/* Top Reinforcement Spine Armor */}
+        <mesh position={[0, 0.060, 0]} material={seamDark}>
+          <boxGeometry args={[0.20, 0.015, 0.34]} />
+        </mesh>
+        {/* Quick-Release Lock Handle */}
+        <mesh position={[0, 0.055, -0.18]} material={motorDark}>
+          <boxGeometry args={[0.12, 0.035, 0.025]} />
+        </mesh>
+        {/* Yellow XT90 High-Current Power Connector Terminals */}
+        <mesh position={[-0.05, 0.055, -0.19]} material={motorSilver}>
+          <cylinderGeometry args={[0.012, 0.012, 0.018, 12]} />
+        </mesh>
+        <mesh position={[0.05, 0.055, -0.19]} material={motorSilver}>
+          <cylinderGeometry args={[0.012, 0.012, 0.018, 12]} />
+        </mesh>
+        {/* 5-Segment LED Battery Fuel Gauge */}
+        {[-0.06, -0.03, 0, 0.03, 0.06].map((x, i) => (
+          <mesh key={`bat-led-${i}`} position={[x, 0.069, -0.10]} material={tealLed}>
+            <boxGeometry args={[0.020, 0.005, 0.008]} />
           </mesh>
-        </group>
-      ))}
+        ))}
+      </group>
+
+      {/* 6. UNDER-BELLY ALTITUDE & GROUND SONAR CLEARANCE MODULE */}
+      <group position={[0, -0.18, 0.0]}>
+        {/* Ventral Sensor Pod Enclosure */}
+        <mesh material={camBlack}>
+          <boxGeometry args={[0.16, 0.040, 0.12]} />
+        </mesh>
+        {/* Dual Ground Sonar Transceiver Horns */}
+        {[-0.045, 0.045].map((x, i) => (
+          <group key={`alt-horn-${i}`} position={[x, -0.022, 0]}>
+            <mesh material={motorSilver}>
+              <cylinderGeometry args={[0.022, 0.016, 0.018, 16]} />
+            </mesh>
+            <mesh position={[0, -0.010, 0]} rotation={[Math.PI / 2, 0, 0]} material={tealLed}>
+              <circleGeometry args={[0.015, 16]} />
+            </mesh>
+          </group>
+        ))}
+        {/* Downward Optical Flow Lens */}
+        <mesh position={[0, -0.022, 0.035]} rotation={[Math.PI / 2, 0, 0]} material={lensGlass}>
+          <circleGeometry args={[0.022, 16]} />
+        </mesh>
+      </group>
+
+      {/* 7. FPV NAVIGATION CAMERA (Front Nose Aperture) */}
+      <group position={[0, -0.06, 1.02]}>
+        {/* Protective Aluminum Roll-Cage Frame */}
+        <mesh material={motorDark}>
+          <boxGeometry args={[0.09, 0.065, 0.04]} />
+        </mesh>
+        {/* 2.1mm Optical Glass Lens Barrel */}
+        <mesh position={[0, 0, 0.022]} rotation={[Math.PI / 2, 0, 0]} material={camBlack}>
+          <cylinderGeometry args={[0.024, 0.024, 0.025, 24]} />
+        </mesh>
+        {/* Front Anti-Reflective Optical Glass Element */}
+        <mesh position={[0, 0, 0.036]} rotation={[Math.PI / 2, 0, 0]} material={lensGlass}>
+          <circleGeometry args={[0.020, 20]} />
+        </mesh>
+        <mesh position={[0, 0, 0.037]} material={tealLed}>
+          <torusGeometry args={[0.022, 0.002, 6, 20]} />
+        </mesh>
+      </group>
 
       {/* ---- TOP SPINE REINFORCEMENT RIBS (3 transverse ribs) ---- */}
       {[0.20, -0.10, -0.40].map((z, i) => (

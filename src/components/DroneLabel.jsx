@@ -18,15 +18,13 @@ export default function DroneLabel({ drone }) {
     >
       <div
         style={{
-          background: "rgba(23, 33, 36, 0.88)",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
+          background: "rgba(18, 26, 28, 0.94)",
           padding: "3px 8px",
           borderRadius: "6px",
           border: `1px solid ${isEmergency ? '#dc3545' : '#79B9C1'}`,
           boxShadow: isEmergency
             ? "0 2px 8px rgba(220, 53, 69, 0.4)"
-            : "0 2px 8px rgba(121, 185, 193, 0.3)",
+            : "0 2px 8px rgba(0, 0, 0, 0.4)",
           color: "#FFFFFF",
           fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)",
           fontSize: "9px",

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AEGIS — Sensors Hub (Light Blueprint Theme)
+   AEGIS — Sensors Hub (3D Drone Control Cards UI Theme)
    ========================================================================== */
 
 .sensors-hub {
@@ -9,7 +9,7 @@
   display: flex;
   flex-direction: column;
   background: transparent;
-  padding: 40px;
+  padding: 36px 40px;
   overflow-y: auto;
   font-family: var(--font-primary, 'Inter', sans-serif);
 }
@@ -17,28 +17,32 @@
 /* ── GRID ── */
 .sensors-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
   justify-content: center;
 }
 
-/* ── LIGHT CARD ── */
+/* ── 3D DRONE THEMED SENSOR CARD ── */
 .light-card {
-  background: #EDF3F4; /* Pale cyan/gray base from mockup */
-  border: 1px solid #8CA3A6; /* Darker border as requested */
-  border-radius: 12px;
-  padding: 14px 16px;
+  background: rgba(235, 243, 245, 0.85); /* Exact 3D Drone Card Base */
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  outline: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 14px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 #FFFFFF;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   position: relative;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .light-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 #FFFFFF;
+  border-color: rgba(121, 185, 193, 0.8);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.08), inset 0 1px 0 #FFFFFF;
 }
 
 /* ── HEADER ── */
@@ -54,7 +58,7 @@
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #243135;
+  color: #172124; /* Crisp dark text */
 }
 
 .icon-close {
@@ -64,34 +68,35 @@
 }
 
 .icon-close:hover {
-  color: #243135;
+  color: #172124;
 }
 
 /* ── ICON, IMAGE & DESCRIPTION BOX ── */
 .light-card__info-box {
-  background: #F8FBFB;
-  border: 1px solid #E1EBEB;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 10px;
-  padding: 10px;
+  padding: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .info-box__image {
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
   object-fit: contain;
   mix-blend-mode: multiply;
-  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1));
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.08));
 }
 
 .light-card__info-box p {
   margin: 0;
   font-size: 11px;
   color: #4C656A;
-  line-height: 1.3;
+  line-height: 1.35;
   font-weight: 500;
   flex: 1;
 }
@@ -99,10 +104,10 @@
 /* ── SHARED LABELS ── */
 .label {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.1em;
-  color: #7A9699;
+  letter-spacing: 0.12em;
+  color: #71888D;
   text-transform: uppercase;
 }
 
@@ -111,15 +116,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: -4px; /* Pull up closer to the box above */
+  margin-top: -2px;
 }
 
 .status-val {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.05em;
-  color: #6BA5AD;
+  letter-spacing: 0.08em;
+  color: #17545C;
+  background: #DCECF0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(121, 185, 193, 0.5);
 }
 
 /* ── LIVE READING ── */
@@ -127,6 +136,11 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02), inset 0 1px 0 #FFFFFF;
 }
 
 .reading-content {
@@ -137,21 +151,21 @@
 
 .reading-value {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
-  color: #243135;
+  color: #172124;
   line-height: 1;
 }
 
 .reading-value .unit {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: #7A9699;
+  color: #71888D;
   margin-left: 4px;
 }
 
 .sparkline {
-  margin-right: -10px; /* Slight right shift to align with edge */
+  margin-right: -4px;
 }
 
 /* ── SPECIFICATIONS ── */
@@ -159,7 +173,10 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 2px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 10px 12px;
 }
 
 .specs-list {
@@ -172,7 +189,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: 11.5px;
 }
 
 .spec-label {
@@ -181,7 +198,7 @@
 }
 
 .spec-value {
-  color: #243135;
+  color: #172124;
   font-weight: 800;
 }
 
@@ -191,16 +208,15 @@
   flex-direction: column;
   gap: 2px;
   margin-top: 2px;
-  margin-bottom: 2px;
 }
 
 .location-val {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
-  color: #243135;
+  color: #2E3E42;
 }
 
-/* ── ACTION BUTTON ── */
+/* ── ACTION BUTTON (Matching 3D Drone interactive control buttons) ── */
 .btn-view-feed {
   display: flex;
   align-items: center;
@@ -209,20 +225,22 @@
   width: 100%;
   padding: 10px;
   background: #FFFFFF;
-  border: 1px solid #8CA3A6; /* Darker border */
-  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
   font-family: 'Space Grotesk', sans-serif;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.1em;
-  color: #3F5257;
+  color: #2E3E42;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03), inset 0 1px 0 #FFFFFF;
 }
 
 .btn-view-feed:hover {
-  background: #F8FBFB;
-  border-color: #6BA5AD;
-  color: #1C262B;
+  background: #B9DCE1;
+  border-color: #8FC4CC;
+  color: #172124;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(138, 203, 210, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }

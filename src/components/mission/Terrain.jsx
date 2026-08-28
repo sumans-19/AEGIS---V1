@@ -201,15 +201,7 @@ function RealisticTree({ position, scale = 1, seed = 0 }) {
 }
 
 function StreetLight({ position, rotation = [0, 0, 0], seed = 0 }) {
-  const isWorking = seededRandom(seed) > 0.6
-  const materialRef = useRef()
-  useFrame((state) => {
-    if (isWorking && materialRef.current) {
-      // Flickering effect for broken lights
-      const flicker = seededRandom(seed + 1) > 0.5 ? (Math.random() > 0.95 ? 0 : 1) : 1
-      materialRef.current.emissiveIntensity = 2 * flicker
-    }
-  })
+  const isWorking = seededRandom(seed) > 0.4
   return (
     <group position={position} rotation={rotation}>
       {/* Pole */}
@@ -230,7 +222,7 @@ function StreetLight({ position, rotation = [0, 0, 0], seed = 0 }) {
       {/* Emissive Bulb */}
       <mesh position={[1.6, 7.94, 0]}>
         <planeGeometry args={[0.3, 0.15]} />
-        <meshStandardMaterial ref={materialRef} color="#fff" emissive={isWorking ? "#ffddaa" : "#000"} emissiveIntensity={2} />
+        <meshStandardMaterial color="#fff" emissive={isWorking ? "#ffddaa" : "#000"} emissiveIntensity={isWorking ? 3 : 0} />
       </mesh>
     </group>
   )
@@ -286,11 +278,10 @@ function DeadTree({ position, seed = 0 }) {
   )
 }
 
-// ── Particle Fire Effect ──
+// ── Particle Fire Effect (Optimized) ──
 function Fire({ position, intensity = 1, spread = null }) {
   const meshRef = useRef()
-  const flickerRef = useRef()
-  const particleCount = spread ? 60 : 20
+  const particleCount = spread ? 24 : 12
   
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const particles = useMemo(() => {
@@ -306,6 +297,7 @@ function Fire({ position, intensity = 1, spread = null }) {
   }, [spread, particleCount, intensity])
 
   useFrame((state) => {
+    if (!meshRef.current) return
     const t = state.clock.elapsedTime
     particles.forEach((p, i) => {
       p.y += p.speed * 0.05
@@ -317,22 +309,16 @@ function Fire({ position, intensity = 1, spread = null }) {
       }
       dummy.position.set(position[0] + p.x, position[1] + p.y, position[2] + p.z)
       
-      // Calculate scale based on height (smaller as it goes up)
       const heightPercent = p.y / (6 * intensity)
       const currentScale = p.scale * Math.max(0.1, 1 - heightPercent)
       dummy.scale.setScalar(currentScale * intensity)
       
-      // Billboard rotation (facing camera)
       dummy.rotation.y = Math.atan2(state.camera.position.x - dummy.position.x, state.camera.position.z - dummy.position.z)
       
       dummy.updateMatrix()
       meshRef.current.setMatrixAt(i, dummy.matrix)
     })
     meshRef.current.instanceMatrix.needsUpdate = true
-
-    if (flickerRef.current) {
-      flickerRef.current.intensity = intensity * (3 + Math.sin(t * 15 + position[0] * 3) * 2.0 + Math.cos(t * 22) * 1.5)
-    }
   })
 
   return (
@@ -346,7 +332,6 @@ function Fire({ position, intensity = 1, spread = null }) {
           depthWrite={false}
         />
       </instancedMesh>
-      <pointLight ref={flickerRef} color="#FF5500" intensity={4} distance={spread ? 60 * intensity : 35 * intensity} position={[position[0], position[1] + (spread ? 5 : 3), position[2]]} />
     </group>
   )
 }
@@ -410,13 +395,13 @@ function Smoke({ position, scale = 1 }) {
   )
 }
 
-// ── Dust Particles ──
-function DustParticles({ count = 200, area = [200, 20, 200] }) {
+// ── Dust Particles (Optimized) ──
+function DustParticles({ count = 80, area = [200, 20, 200] }) {
   const meshRef = useRef()
   const dummy = useMemo(() => new THREE.Object3D(), [])
   
   const particles = useMemo(() => {
-    return Array.from({ length: count }).map((_, i) => ({
+    return Array.from({ length: count }).map(() => ({
       x: (Math.random() - 0.5) * area[0],
       y: Math.random() * area[1],
       z: (Math.random() - 0.5) * area[2],
@@ -426,6 +411,7 @@ function DustParticles({ count = 200, area = [200, 20, 200] }) {
   }, [count, area])
 
   useFrame((state) => {
+    if (!meshRef.current) return
     const t = state.clock.elapsedTime
     particles.forEach((p, i) => {
       p.x += Math.sin(t * p.speed + p.phase) * 0.02
@@ -446,18 +432,28 @@ function DustParticles({ count = 200, area = [200, 20, 200] }) {
   )
 }
 
-// ── Emergency Lights (Flickering Blue/Red) ──
+// ── Emergency Lights (Beacon Pulse) ──
 function EmergencyLight({ position }) {
-  const lightRef = useRef()
+  const matRef = useRef()
   useFrame((state) => {
-    const t = state.clock.elapsedTime * 10
-    if (lightRef.current) {
+    if (matRef.current) {
+      const t = state.clock.elapsedTime * 6
       const isRed = Math.sin(t) > 0
-      lightRef.current.color.setHex(isRed ? 0xff0000 : 0x0000ff)
-      lightRef.current.intensity = Math.sin(t * 2) > 0.5 ? 5 : 0
+      matRef.current.color.setHex(isRed ? 0xff2222 : 0x0088ff)
     }
   })
-  return <pointLight ref={lightRef} position={position} distance={15} intensity={5} />
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.5, 0]}>
+        <cylinderGeometry args={[0.1, 0.15, 0.5, 8]} />
+        <meshStandardMaterial color="#333" />
+      </mesh>
+      <mesh position={[0, 0.8, 0]}>
+        <sphereGeometry args={[0.25, 8, 8]} />
+        <meshBasicMaterial ref={matRef} color="#ff2222" />
+      </mesh>
+    </group>
+  )
 }
 
 // ── Ground crack/fissure ──
@@ -899,34 +895,22 @@ function EarthquakeTerrain() {
   )
 }
 
-// ── Tsunami components ──
+// ── Tsunami components (Optimized) ──
 function Water({ level = 0 }) {
   const waterRef = useRef()
-  const geoRef = useRef()
   
   useFrame((state) => {
     const t = state.clock.elapsedTime
     if (waterRef.current) {
-      waterRef.current.position.y = level + Math.sin(t * 0.5) * 0.2
-      waterRef.current.rotation.x = -Math.PI / 2 + Math.sin(t * 0.3) * 0.01
-      waterRef.current.rotation.y = Math.cos(t * 0.2) * 0.01
-    }
-    if (geoRef.current) {
-      const posAttribute = geoRef.current.attributes.position
-      const v = new THREE.Vector3()
-      for (let i = 0; i < posAttribute.count; i++) {
-        v.fromBufferAttribute(posAttribute, i)
-        // Note: plane is rotated, so z is height locally
-        v.z = Math.sin(v.x * 0.1 + t * 2) * Math.cos(v.y * 0.1 + t * 2) * 1.5
-        posAttribute.setZ(i, v.z)
-      }
-      posAttribute.needsUpdate = true
+      waterRef.current.position.y = level + Math.sin(t * 0.5) * 0.25
+      waterRef.current.rotation.x = -Math.PI / 2 + Math.sin(t * 0.3) * 0.008
+      waterRef.current.rotation.y = Math.cos(t * 0.2) * 0.008
     }
   })
 
   return (
     <mesh ref={waterRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, level, 0]} receiveShadow>
-      <planeGeometry ref={geoRef} args={[1000, 1000, 64, 64]} />
+      <planeGeometry args={[1000, 1000]} />
       <meshStandardMaterial
         color="#0c2c4d" // Deep Oceanic Navy
         transparent
@@ -1076,7 +1060,6 @@ function TsunamiTerrain() {
 
 function MuddyWater({ level = 0 }) {
   const waterRef = useRef()
-  const geoRef = useRef()
 
   useFrame((state) => {
     const t = state.clock.elapsedTime
@@ -1084,22 +1067,11 @@ function MuddyWater({ level = 0 }) {
       waterRef.current.position.y = level + Math.sin(t * 0.4) * 0.15
       waterRef.current.rotation.x = -Math.PI / 2 + Math.sin(t * 0.2) * 0.005
     }
-    if (geoRef.current) {
-      const posAttribute = geoRef.current.attributes.position
-      const v = new THREE.Vector3()
-      for (let i = 0; i < posAttribute.count; i++) {
-        v.fromBufferAttribute(posAttribute, i)
-        // Turbulent muddy surface
-        v.z = (Math.sin(v.x * 0.15 + t * 1.5) + Math.cos(v.y * 0.15 + t * 1.5)) * 0.6
-        posAttribute.setZ(i, v.z)
-      }
-      posAttribute.needsUpdate = true
-    }
   })
 
   return (
     <mesh ref={waterRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, level, 0]} receiveShadow>
-      <planeGeometry ref={geoRef} args={[1000, 1000, 48, 48]} />
+      <planeGeometry args={[1000, 1000]} />
       <meshStandardMaterial
         color="#4a3f35" // Muted silt/mud
         transparent
@@ -1114,7 +1086,7 @@ function MuddyWater({ level = 0 }) {
   )
 }
 
-function RainSystem({ count = 2000, area = [300, 150, 300] }) {
+function RainSystem({ count = 600, area = [300, 150, 300] }) {
   const meshRef = useRef()
   const dummy = useMemo(() => new THREE.Object3D(), [])
   
@@ -1128,6 +1100,7 @@ function RainSystem({ count = 2000, area = [300, 150, 300] }) {
   }, [count, area])
 
   useFrame((state) => {
+    if (!meshRef.current) return
     particles.forEach((p, i) => {
       p.y -= p.speed
       p.x -= p.speed * 0.2 // wind slant
@@ -1136,7 +1109,6 @@ function RainSystem({ count = 2000, area = [300, 150, 300] }) {
         p.x = (Math.random() - 0.5) * area[0]
       }
       dummy.position.set(p.x, p.y, p.z)
-      // Slant the rain based on wind
       dummy.rotation.z = Math.PI / 12
       dummy.updateMatrix()
       meshRef.current.setMatrixAt(i, dummy.matrix)
