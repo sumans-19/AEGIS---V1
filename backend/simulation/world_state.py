@@ -1,6 +1,4 @@
 import numpy as np
-import random
-
 from typing import List, Optional, Tuple, Dict
 from dataclasses import dataclass, field
 
@@ -23,104 +21,7 @@ class DroneState:
     phaseOffset: float = 0.0  # orbit start angle
     orbitSpeed: float = 1.0   # angular velocity
     assigned_zone: Tuple[int, int, int, int] = (0, 0, 10, 10) # (x1,y1,x2,y2) grid indices
-    
-    propeller_health: float = 100.0
-    motor_temperature: float = 45.0
-    cpu_temperature: float = 40.0
 
-    signal_strength: float = 100.0
-    packet_loss: float = 0.0
-
-    thermal_status: bool = True
-    lidar_status: bool = True
-    camera_status: bool = True
-    gps_status: bool = False
-
-    
-    smoke_density: float = 0.0
-    moisture_level: float = 0.0
-    wind_speed: float = 0.0
-    ambient_temperature: float = 25.0
-
-    altitude: float = 20.0
-    direction: float = 0.0
-    obstacle_distance: float = 10.0
-
-   
-    autonomous_mode: bool = False
-    last_decision: str = "CONTINUE_MISSION"
-    reward_score: float = 0.0
-
-   
-    nearby_drone_id: Optional[int] = None
-    requesting_support: bool = False
-
-    
-
-    recent_events: List[str] = field(default_factory=list)
-    
-    def update_telemetry(self):
-
-        # -------------------------
-        # BATTERY DRAIN
-        # -------------------------
-        self.battery -= random.uniform(0.01, 0.2)
-        self.battery = max(0, self.battery)
-
-        # -------------------------
-        # SIGNAL FLUCTUATION
-        # -------------------------
-        self.signal_strength += random.uniform(-2, 2)
-        self.signal_strength = max(0, min(100, self.signal_strength))
-
-        # -------------------------
-        # TEMPERATURE CHANGES
-        # -------------------------
-        self.cpu_temperature += random.uniform(-1, 1)
-        self.motor_temperature += random.uniform(-1, 1)
-
-        # -------------------------
-        # ENVIRONMENT CHANGES
-        # -------------------------
-        self.smoke_density = random.uniform(0, 100)
-        self.moisture_level = random.uniform(0, 100)
-        self.wind_speed = random.uniform(0, 30)
-
-        # -------------------------
-        # NAVIGATION
-        # -------------------------
-        self.altitude += random.uniform(-1, 1)
-        self.obstacle_distance = random.uniform(0.2, 15)
-
-        # -------------------------
-        # RANDOM FAILURES
-        # -------------------------
-        if random.random() < 0.002:
-            self.thermal_status = False
-            self.recent_events.append("THERMAL_SENSOR_FAILURE")
-
-        if random.random() < 0.002:
-            self.lidar_status = False
-            self.recent_events.append("LIDAR_FAILURE")
-
-        if random.random() < 0.002:
-            self.propeller_health -= random.uniform(20, 50)
-            self.recent_events.append("PROPELLER_DAMAGE")
-
-        self.propeller_health = max(0, self.propeller_health)
-
-        # -------------------------
-        # AUTONOMOUS FALLBACK
-        # -------------------------
-        if self.signal_strength < 20:
-            self.autonomous_mode = True
-            self.recent_events.append(
-                "AUTONOMOUS_MODE_ENABLED"
-            )
-
-
-    
-    
 @dataclass
 class Survivor:
     id: int

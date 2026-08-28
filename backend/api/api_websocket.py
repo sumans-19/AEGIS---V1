@@ -41,12 +41,7 @@ class WebSocketHub:
                     "scan_radius": d.scan_radius,
                     "assigned_zone": d.assigned_zone,
                     "thermal_url": f"/api/drone/{d.id}/thermal",
-                    "camera_url": f"/api/drone/{d.id}/camera",
-                    "autonomous_mode": d.autonomous_mode,
-                    "last_decision": d.last_decision,
-                    "nearby_drone_id": d.nearby_drone_id,
-                    "reward_score": round(float(d.reward_score), 1),
-                    "requesting_support": d.requesting_support,
+                    "camera_url": f"/api/drone/{d.id}/camera"
                 } for d in world.drones
             ],
             "survivors": [

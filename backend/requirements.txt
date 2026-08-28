@@ -8,5 +8,3 @@ opencv-python-headless==4.9.0.80
 Pillow==10.3.0
 python-multipart==0.0.9
 asyncio==3.4.3
-pymongo>=4.7.0
-torch>=2.0.0

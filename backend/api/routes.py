@@ -328,3 +328,30 @@ async def merge_missions(data: dict):
     missions = data.get("missions", [])
     merged = merge_mission_data(missions)
     return JSONResponse(content=merged)
+
+@router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await hub.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            msg = json.loads(data)
+            if msg["type"] == "command":
+                action = msg["action"]
+                if action in ["start_simulation", "resume", "start"]:
+                    scenario = msg.get("scenario", world.scenario)
+                    if action == "start_simulation": load_scenario(scenario)
+                    world.running = True
+                elif action in ["pause", "stop"]:
+                    world.running = False
+                elif action == "set_speed":
+                    world.speed = float(msg.get("value", 1.0))
+                elif action == "seed_survivor":
+                    pos = msg.get("pos")
+                    inject_test_survivor(world, pos)
+                elif action == "assign_drone":
+                    d_id = msg.get("drone_id")
+                    target = msg.get("target")
+                    assign_drone_target(d_id, np.array([target[0], 25, target[1]]))
+    except:
+        hub.disconnect(websocket)
