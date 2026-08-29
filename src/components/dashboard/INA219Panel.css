@@ -1,13 +1,13 @@
 /* =========================================================================
-   THERMAL CAMERA & OPTICAL GIMBAL RECONNAISSANCE PANEL
-   Strictly unified with AEGIS Aerospace Brand Palette & Card Deck Layout:
+   INA219 DC POWER MONITOR & ELECTRICAL INTELLIGENCE PANEL
+   Strictly unified with AEGIS Aerospace Brand Palette & 3D Drone Tab Design:
    - Primary Brand Teals: #79B9C1, #6BA5AD, #2D636B, #3BAAB6, #E8F5F7, #DCE6E8
    - Deep Slate/Charcoal: #172124, #1F282B, #20272B, #0D1A1E, #050A0C
    - Technical Labels: #5A6E72, #6C7F84
    - Frosted Glass Cards: rgba(235, 243, 245, 0.92) with subtle borders
    ========================================================================= */
 
-.thermal-panel {
+.ina-panel {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -20,7 +20,7 @@
 }
 
 /* Header Bar */
-.thermal-panel__header {
+.ina-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -34,13 +34,13 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
-.thermal-panel__header-left {
+.ina-panel__header-left {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.thermal-panel__back-btn {
+.ina-panel__back-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -57,20 +57,20 @@
   transition: all 0.2s ease;
 }
 
-.thermal-panel__back-btn:hover {
+.ina-panel__back-btn:hover {
   background: #E8F5F7;
   border-color: #2D636B;
   color: #2D636B;
   transform: translateX(-2px);
 }
 
-.thermal-panel__title-group {
+.ina-panel__title-group {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.thermal-panel__title {
+.ina-panel__title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 14px;
   font-weight: 800;
@@ -82,11 +82,11 @@
   gap: 6px;
 }
 
-.thermal-panel__title-icon {
+.ina-panel__title-icon {
   color: #2D636B;
 }
 
-.thermal-panel__badge {
+.ina-panel__badge {
   background: #E8F5F7;
   border: 1px solid #79B9C1;
   border-radius: 4px;
@@ -99,13 +99,13 @@
 }
 
 /* Header Right */
-.thermal-panel__header-right {
+.ina-panel__header-right {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.thermal-panel__hw-tag {
+.ina-panel__hw-tag {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -119,7 +119,7 @@
   color: #172124;
 }
 
-.thermal-panel__hw-dot {
+.ina-panel__hw-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -127,14 +127,14 @@
   box-shadow: 0 0 8px #3BAAB6;
 }
 
-.thermal-panel__unit-toggle {
+.ina-panel__unit-toggle {
   display: flex;
   background: rgba(0, 0, 0, 0.06);
   border-radius: 8px;
   padding: 2px;
 }
 
-.thermal-panel__unit-btn {
+.ina-panel__unit-btn {
   background: transparent;
   border: none;
   padding: 4px 8px;
@@ -147,14 +147,14 @@
   transition: all 0.15s ease;
 }
 
-.thermal-panel__unit-btn--active {
+.ina-panel__unit-btn--active {
   background: #FFFFFF;
   color: #172124;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Main Grid */
-.thermal-panel__grid {
+.ina-panel__grid {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -162,8 +162,8 @@
   min-height: 0;
 }
 
-/* Left Video Viewport Container */
-.thermal-panel__canvas-container {
+/* Left Canvas Container */
+.ina-panel__canvas-container {
   position: relative;
   border-radius: 12px;
   overflow: hidden;
@@ -171,63 +171,16 @@
   outline: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   background: #070C0E;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.thermal-panel__video {
+.ina-panel__canvas {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   display: block;
 }
 
-/* Offline State */
-.thermal-panel__offline {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: #79B9C1;
-  text-align: center;
-  padding: 20px;
-}
-
-.thermal-panel__offline h3 {
-  margin: 0;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 16px;
-  font-weight: 800;
-  color: #FFFFFF;
-}
-
-.thermal-panel__offline p {
-  margin: 0;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.thermal-panel__btn-retry {
-  background: #2D636B;
-  border: 1px solid #79B9C1;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #FFFFFF;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.thermal-panel__btn-retry:hover {
-  background: #3BAAB6;
-}
-
-/* HUD Overlay Badges */
-.thermal-panel__hud-overlay {
+/* HUD Overlay Badges on Canvas */
+.ina-panel__hud-overlay {
   position: absolute;
   background: rgba(15, 26, 29, 0.82);
   backdrop-filter: blur(8px);
@@ -240,17 +193,17 @@
   flex-direction: column;
 }
 
-.thermal-panel__hud-overlay--top-left {
+.ina-panel__hud-overlay--top-left {
   top: 12px;
   left: 12px;
 }
 
-.thermal-panel__hud-overlay--top-right {
+.ina-panel__hud-overlay--top-right {
   top: 12px;
   right: 12px;
 }
 
-.thermal-panel__hud-overlay--bottom {
+.ina-panel__hud-overlay--bottom {
   bottom: 12px;
   left: 12px;
   right: 12px;
@@ -259,7 +212,7 @@
   align-items: center;
 }
 
-.thermal-panel__hud-tag {
+.ina-panel__hud-tag {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 8.5px;
   font-weight: 700;
@@ -267,26 +220,26 @@
   color: #79B9C1;
 }
 
-.thermal-panel__hud-val {
+.ina-panel__hud-val {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 16px;
   font-weight: 800;
   color: #FFFFFF;
 }
 
-.thermal-panel__hud-val small {
+.ina-panel__hud-val small {
   font-size: 10px;
   color: #79B9C1;
 }
 
-.thermal-panel__hud-sub {
+.ina-panel__hud-sub {
   font-family: 'Inter', sans-serif;
   font-size: 8px;
   color: rgba(255, 255, 255, 0.6);
   margin-top: 1px;
 }
 
-.thermal-panel__hud-status-item {
+.ina-panel__hud-status-item {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -296,7 +249,7 @@
   color: #E2F0F2;
 }
 
-.thermal-panel__hud-dot {
+.ina-panel__hud-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -305,7 +258,7 @@
 }
 
 /* Right Side Deck */
-.thermal-panel__side-deck {
+.ina-panel__side-deck {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -315,7 +268,7 @@
 }
 
 /* Card Styling Matching 3D Drone Tab */
-.thermal-card {
+.ina-card {
   background: rgba(235, 243, 245, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -330,19 +283,19 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.thermal-card:hover {
+.ina-card:hover {
   transform: translateY(-1px);
   border-color: #79B9C1;
   box-shadow: 0 6px 20px rgba(45, 99, 107, 0.08);
 }
 
-.thermal-card__header {
+.ina-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.thermal-card__title {
+.ina-card__title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 10px;
   font-weight: 800;
@@ -351,7 +304,7 @@
   color: #1F282B;
 }
 
-.thermal-card__badge {
+.ina-card__badge {
   background: #E8F5F7;
   border: 1px solid #79B9C1;
   border-radius: 4px;
@@ -363,13 +316,13 @@
 }
 
 /* Primary Metric Grid */
-.thermal-metric-grid {
+.ina-metric-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-.thermal-metric-box {
+.ina-metric-box {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -381,13 +334,13 @@
   transition: all 0.2s ease;
 }
 
-.thermal-metric-box:hover {
+.ina-metric-box:hover {
   border-color: #79B9C1;
   background: #FFFFFF;
   box-shadow: 0 4px 10px rgba(45, 99, 107, 0.08);
 }
 
-.thermal-metric-box__icon-wrap {
+.ina-metric-box__icon-wrap {
   width: 32px;
   height: 32px;
   border-radius: 6px;
@@ -400,13 +353,13 @@
   color: #2D636B;
 }
 
-.thermal-metric-box__content {
+.ina-metric-box__content {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.thermal-metric-box__label {
+.ina-metric-box__label {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 7.5px;
   font-weight: 700;
@@ -415,7 +368,7 @@
   color: #6C7F84;
 }
 
-.thermal-metric-box__val {
+.ina-metric-box__val {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 15px;
   font-weight: 800;
@@ -424,7 +377,7 @@
   margin-top: 1px;
 }
 
-.thermal-metric-box__val small {
+.ina-metric-box__val small {
   font-size: 9px;
   font-weight: 700;
   color: #2D636B;
@@ -432,13 +385,13 @@
 }
 
 /* Waveforms Row */
-.thermal-waveform-row {
+.ina-waveform-row {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.thermal-waveform-item {
+.ina-waveform-item {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
@@ -446,11 +399,11 @@
   transition: border-color 0.2s ease;
 }
 
-.thermal-waveform-item:hover {
+.ina-waveform-item:hover {
   border-color: #79B9C1;
 }
 
-.thermal-waveform-header {
+.ina-waveform-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -462,54 +415,62 @@
   margin-bottom: 2px;
 }
 
-.thermal-waveform-val {
+.ina-waveform-val {
   font-size: 9.5px;
   font-weight: 800;
   color: #2D636B;
 }
 
-.thermal-sparkline-svg {
+.ina-sparkline-svg {
   width: 100%;
   height: 32px;
   display: block;
 }
 
-/* Target Intel Rows */
-.thermal-intel-list {
+/* Subsystem Breakdown Bars */
+.ina-subsystems-list {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
-.thermal-intel-row {
+.ina-subsystem-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ina-subsystem-labels {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 4px 6px;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 6px;
   font-family: 'Space Grotesk', sans-serif;
   font-size: 8px;
-}
-
-.thermal-intel-label {
-  color: #6C7F84;
-  font-weight: 600;
-}
-
-.thermal-intel-val {
+  font-weight: 700;
   color: #1F282B;
-  font-weight: 800;
+}
+
+.ina-subsystem-bar-bg {
+  width: 100%;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ina-subsystem-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
 /* Specs List */
-.thermal-specs-list {
+.ina-specs-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.thermal-spec-row {
+.ina-spec-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -520,12 +481,12 @@
   font-size: 8px;
 }
 
-.thermal-spec-label {
+.ina-spec-label {
   color: #6C7F84;
   font-weight: 600;
 }
 
-.thermal-spec-val {
+.ina-spec-val {
   color: #1F282B;
   font-weight: 800;
 }

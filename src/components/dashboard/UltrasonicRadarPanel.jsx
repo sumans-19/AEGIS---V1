@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Waves, Radio, Activity, VideoOff, 
-  Wifi, ShieldAlert, Cpu, HardDrive, MapPin, Lock, Crosshair, Target
+  Wifi, ShieldAlert, Cpu, HardDrive, MapPin, Lock, Crosshair, Target, ArrowLeft
 } from 'lucide-react';
 import './UltrasonicRadarPanel.css';
 
@@ -12,12 +12,16 @@ const HEALTH_URL = import.meta.env.VITE_THERMAL_HEALTH_URL || "http://localhost:
 export default function UltrasonicRadarPanel({ onBack }) {
   const [streamStatus, setStreamStatus] = useState('live'); // connecting, live, error
   const [sysTime, setSysTime] = useState('');
+  const [unitMode, setUnitMode] = useState('CM'); // 'CM' or 'M'
   const [telemetry, setTelemetry] = useState({
     distance_cm: 238.95,
     distance_m: 2.39,
     status: 'ACTIVE',
-    source: 'SERIAL_COM9',
+    source: 'HARDWARE_COM9',
     risk_level: 'SAFE',
+    history: [240.2, 239.5, 238.9, 238.5, 238.0, 237.5, 238.5],
+    history_echo: [13.8, 13.9, 13.8, 13.7, 13.6, 13.7, 13.7],
+    history_amp: [92, 94, 93, 95, 93, 94, 94],
     fused_shape: {
       primary_class: 'HUMAN SURVIVOR',
       estimated_width_cm: 78.9,
@@ -68,65 +72,46 @@ export default function UltrasonicRadarPanel({ onBack }) {
         if (res.ok) {
           const data = await res.json();
           setTelemetry(prev => {
-            const current = prev || {
-              distance_cm: 238.5,
-              distance_m: 2.38,
-              status: 'ACTIVE',
-              source: 'SIMULATED',
-              risk_level: 'SAFE',
-              fused_shape: {
-                class: 'OBSTACLE',
-                aspect_ratio: '1:1.4',
-                estimated_width_cm: 45.0,
-                estimated_height_cm: 63.0,
-                confidence: 85,
-                hazard_score: 12,
-              },
-              targets: 1,
-            };
-            if (!data) return current;
+            if (!data) return prev;
+            const dist = data.distance_cm ?? prev.distance_cm;
+            const newHistory = (prev.history || []).concat([dist]).slice(-25);
+            const echoDuration = Math.round((dist / 0.0343) * 2 / 100) / 10;
+            const newHistoryEcho = (prev.history_echo || []).concat([echoDuration]).slice(-25);
+            const amp = Math.min(99, Math.max(50, Math.round(98 - (dist * 0.1))));
+            const newHistoryAmp = (prev.history_amp || []).concat([amp]).slice(-25);
+
             return {
-              ...current,
-              distance_cm: data.distance_cm ?? current.distance_cm,
-              distance_m: data.distance_m ?? current.distance_m,
+              ...prev,
+              ...data,
+              distance_cm: dist,
+              distance_m: data.distance_m ?? Number((dist / 100).toFixed(2)),
               status: data.status ?? 'ACTIVE',
-              source: data.source ?? current.source,
-              risk_level: data.risk_level ?? current.risk_level,
-              fused_shape: data.fused_shape ?? current.fused_shape,
-              targets: data.fused_shape?.object_count || (data.distance_cm ? 1 : 0),
+              source: data.source ?? prev.source,
+              risk_level: data.risk_level ?? prev.risk_level,
+              fused_shape: data.fused_shape ?? prev.fused_shape,
+              targets: data.fused_shape?.object_count || (dist ? 1 : 0),
+              history: newHistory,
+              history_echo: newHistoryEcho,
+              history_amp: newHistoryAmp,
             };
           });
         }
       } catch (err) {
-        // Smooth telemetry simulator when backend is initializing
+        // Smooth telemetry simulator when disconnected
         setTelemetry(prev => {
-          const current = prev || {
-            distance_cm: 238.5,
-            distance_m: 2.38,
-            status: 'ACTIVE',
-            source: 'SIMULATED',
-            risk_level: 'SAFE',
-            fused_shape: {
-              class: 'OBSTACLE',
-              aspect_ratio: '1:1.4',
-              estimated_width_cm: 45.0,
-              estimated_height_cm: 63.0,
-              confidence: 85,
-              hazard_score: 12,
-            },
-            targets: 1,
-          };
-          const prevCm = current.distance_cm || 238.5;
+          const prevCm = prev.distance_cm || 238.5;
           const drift = Math.sin(Date.now() / 1500) * 1.8 + (Math.random() - 0.5) * 0.4;
           const newCm = Math.max(15, Math.min(380, prevCm + drift));
           const risk = newCm < 45 ? 'COLLISION_IMMINENT' : newCm < 120 ? 'PROXIMITY_WARNING' : 'SAFE';
+          const newHistory = (prev.history || []).concat([Number(newCm.toFixed(1))]).slice(-25);
           return {
-            ...current,
-            distance_cm: Number(newCm.toFixed(2)),
+            ...prev,
+            distance_cm: Number(newCm.toFixed(1)),
             distance_m: Number((newCm / 100).toFixed(2)),
             risk_level: risk,
+            history: newHistory,
             fused_shape: {
-              ...(current.fused_shape || {}),
+              ...(prev.fused_shape || {}),
               estimated_width_cm: Number((newCm * 0.28).toFixed(1)),
               estimated_height_cm: Number((newCm * 0.65).toFixed(1)),
             }
@@ -136,222 +121,346 @@ export default function UltrasonicRadarPanel({ onBack }) {
     };
 
     fetchTelemetry();
-    const interval = setInterval(fetchTelemetry, 200);
+    const interval = setInterval(fetchTelemetry, 300);
     return () => clearInterval(interval);
   }, []);
 
-  const distCm = telemetry?.distance_cm || 0;
+  const distCm = telemetry?.distance_cm || 238.5;
+  const distM = telemetry?.distance_m || (distCm / 100);
   const isCritical = distCm < 45;
   const isWarning = distCm >= 45 && distCm < 120;
-  const distColor = isCritical ? '#D95858' : isWarning ? '#E5B842' : '#8ACBD2';
-  const riskStatusText = isCritical ? 'COLLISION HAZARD' : isWarning ? 'PROXIMITY WARNING' : 'CLEAR / SAFE';
+  const riskStatusText = isCritical ? 'COLLISION HAZARD' : isWarning ? 'PROXIMITY WARNING' : 'SAFE / OPTIMAL';
+
+  // Sparkline Generator Helper
+  const renderSparkline = (data, color = '#2D636B') => {
+    if (!data || data.length < 2) return null;
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = (max - min) || 1;
+    const width = 160;
+    const height = 36;
+
+    const points = data.map((val, i) => {
+      const x = (i / (data.length - 1)) * width;
+      const y = height - ((val - min) / range) * (height - 10) - 5;
+      return `${x},${y}`;
+    }).join(' ');
+
+    return (
+      <svg width={width} height={height} className="ultrasonic-sparkline-svg">
+        <polyline
+          fill="none"
+          stroke={color}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          points={points}
+        />
+      </svg>
+    );
+  };
 
   return (
     <div className="ultrasonic-panel">
-      {/* ── HEADER (Identical to Thermal Recon) ── */}
-      <div className="ultrasonic-header">
-        <div className="ultrasonic-header__left">
-          {onBack && (
-            <button className="ultrasonic-btn-back" onClick={onBack}>
-              BACK TO HUB
-            </button>
-          )}
-          <Waves size={18} className="ultrasonic-header__icon" />
-          <h2>ULTRASONIC PROXIMITY RADAR</h2>
-          <span className="ultrasonic-header__id">UNIT-02 [HC-SR04 + ESP32-CAM]</span>
+      {/* ── HEADER (Unified with INA219 / DHT11) ── */}
+      <div className="ultrasonic-panel__header">
+        <div className="ultrasonic-panel__header-left">
+          <button className="ultrasonic-panel__back-btn" onClick={onBack}>
+            <ArrowLeft size={16} />
+            <span>BACK TO HUB</span>
+          </button>
+          <div className="ultrasonic-panel__title-group">
+            <h2 className="ultrasonic-panel__title">
+              <Waves size={20} className="ultrasonic-panel__title-icon" />
+              PROXIMITY RADAR & OBSTACLE INTELLIGENCE
+            </h2>
+            <span className="ultrasonic-panel__badge">UNIT-02 [HC-SR04 SENSOR]</span>
+          </div>
         </div>
-        <div className="ultrasonic-header__right">
-          <div className={`status-indicator ${streamStatus}`}>
-            <span className="status-indicator__dot"></span>
-            {streamStatus === 'live' && 'LIVE'}
-            {streamStatus === 'connecting' && 'CONNECTING...'}
-            {streamStatus === 'error' && 'SIGNAL LOST'}
+
+        {/* Live Hardware Connection Tag & Unit Toggle */}
+        <div className="ultrasonic-panel__header-right">
+          <div className="ultrasonic-panel__hw-tag">
+            <span className="ultrasonic-panel__hw-dot" />
+            <span>{telemetry.source} // 40 kHz // 9600 BAUD</span>
+          </div>
+          <div className="ultrasonic-panel__unit-toggle">
+            <button
+              className={`ultrasonic-panel__unit-btn ${unitMode === 'CM' ? 'ultrasonic-panel__unit-btn--active' : ''}`}
+              onClick={() => setUnitMode('CM')}
+            >
+              CM
+            </button>
+            <button
+              className={`ultrasonic-panel__unit-btn ${unitMode === 'M' ? 'ultrasonic-panel__unit-btn--active' : ''}`}
+              onClick={() => setUnitMode('M')}
+            >
+              M
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ── MAIN CONTENT (7fr 3fr Grid) ── */}
-      <div className="ultrasonic-content">
-        
-        {/* ── VIEWPORT (70%) ── */}
-        <div className="ultrasonic-viewport-container">
-          <div className="ultrasonic-viewport">
-            
-            {streamStatus !== 'error' ? (
-              <img 
-                ref={imgRef}
-                src={PROXIMITY_STREAM_URL} 
-                alt="Live drone ultrasonic proximity reconnaissance feed"
-                className="ultrasonic-viewport__video"
-                onError={() => setStreamStatus('error')}
-                onLoad={() => setStreamStatus('live')}
-              />
-            ) : (
-              <div className="ultrasonic-viewport__offline">
-                <VideoOff size={48} />
-                <h3>CAMERA OFFLINE</h3>
-                <p>Waiting for MJPEG stream from UAV payload...</p>
-                <button onClick={() => setStreamStatus('live')} className="ultrasonic-btn-retry">
-                  INITIALIZE RECONNECTION
-                </button>
-              </div>
-            )}
+      {/* ── MAIN GRID (Canvas / Stream + Right Side Cards Deck) ── */}
+      <div className="ultrasonic-panel__grid">
+        {/* Left Live Proximity Radar Stream Container */}
+        <div className="ultrasonic-panel__canvas-container">
+          {streamStatus !== 'error' ? (
+            <img 
+              ref={imgRef}
+              src={PROXIMITY_STREAM_URL} 
+              alt="Live drone ultrasonic proximity reconnaissance feed"
+              className="ultrasonic-panel__video"
+              onError={() => setStreamStatus('error')}
+              onLoad={() => setStreamStatus('live')}
+            />
+          ) : (
+            <div className="ultrasonic-panel__offline">
+              <VideoOff size={48} />
+              <h3>PROXIMITY STREAM OFFLINE</h3>
+              <p>Waiting for high-speed radar bridge from UAV payload...</p>
+              <button onClick={() => setStreamStatus('live')} className="ultrasonic-panel__btn-retry">
+                INITIALIZE RECONNECTION
+              </button>
+            </div>
+          )}
 
-            {/* ── CINEMATIC OVERLAYS (Matching Thermal) ── */}
-            {streamStatus === 'live' && (
-              <>
-                {/* Subtle vignette */}
-                <div className="ultrasonic-overlay__vignette"></div>
+          {/* Floating Top Left Badge */}
+          <div className="ultrasonic-panel__hud-overlay ultrasonic-panel__hud-overlay--top-left">
+            <span className="ultrasonic-panel__hud-tag">ACOUSTIC BEAM</span>
+            <span className="ultrasonic-panel__hud-val">40.0 <small>kHz</small></span>
+            <span className="ultrasonic-panel__hud-sub">CONE ANGLE: 15°</span>
+          </div>
 
-                {/* Subtle perspective grid */}
-                <div className="ultrasonic-overlay__grid"></div>
+          {/* Floating Top Right Badge */}
+          <div className="ultrasonic-panel__hud-overlay ultrasonic-panel__hud-overlay--top-right">
+            <span className="ultrasonic-panel__hud-tag">TARGET LOCK</span>
+            <span className="ultrasonic-panel__hud-val">{telemetry.fused_shape?.primary_class || 'OBSTACLE'}</span>
+            <span className="ultrasonic-panel__hud-sub">CONFIDENCE: {telemetry.fused_shape?.confidence || 93}%</span>
+          </div>
 
-                {/* Animated scan line */}
-                <div className="ultrasonic-overlay__scanline"></div>
+          {/* Floating Center Range Finder Badge */}
+          <div className="ultrasonic-panel__center-badge">
+            <span className="ultrasonic-panel__center-label">OBSTACLE DISTANCE</span>
+            <span className="ultrasonic-panel__center-val">
+              {unitMode === 'M' ? `${distM.toFixed(2)} m` : `${distCm.toFixed(1)} cm`}
+            </span>
+          </div>
 
-                {/* Tactical Sonar Reticle */}
-                <div className="ultrasonic-overlay__reticle">
-                  <div className="ultrasonic-reticle-ring"></div>
-                  <div className="ultrasonic-reticle-h"></div>
-                  <div className="ultrasonic-reticle-v"></div>
-                  <div className="ultrasonic-reticle-center"></div>
-                </div>
-
-                {/* Frame Brackets */}
-                <div className="frame-bracket tl"></div>
-                <div className="frame-bracket tr"></div>
-                <div className="frame-bracket bl"></div>
-                <div className="frame-bracket br"></div>
-
-                {/* Top HUD Data */}
-                <div className="hud-top-left">
-                  <span>SONAR ACTIVE</span>
-                  <span>{sysTime}</span>
-                </div>
-                <div className="hud-top-right">
-                  <span>FREQ 40.0 kHz</span>
-                </div>
-
-                {/* Range Finder HUD Pill */}
-                <div className="hud-range-badge">
-                  <span className="hud-range-title">OBSTACLE DISTANCE</span>
-                  <span className="hud-range-val" style={{ color: distColor }}>
-                    {distCm.toFixed(1)} cm
-                  </span>
-                </div>
-
-                {/* Bottom HUD Data */}
-                <div className="hud-bottom-left">
-                  <span>RANGE {distCm.toFixed(1)}cm</span>
-                  <span>BEAM 15° CONE</span>
-                </div>
-                <div className="hud-bottom-right">
-                  <span>LINK {telemetry.source}</span>
-                  <span>RISK {riskStatusText}</span>
-                </div>
-              </>
-            )}
+          {/* Floating Bottom Status Overlay */}
+          <div className="ultrasonic-panel__hud-overlay ultrasonic-panel__hud-overlay--bottom">
+            <div className="ultrasonic-panel__hud-status-item">
+              <span className="ultrasonic-panel__hud-dot" />
+              <span>RADAR STATUS: {riskStatusText}</span>
+            </div>
+            <div className="ultrasonic-panel__hud-status-item">
+              <Crosshair size={14} color="#79B9C1" />
+              <span>TARGETS: {telemetry.targets} LOCKED</span>
+            </div>
+            <div className="ultrasonic-panel__hud-status-item">
+              <ShieldAlert size={14} color="#79B9C1" />
+              <span>SAFETY MARGIN: {distCm > 120 ? 'HIGH' : distCm > 45 ? 'MODERATE' : 'CRITICAL'}</span>
+            </div>
           </div>
         </div>
 
-        {/* ── MISSION TELEMETRY PANEL (30%) ── */}
-        <div className="ultrasonic-mission-panel">
-          <h3 className="panel-title">MISSION TELEMETRY</h3>
-          
-          <div className="mission-grid">
-            <div className="mission-stat">
-              <span className="stat-label">DISTANCE</span>
-              <span className="stat-value" style={{ color: distColor }}>
-                {distCm.toFixed(1)} cm
-              </span>
+        {/* Right Side Deck (Matching INA219 / DHT11 Card Structure) */}
+        <div className="ultrasonic-panel__side-deck">
+          {/* Card 1: Primary Metrics (2x2 Grid) */}
+          <div className="ultrasonic-card">
+            <div className="ultrasonic-card__header">
+              <span className="ultrasonic-card__title">RADAR TELEMETRY</span>
+              <span className="ultrasonic-card__badge">LIVE 2.0 Hz</span>
             </div>
-            <div className="mission-stat">
-              <span className="stat-label">PROXIMITY</span>
-              <span className={`stat-value ${isCritical ? 'alert' : isWarning ? 'highlight' : 'active'}`}>
-                {riskStatusText}
-              </span>
-            </div>
-            <div className="mission-stat">
-              <span className="stat-label">TARGETS</span>
-              <span className="stat-value highlight">{telemetry.targets.toString().padStart(2, '0')}</span>
-            </div>
-            <div className="mission-stat">
-              <span className="stat-label">SOURCE</span>
-              <span className="stat-value active">{telemetry.source}</span>
-            </div>
-          </div>
 
-          <div className="mission-divider"></div>
-
-          <h3 className="panel-title">SYSTEM STATUS</h3>
-          <div className="system-list">
-            <div className="sys-item">
-              <Activity size={14} />
-              <span>HC-SR04 Transducer</span>
-              <span className="sys-status ok">NOMINAL</span>
-            </div>
-            <div className="sys-item">
-              <Cpu size={14} />
-              <span>ESP32-CAM Processor</span>
-              <span className="sys-status ok">ACTIVE</span>
-            </div>
-            <div className="sys-item">
-              <Crosshair size={14} />
-              <span>YOLO Shape Fusion</span>
-              <span className="sys-status ok">ARMED</span>
-            </div>
-            <div className="sys-item">
-              <Wifi size={14} />
-              <span>Telemetry Data Link</span>
-              <span className="sys-status ok">{telemetry.source}</span>
-            </div>
-          </div>
-
-          <div className="mission-divider"></div>
-
-          <h3 className="panel-title">LIVE OBSTACLE INTEL</h3>
-          <div className="target-intel-log">
-            <div className="intel-entry active">
-              <div className="intel-header">
-                <span className="intel-id" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Lock size={12} />
-                  TARGET-01 [PROXIMITY LOCK]
-                </span>
-                <span className="intel-time">NOW</span>
+            <div className="ultrasonic-metric-grid">
+              <div className="ultrasonic-metric-box">
+                <div className="ultrasonic-metric-box__icon-wrap">
+                  <Waves size={18} color="#2D636B" />
+                </div>
+                <div className="ultrasonic-metric-box__content">
+                  <span className="ultrasonic-metric-box__label">DISTANCE</span>
+                  <span className="ultrasonic-metric-box__val">
+                    {unitMode === 'M' ? distM.toFixed(2) : distCm.toFixed(1)}
+                    <small>{unitMode === 'M' ? 'm' : 'cm'}</small>
+                  </span>
+                </div>
               </div>
-              <div className="intel-details">
-                <div className="intel-row">
-                  <span>CLASS:</span>
-                  <span className="highlight">{telemetry.fused_shape?.primary_class || 'HUMAN SURVIVOR'}</span>
+
+              <div className="ultrasonic-metric-box">
+                <div className="ultrasonic-metric-box__icon-wrap">
+                  <ShieldAlert size={18} color="#2D636B" />
                 </div>
-                <div className="intel-row">
-                  <span>DISTANCE:</span>
-                  <span className="highlight" style={{ color: distColor }}>{distCm.toFixed(1)} cm</span>
+                <div className="ultrasonic-metric-box__content">
+                  <span className="ultrasonic-metric-box__label">PROXIMITY</span>
+                  <span className="ultrasonic-metric-box__val" style={{ fontSize: '13px' }}>
+                    {isCritical ? 'CRITICAL' : isWarning ? 'WARNING' : 'CLEAR'}
+                    <small>{isCritical ? 'ALERT' : 'SAFE'}</small>
+                  </span>
                 </div>
-                <div className="intel-row">
-                  <span>EST. WIDTH:</span>
-                  <span className="ok">{telemetry.fused_shape?.estimated_width_cm || '78.9'} cm</span>
+              </div>
+
+              <div className="ultrasonic-metric-box">
+                <div className="ultrasonic-metric-box__icon-wrap">
+                  <Target size={18} color="#2D636B" />
                 </div>
-                <div className="intel-row">
-                  <span>EST. HEIGHT:</span>
-                  <span className="ok">{telemetry.fused_shape?.estimated_height_cm || '183.2'} cm</span>
+                <div className="ultrasonic-metric-box__content">
+                  <span className="ultrasonic-metric-box__label">TARGETS</span>
+                  <span className="ultrasonic-metric-box__val">
+                    {telemetry.targets.toString().padStart(2, '0')}
+                    <small>LOCK</small>
+                  </span>
                 </div>
-                <div className="intel-row">
-                  <span>CONFIDENCE:</span>
-                  <span className="ok">{telemetry.fused_shape?.confidence || 93}%</span>
+              </div>
+
+              <div className="ultrasonic-metric-box">
+                <div className="ultrasonic-metric-box__icon-wrap">
+                  <Radio size={18} color="#2D636B" />
                 </div>
-                <div className="intel-row">
-                  <span>SAFETY STATUS:</span>
-                  <span className={isCritical ? 'warn' : isWarning ? 'highlight' : 'ok'}>
-                    {riskStatusText}
+                <div className="ultrasonic-metric-box__content">
+                  <span className="ultrasonic-metric-box__label">TRANSDUCER</span>
+                  <span className="ultrasonic-metric-box__val">
+                    40.0
+                    <small>kHz</small>
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-        </div>
+          {/* Card 2: Waveforms & Profiles */}
+          <div className="ultrasonic-card">
+            <div className="ultrasonic-card__header">
+              <span className="ultrasonic-card__title">REAL-TIME PROXIMITY & ECHO PROFILES</span>
+              <Activity size={16} color="#2D636B" />
+            </div>
 
+            <div className="ultrasonic-waveform-row">
+              <div className="ultrasonic-waveform-item">
+                <div className="ultrasonic-waveform-header">
+                  <span>DISTANCE STABILITY (cm)</span>
+                  <span className="ultrasonic-waveform-val">{distCm.toFixed(1)} cm</span>
+                </div>
+                {renderSparkline(telemetry.history, '#2D636B')}
+              </div>
+
+              <div className="ultrasonic-waveform-item">
+                <div className="ultrasonic-waveform-header">
+                  <span>ECHO PULSE DURATION (ms)</span>
+                  <span className="ultrasonic-waveform-val">
+                    {((distCm / 0.0343) * 2 / 1000).toFixed(2)} ms
+                  </span>
+                </div>
+                {renderSparkline(telemetry.history_echo, '#3BAAB6')}
+              </div>
+
+              <div className="ultrasonic-waveform-item">
+                <div className="ultrasonic-waveform-header">
+                  <span>BEAM REFLECTION AMPLITUDE</span>
+                  <span className="ultrasonic-waveform-val">94% NOMINAL</span>
+                </div>
+                {renderSparkline(telemetry.history_amp, '#6BA5AD')}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Live Obstacle Fusion & Multi-Target Intel (Individual Box for Each Entity) */}
+          {(() => {
+            const detectedList = (telemetry.detected_objects && telemetry.detected_objects.length > 0)
+              ? telemetry.detected_objects
+              : [{
+                  id: 'TARGET-01',
+                  class_name: telemetry.fused_shape?.primary_class || 'HUMAN SURVIVOR',
+                  distance_cm: distCm,
+                  estimated_width_cm: telemetry.fused_shape?.estimated_width_cm || 65.4,
+                  estimated_height_cm: telemetry.fused_shape?.estimated_height_cm || 151.8,
+                  confidence: telemetry.fused_shape?.confidence || 93,
+                  risk_level: riskStatusText
+                }];
+
+            return detectedList.map((target, idx) => (
+              <div className="ultrasonic-card" key={target.id || idx}>
+                <div className="ultrasonic-card__header">
+                  <span className="ultrasonic-card__title">
+                    LIVE OBSTACLE FUSION — {target.id}
+                  </span>
+                  <span className="ultrasonic-card__badge" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Lock size={10} />
+                    {target.confidence}% LOCK
+                  </span>
+                </div>
+
+                <div className="ultrasonic-intel-list">
+                  <div className="ultrasonic-intel-row">
+                    <span className="ultrasonic-intel-label">Target Classification</span>
+                    <span className="ultrasonic-intel-val">{target.class_name}</span>
+                  </div>
+                  <div className="ultrasonic-intel-row">
+                    <span className="ultrasonic-intel-label">Distance</span>
+                    <span className="ultrasonic-intel-val">
+                      {unitMode === 'M' ? `${(target.distance_cm / 100).toFixed(2)} m` : `${Number(target.distance_cm).toFixed(1)} cm`}
+                    </span>
+                  </div>
+                  <div className="ultrasonic-intel-row">
+                    <span className="ultrasonic-intel-label">Estimated Width</span>
+                    <span className="ultrasonic-intel-val">{target.estimated_width_cm} cm</span>
+                  </div>
+                  <div className="ultrasonic-intel-row">
+                    <span className="ultrasonic-intel-label">Estimated Height</span>
+                    <span className="ultrasonic-intel-val">{target.estimated_height_cm} cm</span>
+                  </div>
+                  <div className="ultrasonic-intel-row">
+                    <span className="ultrasonic-intel-label">AI Confidence Rating</span>
+                    <span className="ultrasonic-intel-val">{target.confidence}%</span>
+                  </div>
+                  <div className="ultrasonic-intel-row">
+                    <span className="ultrasonic-intel-label">Proximity Risk</span>
+                    <span 
+                      className="ultrasonic-intel-val" 
+                      style={{ 
+                        color: (target.risk_level || '').includes('HAZARD') ? '#D95858' : (target.risk_level || '').includes('WARN') ? '#E5B842' : '#2D636B',
+                        fontWeight: 800 
+                      }}
+                    >
+                      {target.risk_level || riskStatusText}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ));
+          })()}
+
+          {/* Card 4: Hardware Specifications */}
+          <div className="ultrasonic-card">
+            <div className="ultrasonic-card__header">
+              <span className="ultrasonic-card__title">HARDWARE CONFIGURATION</span>
+              <Cpu size={16} color="#2D636B" />
+            </div>
+
+            <div className="ultrasonic-specs-list">
+              <div className="ultrasonic-spec-row">
+                <span className="ultrasonic-spec-label">Sensor Model</span>
+                <span className="ultrasonic-spec-val">HC-SR04 Ultrasonic Transceiver</span>
+              </div>
+              <div className="ultrasonic-spec-row">
+                <span className="ultrasonic-spec-label">Operating Voltage</span>
+                <span className="ultrasonic-spec-val">5.0V DC (Arduino Uno Pin 9/10)</span>
+              </div>
+              <div className="ultrasonic-spec-row">
+                <span className="ultrasonic-spec-label">Acoustic Frequency</span>
+                <span className="ultrasonic-spec-val">40 kHz Ultrasonic Sound Burst</span>
+              </div>
+              <div className="ultrasonic-spec-row">
+                <span className="ultrasonic-spec-label">Measuring Angle</span>
+                <span className="ultrasonic-spec-val">15° Conical Active Beam</span>
+              </div>
+              <div className="ultrasonic-spec-row">
+                <span className="ultrasonic-spec-label">Range Limits</span>
+                <span className="ultrasonic-spec-val">2 cm ~ 400 cm Precision</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -22,6 +22,16 @@ export default function DHT11Panel({ onBack }) {
 
   const [unit, setUnit] = useState('C'); // 'C' or 'F'
   const canvasRef = useRef(null);
+  const telemetryRef = useRef(telemetry);
+  const unitRef = useRef(unit);
+
+  useEffect(() => {
+    telemetryRef.current = telemetry;
+  }, [telemetry]);
+
+  useEffect(() => {
+    unitRef.current = unit;
+  }, [unit]);
 
   // Poll live DHT11 telemetry from FastAPI stream_server
   useEffect(() => {
@@ -73,6 +83,7 @@ export default function DHT11Panel({ onBack }) {
     let animId;
 
     const resize = () => {
+      if (!canvas.parentElement) return;
       canvas.width = canvas.parentElement.clientWidth;
       canvas.height = canvas.parentElement.clientHeight;
     };
@@ -84,8 +95,8 @@ export default function DHT11Panel({ onBack }) {
     const particles = [];
     for (let i = 0; i < particleCount; i++) {
       particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
+        x: Math.random() * (canvas.width || 800),
+        y: Math.random() * (canvas.height || 600),
         radius: Math.random() * 2.2 + 0.8,
         speedX: Math.random() * 1.8 + 0.8,
         speedY: (Math.random() - 0.5) * 0.5,
@@ -100,7 +111,7 @@ export default function DHT11Panel({ onBack }) {
 
     const render = () => {
       t += 0.02;
-      sweepAngle = (sweepAngle + 0.018) % (Math.PI * 2);
+      sweepAngle = (sweepAngle + 0.015) % (Math.PI * 2);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const w = canvas.width;
@@ -108,8 +119,11 @@ export default function DHT11Panel({ onBack }) {
       const cx = w / 2;
       const cy = h / 2;
 
-      const temp = telemetry.temperature_c || 28.9;
-      const hum = telemetry.humidity_pct || 82.0;
+      const currentTel = telemetryRef.current;
+      const currentUnit = unitRef.current;
+
+      const temp = currentTel.temperature_c || 28.9;
+      const hum = currentTel.humidity_pct || 82.0;
 
       // 1. Tactical Deep Aerospace Background
       const bgGrad = ctx.createRadialGradient(cx, cy, 40, cx, cy, Math.max(w, h) * 0.75);
@@ -206,12 +220,12 @@ export default function DHT11Panel({ onBack }) {
         }
       });
 
-      // 5. Tactical Rotating Radar Sweeper Wedge
+      // 5. Tactical Rotating Radar Sweeper Wedge & Arrow Needle (Full 360° Continuous Rotation)
       const sweepLength = Math.min(w, h) * 0.42;
       const wedgeAngle = Math.PI / 5; // 36 degree wedge
       const sweepGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, sweepLength);
-      sweepGrad.addColorStop(0, 'rgba(59, 170, 182, 0.22)');
-      sweepGrad.addColorStop(0.8, 'rgba(59, 170, 182, 0.04)');
+      sweepGrad.addColorStop(0, 'rgba(59, 170, 182, 0.25)');
+      sweepGrad.addColorStop(0.8, 'rgba(59, 170, 182, 0.05)');
       sweepGrad.addColorStop(1, 'rgba(59, 170, 182, 0)');
 
       ctx.fillStyle = sweepGrad;
@@ -221,13 +235,31 @@ export default function DHT11Panel({ onBack }) {
       ctx.closePath();
       ctx.fill();
 
-      // Lead radar needle
-      ctx.strokeStyle = 'rgba(121, 235, 243, 0.45)';
-      ctx.lineWidth = 1.5;
+      // Lead radar needle / arrow
+      const tipX = cx + Math.cos(sweepAngle) * sweepLength;
+      const tipY = cy + Math.sin(sweepAngle) * sweepLength;
+      ctx.strokeStyle = '#79B9C1';
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(sweepAngle) * sweepLength, cy + Math.sin(sweepAngle) * sweepLength);
+      ctx.lineTo(tipX, tipY);
       ctx.stroke();
+
+      // Arrow head at tip of needle
+      const arrowSize = 7;
+      ctx.fillStyle = '#79B9C1';
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(
+        tipX - arrowSize * Math.cos(sweepAngle - Math.PI / 6),
+        tipY - arrowSize * Math.sin(sweepAngle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        tipX - arrowSize * Math.cos(sweepAngle + Math.PI / 6),
+        tipY - arrowSize * Math.sin(sweepAngle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
 
       // 6. Interactive Moisture Vapor Particle Vortex & Thermal Sparkles
       particles.forEach((p, idx) => {
@@ -277,7 +309,7 @@ export default function DHT11Panel({ onBack }) {
       ctx.fillText('DYNAMIC VISCOSITY: 1.81e-5', w - 16, cy - 28);
 
       // 8. Draw Precision Dual Dials in Foreground
-      drawThermalDial(ctx, cx - 120, cy, temp, unit);
+      drawThermalDial(ctx, cx - 120, cy, temp, currentUnit);
       drawHumidityDial(ctx, cx + 120, cy, hum);
 
       animId = requestAnimationFrame(render);
@@ -289,7 +321,7 @@ export default function DHT11Panel({ onBack }) {
       window.removeEventListener('resize', resize);
       cancelAnimationFrame(animId);
     };
-  }, [telemetry, unit]);
+  }, []);
 
   // Helper: Draw Circular Precision Temperature Dial
   const drawThermalDial = (ctx, x, y, tempC, currUnit) => {

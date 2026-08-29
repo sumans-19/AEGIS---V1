@@ -44,13 +44,18 @@ export default function SensorsHub({ onSelectSensor }) {
   const [dhtTemp, setDhtTemp] = React.useState('27.5');
   const [dhtHum, setDhtHum] = React.useState('68.0');
   const [dhtSource, setDhtSource] = React.useState('HARDWARE_COM9');
+  const [inaVolt, setInaVolt] = React.useState('5.13');
+  const [inaCurr, setInaCurr] = React.useState('27.5');
+  const [inaPow, setInaPow] = React.useState('140.0');
+  const [inaSource, setInaSource] = React.useState('HARDWARE_COM9');
 
   React.useEffect(() => {
     const fetchTelemetry = async () => {
       try {
-        const [proxRes, dhtRes] = await Promise.all([
+        const [proxRes, dhtRes, inaRes] = await Promise.all([
           fetch("http://localhost:5000/proximity-data").catch(() => null),
-          fetch("http://localhost:5000/dht11-data").catch(() => null)
+          fetch("http://localhost:5000/dht11-data").catch(() => null),
+          fetch("http://localhost:5000/ina219-data").catch(() => null)
         ]);
         
         if (proxRes && proxRes.ok) {
@@ -64,10 +69,18 @@ export default function SensorsHub({ onSelectSensor }) {
           if (dhtData.humidity_pct !== undefined) setDhtHum(dhtData.humidity_pct.toFixed(1));
           if (dhtData.source) setDhtSource(dhtData.source);
         }
+
+        if (inaRes && inaRes.ok) {
+          const inaData = await inaRes.json();
+          if (inaData.bus_voltage_v !== undefined) setInaVolt(inaData.bus_voltage_v.toFixed(2));
+          if (inaData.current_ma !== undefined) setInaCurr(inaData.current_ma.toFixed(1));
+          if (inaData.power_mw !== undefined) setInaPow(inaData.power_mw.toFixed(1));
+          if (inaData.source) setInaSource(inaData.source);
+        }
       } catch (e) {}
     };
     fetchTelemetry();
-    const interval = setInterval(fetchTelemetry, 600);
+    const interval = setInterval(fetchTelemetry, 500);
     return () => clearInterval(interval);
   }, []);
 
@@ -92,18 +105,19 @@ export default function SensorsHub({ onSelectSensor }) {
     },
     {
       id: 'ina219',
-      title: 'POWER MONITOR',
-      description: 'Bi-directional current, voltage, and total power draw telemetry module.',
+      title: 'POWER MONITOR (INA219)',
+      description: 'Zero-drift bi-directional DC current, bus voltage, and total power draw telemetry module.',
       icon: Zap,
       image: '/assets/sensors/ina219.png',
       status: 'ACTIVE',
-      reading: '11.4',
+      reading: `${inaVolt}`,
       unit: 'V',
+      subReading: `${inaCurr} mA | ${inaPow} mW`,
       specs: [
-        { label: 'Bus Voltage', value: '26V Max' },
-        { label: 'Current Limit', value: '±3.2A' },
-        { label: 'Precision', value: '1% Error' },
-        { label: 'Interface', value: 'I2C' }
+        { label: 'Bus Voltage', value: `${inaVolt} V DC` },
+        { label: 'Current Draw', value: `${inaCurr} mA` },
+        { label: 'Active Power', value: `${inaPow} mW` },
+        { label: 'Telemetry Link', value: inaSource }
       ],
       location: 'Core - Power Distribution'
     },

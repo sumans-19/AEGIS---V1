@@ -78,9 +78,32 @@ dht11_state = {
     "history_hum": [66.0, 67.0, 67.5, 68.0, 68.0, 68.0, 68.0],
 }
 
+# INA219 High-Side DC Voltage, Current & Power Telemetry State
+ina219_state = {
+    "bus_voltage_v": 5.13,
+    "shunt_voltage_mv": 2.75,
+    "load_voltage_v": 5.13,
+    "current_ma": 27.5,
+    "current_a": 0.028,
+    "power_mw": 140.0,
+    "power_w": 0.14,
+    "energy_mwh": 18.4,
+    "capacity_mah": 3.65,
+    "efficiency_pct": 98.4,
+    "ripple_mv": 12.0,
+    "estimated_runtime_min": 184,
+    "power_status": "OPTIMAL / NOMINAL",
+    "status": "ACTIVE",
+    "source": "SIMULATED",
+    "last_update": time.time(),
+    "history_volt": [5.12, 5.13, 5.13, 5.12, 5.13, 5.14, 5.13],
+    "history_curr": [26.8, 27.2, 27.5, 27.1, 27.5, 27.8, 27.5],
+    "history_pow": [137.0, 139.5, 140.0, 138.8, 140.0, 141.2, 140.0],
+}
+
 def ultrasonic_poller():
-    """Polls Serial COM ports (COM9/COM12/etc) for live HC-SR04 & DHT11 readings, or ESP32-CAM HTTP endpoint."""
-    global ultrasonic_state, dht11_state
+    """Polls Serial COM ports (COM9/COM12/etc) for live HC-SR04, DHT11 & INA219 readings, or ESP32-CAM HTTP endpoint."""
+    global ultrasonic_state, dht11_state, ina219_state
     import urllib.request
     import json
     import re
@@ -92,9 +115,12 @@ def ultrasonic_poller():
     last_reconnect_time = 0
     last_log_time = 0
     last_hardware_dist_time = 0
+    last_hardware_ina_time = 0
+    last_energy_calc_time = time.time()
 
     while True:
         got_dist_reading = False
+        got_ina_reading = False
         dist = None
         source = None
         now = time.time()
@@ -114,7 +140,7 @@ def ultrasonic_poller():
                 for port in candidate_ports:
                     try:
                         ser = serial.Serial(port, 9600, timeout=0.05)
-                        print(f"[AEGIS] >>> Hardware Serial Connected on {port} (9600 baud: HC-SR04 + DHT11) <<<")
+                        print(f"[AEGIS] >>> Hardware Serial Connected on {port} (9600 baud: HC-SR04 + DHT11 + INA219) <<<")
                         break
                     except Exception:
                         ser = None
@@ -132,15 +158,14 @@ def ultrasonic_poller():
                         if not line:
                             continue
 
-                        # Check for multi-sensor format: DIST:233.27,TEMP:27.40,HUM:68.00
-                        if "DIST:" in line or "TEMP:" in line or "HUM:" in line:
+                        # Check for multi-sensor format: DIST:213.2,TEMP:27.6,HUM:65.0,VOLT:5.13,CURR:27.5,POW:140.0
+                        if any(k in line for k in ["DIST:", "TEMP:", "HUM:", "VOLT:", "CURR:", "POW:"]):
                             parts = line.split(",")
                             for p in parts:
                                 p = p.strip()
                                 if "DIST:" in p:
                                     try:
                                         d_val = float(p.split("DIST:")[1].strip())
-                                        # Handle valid distance (HC-SR04 returns -1 on timeout)
                                         if 1.0 <= d_val <= 450.0:
                                             dist = d_val
                                             source = f"HARDWARE_{ser.port}"
@@ -172,11 +197,47 @@ def ultrasonic_poller():
                                                 dht11_state["last_update"] = now
                                     except Exception:
                                         pass
+                                if "VOLT:" in p:
+                                    try:
+                                        v_str = p.split("VOLT:")[1].strip()
+                                        v_val = float(v_str)
+                                        if 0.0 <= v_val <= 32.0:
+                                            ina219_state["bus_voltage_v"] = round(v_val, 2)
+                                            ina219_state["load_voltage_v"] = round(v_val, 2)
+                                            got_ina_reading = True
+                                    except Exception:
+                                        pass
+                                if "CURR:" in p:
+                                    try:
+                                        c_str = p.split("CURR:")[1].strip()
+                                        c_val = float(c_str)
+                                        ina219_state["current_ma"] = round(c_val, 1)
+                                        ina219_state["current_a"] = round(c_val / 1000.0, 3)
+                                        # Shunt drop approx: 0.1 ohm shunt => V_shunt = I * 0.1
+                                        ina219_state["shunt_voltage_mv"] = round(c_val * 0.1, 2)
+                                        got_ina_reading = True
+                                    except Exception:
+                                        pass
+                                if "POW:" in p:
+                                    try:
+                                        pw_str = p.split("POW:")[1].strip()
+                                        pw_val = float(pw_str)
+                                        ina219_state["power_mw"] = round(pw_val, 1)
+                                        ina219_state["power_w"] = round(pw_val / 1000.0, 3)
+                                        got_ina_reading = True
+                                    except Exception:
+                                        pass
 
-                            if got_dist_reading:
+                            if got_ina_reading:
+                                last_hardware_ina_time = now
+                                ina219_state["source"] = f"HARDWARE_{ser.port}"
+                                ina219_state["status"] = "ACTIVE"
+                                ina219_state["last_update"] = now
+
+                            if got_dist_reading or got_ina_reading:
                                 if now - last_log_time > 1.5:
                                     last_log_time = now
-                                    print(f"[AEGIS] >>> REAL SENSOR TELEMETRY: Dist={dist:.1f}cm | Temp={dht11_state['temperature_c']}°C | Hum={dht11_state['humidity_pct']}% ({source}) <<<")
+                                    print(f"[AEGIS] >>> HARDWARE SENSORS: Dist={ultrasonic_state['distance_cm']}cm | Temp={dht11_state['temperature_c']}°C | Volt={ina219_state['bus_voltage_v']}V | Curr={ina219_state['current_ma']}mA | Pow={ina219_state['power_mw']}mW ({ser.port}) <<<")
                                 break
 
                         # Legacy distance format fallback: DISTANCE: 3.60
@@ -237,7 +298,7 @@ def ultrasonic_poller():
             ultrasonic_state["last_update"] = now
             ultrasonic_state["history"] = (ultrasonic_state["history"] + [round(sim_dist, 1)])[-30:]
 
-        # Update DHT11 Derived Calculations
+        # 5. Update DHT11 Derived Calculations
         T = dht11_state["temperature_c"]
         H = dht11_state["humidity_pct"]
         
@@ -254,6 +315,51 @@ def ultrasonic_poller():
         dht11_state["comfort_index"] = "SAFE / OPTIMAL" if T < 32.0 and H < 75.0 else "ELEVATED HUMIDITY"
         dht11_state["history_temp"] = (dht11_state["history_temp"] + [T])[-30:]
         dht11_state["history_hum"] = (dht11_state["history_hum"] + [H])[-30:]
+
+        # 6. Update INA219 Energy Accumulator & Intelligence
+        dt = max(0.01, now - last_energy_calc_time)
+        last_energy_calc_time = now
+
+        if (now - last_hardware_ina_time > 4.0):
+            # Gentle simulated jitter if no live INA219 data
+            v_base = 5.12 + np.sin(now * 0.5) * 0.02 + np.random.uniform(-0.01, 0.01)
+            c_base = 27.5 + np.sin(now * 0.8) * 1.2 + np.random.uniform(-0.4, 0.4)
+            p_base = v_base * c_base
+            ina219_state["bus_voltage_v"] = round(v_base, 2)
+            ina219_state["load_voltage_v"] = round(v_base, 2)
+            ina219_state["current_ma"] = round(c_base, 1)
+            ina219_state["current_a"] = round(c_base / 1000.0, 3)
+            ina219_state["power_mw"] = round(p_base, 1)
+            ina219_state["power_w"] = round(p_base / 1000.0, 3)
+            ina219_state["shunt_voltage_mv"] = round(c_base * 0.1, 2)
+            ina219_state["source"] = "SIMULATED"
+
+        # Accumulate mWh and mAh
+        p_now_mw = ina219_state["power_mw"]
+        c_now_ma = ina219_state["current_ma"]
+        ina219_state["energy_mwh"] = round(ina219_state.get("energy_mwh", 0.0) + (p_now_mw * dt / 3600.0), 3)
+        ina219_state["capacity_mah"] = round(ina219_state.get("capacity_mah", 0.0) + (c_now_ma * dt / 3600.0), 3)
+        
+        # Power status & runtime estimation (assume standard 5000mAh battery pack)
+        current_draw = max(1.0, ina219_state["current_ma"])
+        remaining_capacity = 4200.0 # mAh
+        est_runtime_mins = int((remaining_capacity / current_draw) * 60.0)
+        ina219_state["estimated_runtime_min"] = min(999, est_runtime_mins)
+        ina219_state["ripple_mv"] = round(8.0 + np.random.uniform(0.5, 4.5), 1)
+
+        v_curr = ina219_state["bus_voltage_v"]
+        if v_curr < 4.6 and v_curr > 0:
+            ina219_state["power_status"] = "LOW VOLTAGE WARNING"
+        elif ina219_state["current_ma"] > 2500.0:
+            ina219_state["power_status"] = "OVERCURRENT ALERT"
+        elif ina219_state["power_mw"] > 10000.0:
+            ina219_state["power_status"] = "HIGH POWER DRAW"
+        else:
+            ina219_state["power_status"] = "OPTIMAL / NOMINAL"
+
+        ina219_state["history_volt"] = (ina219_state.get("history_volt", []) + [ina219_state["bus_voltage_v"]])[-30:]
+        ina219_state["history_curr"] = (ina219_state.get("history_curr", []) + [ina219_state["current_ma"]])[-30:]
+        ina219_state["history_pow"] = (ina219_state.get("history_pow", []) + [ina219_state["power_mw"]])[-30:]
 
         time.sleep(0.04)
 
@@ -1142,8 +1248,9 @@ def generate_proximity_frames():
 
             cached_boxes = boxes
 
-        # Draw dashed border and tactical highlight HUD on all detected targets
+        # Build individual entity intel list for each detected target
         dist = ultrasonic_state.get("distance_cm", 238.5)
+        entity_list = []
         for index, (coords, conf, cls_name) in enumerate(cached_boxes, 1):
             x1, y1, x2, y2 = coords
             x1 = max(0, min(w - 1, x1))
@@ -1154,6 +1261,25 @@ def generate_proximity_frames():
                 continue
 
             draw_proximity_hud(optical_frame, (x1, y1), (x2, y2), dist, index, cls_name)
+            
+            box_w = x2 - x1
+            box_h = y2 - y1
+            est_w = round(max(15.0, min(200.0, (dist * (box_w / max(1, w)) * 1.8))), 1)
+            est_h = round(max(30.0, min(240.0, (dist * (box_h / max(1, h)) * 2.2))), 1)
+            
+            disp_class = "HUMAN SURVIVOR" if any(k in cls_name.upper() for k in ["PERSON", "HUMAN", "SURVIVOR"]) else cls_name.upper()
+            
+            entity_list.append({
+                "id": f"TARGET-{index:02d}",
+                "class_name": disp_class,
+                "distance_cm": round(dist, 1),
+                "estimated_width_cm": est_w,
+                "estimated_height_cm": est_h,
+                "confidence": int(conf * 100) if conf <= 1.0 else int(conf),
+                "risk_level": "COLLISION HAZARD" if dist < 45 else ("PROXIMITY WARNING" if dist < 120 else "CLEAR / SAFE")
+            })
+
+        ultrasonic_state["detected_objects"] = entity_list
 
         # Subtle optical crosshair at image center
         cx, cy = w // 2, h // 2
@@ -1228,20 +1354,18 @@ def get_proximity_data():
     
     # Fuse latest YOLO detections with ultrasonic distance
     dist_cm = ultrasonic_state.get("distance_cm", 238.5)
+    detected_objs = ultrasonic_state.get("detected_objects", [])
+    
     fused_shape = {
-        "detected": len(current_detections_list) > 0,
-        "object_count": len(current_detections_list),
-        "primary_class": "HUMANOID / OBSTACLE" if len(current_detections_list) > 0 else "UNKNOWN OBSTACLE",
-        "estimated_width_cm": round(max(15.0, min(180.0, (dist_cm * 0.28))), 1),
-        "estimated_height_cm": round(max(30.0, min(220.0, (dist_cm * 0.65))), 1),
+        "detected": len(detected_objs) > 0 or len(current_detections_list) > 0,
+        "object_count": max(1, len(detected_objs)),
+        "primary_class": detected_objs[0]["class_name"] if len(detected_objs) > 0 else "HUMAN SURVIVOR",
+        "estimated_width_cm": detected_objs[0]["estimated_width_cm"] if len(detected_objs) > 0 else round(max(15.0, min(180.0, (dist_cm * 0.28))), 1),
+        "estimated_height_cm": detected_objs[0]["estimated_height_cm"] if len(detected_objs) > 0 else round(max(30.0, min(220.0, (dist_cm * 0.65))), 1),
         "aspect_ratio": "1:1.6",
+        "confidence": detected_objs[0]["confidence"] if len(detected_objs) > 0 else 93,
         "hazard_score": 95 if dist_cm < 45 else (55 if dist_cm < 120 else 10),
     }
-
-    if len(current_detections_list) > 0:
-        primary = current_detections_list[0]
-        fused_shape["primary_class"] = primary.get("type", "SURVIVOR")
-        fused_shape["confidence"] = primary.get("conf", 88)
 
     ultrasonic_state["fused_shape"] = fused_shape
     return ultrasonic_state
@@ -1258,15 +1382,27 @@ def get_dht11_data():
 
 
 # ---------------------------------------------------------
+# INA219 POWER & ELECTRICAL TELEMETRY API
+# ---------------------------------------------------------
+
+@app.get("/ina219-data")
+@app.get("/power-data")
+def get_ina219_data():
+    global ina219_state
+    return ina219_state
+
+
+# ---------------------------------------------------------
 # COMBINED SENSORS TELEMETRY API
 # ---------------------------------------------------------
 
 @app.get("/sensors-telemetry")
 def get_sensors_telemetry():
-    global ultrasonic_state, dht11_state, current_detections_list
+    global ultrasonic_state, dht11_state, ina219_state, current_detections_list
     return {
         "ultrasonic": ultrasonic_state,
         "dht11": dht11_state,
+        "ina219": ina219_state,
         "thermal_targets": current_detections_list
     }
 
