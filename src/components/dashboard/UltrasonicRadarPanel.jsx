@@ -67,30 +67,66 @@ export default function UltrasonicRadarPanel({ onBack }) {
         const res = await fetch(PROXIMITY_API_URL, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          setTelemetry(prev => ({
-            ...prev,
-            distance_cm: data.distance_cm ?? prev.distance_cm,
-            distance_m: data.distance_m ?? prev.distance_m,
-            status: data.status ?? 'ACTIVE',
-            source: data.source ?? prev.source,
-            risk_level: data.risk_level ?? prev.risk_level,
-            fused_shape: data.fused_shape ?? prev.fused_shape,
-            targets: data.fused_shape?.object_count || (data.distance_cm ? 1 : 0),
-          }));
+          setTelemetry(prev => {
+            const current = prev || {
+              distance_cm: 238.5,
+              distance_m: 2.38,
+              status: 'ACTIVE',
+              source: 'SIMULATED',
+              risk_level: 'SAFE',
+              fused_shape: {
+                class: 'OBSTACLE',
+                aspect_ratio: '1:1.4',
+                estimated_width_cm: 45.0,
+                estimated_height_cm: 63.0,
+                confidence: 85,
+                hazard_score: 12,
+              },
+              targets: 1,
+            };
+            if (!data) return current;
+            return {
+              ...current,
+              distance_cm: data.distance_cm ?? current.distance_cm,
+              distance_m: data.distance_m ?? current.distance_m,
+              status: data.status ?? 'ACTIVE',
+              source: data.source ?? current.source,
+              risk_level: data.risk_level ?? current.risk_level,
+              fused_shape: data.fused_shape ?? current.fused_shape,
+              targets: data.fused_shape?.object_count || (data.distance_cm ? 1 : 0),
+            };
+          });
         }
       } catch (err) {
         // Smooth telemetry simulator when backend is initializing
         setTelemetry(prev => {
+          const current = prev || {
+            distance_cm: 238.5,
+            distance_m: 2.38,
+            status: 'ACTIVE',
+            source: 'SIMULATED',
+            risk_level: 'SAFE',
+            fused_shape: {
+              class: 'OBSTACLE',
+              aspect_ratio: '1:1.4',
+              estimated_width_cm: 45.0,
+              estimated_height_cm: 63.0,
+              confidence: 85,
+              hazard_score: 12,
+            },
+            targets: 1,
+          };
+          const prevCm = current.distance_cm || 238.5;
           const drift = Math.sin(Date.now() / 1500) * 1.8 + (Math.random() - 0.5) * 0.4;
-          const newCm = Math.max(15, Math.min(380, prev.distance_cm + drift));
+          const newCm = Math.max(15, Math.min(380, prevCm + drift));
           const risk = newCm < 45 ? 'COLLISION_IMMINENT' : newCm < 120 ? 'PROXIMITY_WARNING' : 'SAFE';
           return {
-            ...prev,
+            ...current,
             distance_cm: Number(newCm.toFixed(2)),
             distance_m: Number((newCm / 100).toFixed(2)),
             risk_level: risk,
             fused_shape: {
-              ...prev.fused_shape,
+              ...(current.fused_shape || {}),
               estimated_width_cm: Number((newCm * 0.28).toFixed(1)),
               estimated_height_cm: Number((newCm * 0.65).toFixed(1)),
             }
@@ -104,7 +140,7 @@ export default function UltrasonicRadarPanel({ onBack }) {
     return () => clearInterval(interval);
   }, []);
 
-  const distCm = telemetry.distance_cm || 0;
+  const distCm = telemetry?.distance_cm || 0;
   const isCritical = distCm < 45;
   const isWarning = distCm >= 45 && distCm < 120;
   const distColor = isCritical ? '#D95858' : isWarning ? '#E5B842' : '#8ACBD2';

@@ -62,86 +62,200 @@ ultrasonic_state = {
     }
 }
 
+# DHT11 Temperature & Humidity Environmental Sensor State
+dht11_state = {
+    "temperature_c": 27.5,
+    "temperature_f": 81.5,
+    "humidity_pct": 68.0,
+    "heat_index_c": 29.6,
+    "dew_point_c": 21.1,
+    "air_density_kg_m3": 1.175,
+    "comfort_index": "NOMINAL",
+    "status": "ACTIVE",
+    "source": "SIMULATED",
+    "last_update": time.time(),
+    "history_temp": [26.8, 27.0, 27.2, 27.4, 27.5, 27.5, 27.5],
+    "history_hum": [66.0, 67.0, 67.5, 68.0, 68.0, 68.0, 68.0],
+}
+
 def ultrasonic_poller():
-    """Polls ESP32-CAM /distance HTTP endpoint or Serial COM port for live ultrasonic readings."""
-    global ultrasonic_state
+    """Polls Serial COM ports (COM9/COM12/etc) for live HC-SR04 & DHT11 readings, or ESP32-CAM HTTP endpoint."""
+    global ultrasonic_state, dht11_state
     import urllib.request
     import json
+    import re
 
     esp32_ip = ESP32_STREAM_URL.split(":")[1].replace("//", "")
     distance_url = f"http://{esp32_ip}/distance"
 
-    # Try Serial port connection (e.g. COM9)
     ser = None
-    try:
-        import serial
-        for port in ["COM9", "COM3", "COM4", "COM5", "COM8"]:
-            try:
-                ser = serial.Serial(port, 9600, timeout=0.1)
-                print(f"[AEGIS] Ultrasonic Serial connected on {port}")
-                break
-            except Exception:
-                pass
-    except ImportError:
-        pass
+    last_reconnect_time = 0
+    last_log_time = 0
+    last_hardware_dist_time = 0
 
     while True:
-        got_reading = False
+        got_dist_reading = False
         dist = None
         source = None
+        now = time.time()
 
-        # 1. Try Serial if open
-        if ser and ser.is_open:
+        # 1. Active Serial Auto-Discovery and Auto-Reconnect (e.g. COM9)
+        if (ser is None or not getattr(ser, "is_open", False)) and (now - last_reconnect_time > 1.5):
+            last_reconnect_time = now
             try:
-                line = ser.readline().decode('utf-8', errors='ignore').strip()
-                if "DISTANCE:" in line:
-                    parts = line.split("DISTANCE:")
-                    val = float(parts[1].replace("cm", "").strip())
-                    if 2.0 <= val <= 450.0:
-                        dist = val
-                        source = f"SERIAL_{ser.port}"
-                        got_reading = True
+                import serial
+                import serial.tools.list_ports
+                available_ports = [p.device for p in serial.tools.list_ports.comports()]
+                priority_ports = ["COM9", "COM12", "COM3", "COM4", "COM5", "COM8"]
+                candidate_ports = [p for p in priority_ports if p in available_ports] + [p for p in available_ports if p not in priority_ports]
+                if not candidate_ports:
+                    candidate_ports = priority_ports
+
+                for port in candidate_ports:
+                    try:
+                        ser = serial.Serial(port, 9600, timeout=0.05)
+                        print(f"[AEGIS] >>> Hardware Serial Connected on {port} (9600 baud: HC-SR04 + DHT11) <<<")
+                        break
+                    except Exception:
+                        ser = None
             except Exception:
                 pass
 
-        # 2. Try WiFi HTTP /distance endpoint from ESP32
-        if not got_reading:
+        # 2. Read from Serial if connected
+        if ser and ser.is_open:
+            try:
+                if ser.in_waiting > 0:
+                    raw_chunk = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
+                    raw_lines = raw_chunk.split('\n')
+                    for line in reversed(raw_lines):
+                        line = line.strip()
+                        if not line:
+                            continue
+
+                        # Check for multi-sensor format: DIST:233.27,TEMP:27.40,HUM:68.00
+                        if "DIST:" in line or "TEMP:" in line or "HUM:" in line:
+                            parts = line.split(",")
+                            for p in parts:
+                                p = p.strip()
+                                if "DIST:" in p:
+                                    try:
+                                        d_val = float(p.split("DIST:")[1].strip())
+                                        # Handle valid distance (HC-SR04 returns -1 on timeout)
+                                        if 1.0 <= d_val <= 450.0:
+                                            dist = d_val
+                                            source = f"HARDWARE_{ser.port}"
+                                            got_dist_reading = True
+                                    except Exception:
+                                        pass
+                                if "TEMP:" in p:
+                                    try:
+                                        t_str = p.split("TEMP:")[1].strip()
+                                        if t_str != "ERR":
+                                            t_val = float(t_str)
+                                            if -40.0 <= t_val <= 85.0:
+                                                dht11_state["temperature_c"] = round(t_val, 1)
+                                                dht11_state["temperature_f"] = round((t_val * 9.0/5.0) + 32.0, 1)
+                                                dht11_state["source"] = f"HARDWARE_{ser.port}"
+                                                dht11_state["status"] = "ACTIVE"
+                                                dht11_state["last_update"] = now
+                                    except Exception:
+                                        pass
+                                if "HUM:" in p:
+                                    try:
+                                        h_str = p.split("HUM:")[1].strip()
+                                        if h_str != "ERR":
+                                            h_val = float(h_str)
+                                            if 0.0 <= h_val <= 100.0:
+                                                dht11_state["humidity_pct"] = round(h_val, 1)
+                                                dht11_state["source"] = f"HARDWARE_{ser.port}"
+                                                dht11_state["status"] = "ACTIVE"
+                                                dht11_state["last_update"] = now
+                                    except Exception:
+                                        pass
+
+                            if got_dist_reading:
+                                if now - last_log_time > 1.5:
+                                    last_log_time = now
+                                    print(f"[AEGIS] >>> REAL SENSOR TELEMETRY: Dist={dist:.1f}cm | Temp={dht11_state['temperature_c']}°C | Hum={dht11_state['humidity_pct']}% ({source}) <<<")
+                                break
+
+                        # Legacy distance format fallback: DISTANCE: 3.60
+                        elif "DISTANCE:" in line:
+                            match = re.search(r"[-+]?\d*\.?\d+", line)
+                            if match:
+                                val = float(match.group(0))
+                                if 1.0 <= val <= 450.0:
+                                    dist = val
+                                    source = f"HARDWARE_{ser.port}"
+                                    got_dist_reading = True
+                                    if now - last_log_time > 1.5:
+                                        last_log_time = now
+                                        print(f"[AEGIS] >>> REAL DISTANCE: {dist:.1f} cm ({source}) <<<")
+                                    break
+            except Exception as e:
+                try:
+                    ser.close()
+                except Exception:
+                    pass
+                ser = None
+
+        # 3. Try WiFi HTTP /distance endpoint from ESP32
+        if not got_dist_reading:
             try:
                 req = urllib.request.Request(distance_url, headers={'User-Agent': 'AEGIS-GroundStation'})
-                with urllib.request.urlopen(req, timeout=0.25) as response:
+                with urllib.request.urlopen(req, timeout=0.15) as response:
                     if response.status == 200:
                         data = json.loads(response.read().decode())
                         dist = float(data.get("distance_cm", 0))
                         source = "ESP32_WIFI"
-                        got_reading = True
+                        got_dist_reading = True
             except Exception:
                 pass
 
-        # 3. Smooth fallback simulation if hardware is not broadcasting this instant
-        if not got_reading:
+        # 4. Update Ultrasonic state with real reading or retain previous real reading
+        if got_dist_reading:
+            last_hardware_dist_time = now
+            risk = "COLLISION_IMMINENT" if dist < 45.0 else ("PROXIMITY_WARNING" if dist < 120.0 else "SAFE")
+            ultrasonic_state["distance_cm"] = round(dist, 1)
+            ultrasonic_state["distance_m"] = round(dist / 100.0, 2)
+            ultrasonic_state["status"] = "ACTIVE"
+            ultrasonic_state["source"] = source
+            ultrasonic_state["risk_level"] = risk
+            ultrasonic_state["last_update"] = now
+            ultrasonic_state["history"] = (ultrasonic_state["history"] + [round(dist, 1)])[-30:]
+        elif (now - last_hardware_dist_time > 4.0):
+            # Only synthesize fallback drift if NO hardware packet received in 4 seconds
             last = ultrasonic_state["distance_cm"]
-            drift = np.sin(time.time() * 0.8) * 2.5 + np.random.uniform(-0.4, 0.4)
-            dist = max(15.0, min(380.0, last + drift))
-            source = ultrasonic_state.get("source", "SIMULATED")
+            drift = np.sin(now * 0.8) * 1.5 + np.random.uniform(-0.3, 0.3)
+            sim_dist = max(15.0, min(380.0, last + drift))
+            sim_risk = "COLLISION_IMMINENT" if sim_dist < 45.0 else ("PROXIMITY_WARNING" if sim_dist < 120.0 else "SAFE")
+            ultrasonic_state["distance_cm"] = round(sim_dist, 1)
+            ultrasonic_state["distance_m"] = round(sim_dist / 100.0, 2)
+            ultrasonic_state["status"] = "ACTIVE"
+            ultrasonic_state["source"] = "SIMULATED"
+            ultrasonic_state["risk_level"] = sim_risk
+            ultrasonic_state["last_update"] = now
+            ultrasonic_state["history"] = (ultrasonic_state["history"] + [round(sim_dist, 1)])[-30:]
 
-        # Determine risk level
-        if dist < 45.0:
-            risk = "COLLISION_IMMINENT"
-        elif dist < 120.0:
-            risk = "PROXIMITY_WARNING"
-        else:
-            risk = "SAFE"
+        # Update DHT11 Derived Calculations
+        T = dht11_state["temperature_c"]
+        H = dht11_state["humidity_pct"]
+        
+        # Dew point approximation: Td = T - ((100 - H)/5)
+        dew_point = round(T - ((100.0 - H) / 5.0), 1)
+        # Heat Index formula approximation
+        heat_index = round(-8.784695 + 1.61139411 * T + 2.338549 * H - 0.14611605 * T * H + 0.002211732 * (T**2) + 0.0072546 * (H**2), 1)
+        # Dry Air density kg/m3 at sea level: p / (R * T_kelvin)
+        air_density = round(101325.0 / (287.05 * (T + 273.15)), 3)
 
-        # Update global state
-        ultrasonic_state["distance_cm"] = round(dist, 1)
-        ultrasonic_state["distance_m"] = round(dist / 100.0, 2)
-        ultrasonic_state["status"] = "ACTIVE"
-        ultrasonic_state["source"] = source
-        ultrasonic_state["risk_level"] = risk
-        ultrasonic_state["last_update"] = time.time()
-        ultrasonic_state["history"] = (ultrasonic_state["history"] + [round(dist, 1)])[-30:]
+        dht11_state["dew_point_c"] = dew_point
+        dht11_state["heat_index_c"] = max(T, heat_index)
+        dht11_state["air_density_kg_m3"] = air_density
+        dht11_state["comfort_index"] = "SAFE / OPTIMAL" if T < 32.0 and H < 75.0 else "ELEVATED HUMIDITY"
+        dht11_state["history_temp"] = (dht11_state["history_temp"] + [T])[-30:]
+        dht11_state["history_hum"] = (dht11_state["history_hum"] + [H])[-30:]
 
-        time.sleep(0.08)
+        time.sleep(0.04)
 
 # Start poller thread
 threading.Thread(target=ultrasonic_poller, daemon=True).start()
@@ -156,62 +270,98 @@ class VideoStreamThread:
 
     def __init__(self, src):
         self.src = src
-        self.cap = None
-        self.ret = False
         self.frame = None
+        self.ret = False
         self.running = True
         self.lock = threading.Lock()
         self.mode = "CONNECTING"
         self.synth_t = 0
 
-        # Try ESP32-CAM first, then USB Webcam, then Synthetic Generator
-        self._init_capture()
-
         self.thread = threading.Thread(
-            target=self.update,
+            target=self._stream_worker,
             daemon=True
         )
         self.thread.start()
 
-    def _init_capture(self):
-        # 1. Try ESP32-CAM Network Stream
-        try:
-            print(f"[AEGIS] Connecting to ESP32-CAM: {self.src}")
-            self.cap = cv2.VideoCapture(self.src)
-            self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-            ret, frame = self.cap.read()
-            if ret and frame is not None:
-                self.ret = True
-                self.frame = frame
-                self.mode = "ESP32_WIFI"
-                print("[AEGIS] ESP32-CAM stream connected successfully!")
-                return
-        except Exception as e:
-            print(f"[AEGIS] ESP32-CAM connect attempt failed: {e}")
+    def _stream_worker(self):
+        """High-speed native socket MJPEG reader for ESP32-CAM (sub-30ms latency direct stream)."""
+        import socket
+        import urllib.request
+        from urllib.parse import urlparse
 
-        # 2. Try Local USB / Laptop Webcam (Index 0 or 1)
-        for cam_idx in [0, 1]:
+        parsed = urlparse(self.src)
+        host = parsed.hostname or "172.21.58.236"
+        port = parsed.port or 81
+
+        while self.running:
+            connected = False
+
+            # 1. Primary Direct Socket Stream on Port 81 (Proven fastest method)
+            s = None
             try:
-                print(f"[AEGIS] Trying local camera device index {cam_idx}...")
-                cap = cv2.VideoCapture(cam_idx, cv2.CAP_DSHOW) if hasattr(cv2, 'CAP_DSHOW') else cv2.VideoCapture(cam_idx)
-                if cap.isOpened():
-                    ret, frame = cap.read()
-                    if ret and frame is not None:
-                        self.cap = cap
-                        self.ret = True
-                        self.frame = frame
-                        self.mode = f"WEBCAM_{cam_idx}"
-                        print(f"[AEGIS] Local Webcam {cam_idx} connected successfully!")
-                        return
-                    cap.release()
-            except Exception:
-                pass
+                print(f"[AEGIS] Connecting raw socket to ESP32-CAM at {host}:{port}/stream...")
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(2.5)
+                s.connect((host, port))
+                s.sendall(f"GET /stream HTTP/1.1\r\nHost: {host}:{port}\r\nUser-Agent: AEGIS-Vision\r\nConnection: close\r\n\r\n".encode())
 
-        # 3. Fallback: Standby synthetic drone optical generator
-        print("[AEGIS] No physical camera stream reachable, initializing tactical drone video simulator...")
-        self.mode = "SYNTHETIC_SIM"
-        self.ret = True
-        self.frame = self._generate_synthetic_frame(0)
+                buffer = b''
+                print(f"[AEGIS] >>> ESP32-CAM Live Video Stream Active on {host}:{port}/stream! <<<")
+                self.mode = "ESP32_WIFI"
+                connected = True
+
+                while self.running:
+                    data = s.recv(4096)
+                    if not data:
+                        break
+                    buffer += data
+                    a = buffer.find(b'\xff\xd8')
+                    b = buffer.find(b'\xff\xd9')
+                    if a != -1 and b != -1 and b > a:
+                        jpg = buffer[a:b+2]
+                        buffer = buffer[b+2:]
+                        frame = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                        if frame is not None and frame.size > 0:
+                            with self.lock:
+                                self.frame = frame
+                                self.ret = True
+            except Exception as e:
+                connected = False
+            finally:
+                if s:
+                    try:
+                        s.close()
+                    except Exception:
+                        pass
+
+            # 2. Secondary HTTP Snapshot Fallback: http://<host>/capture
+            if not connected and self.running:
+                try:
+                    capture_url = f"http://{host}/capture"
+                    req = urllib.request.Request(capture_url, headers={'User-Agent': 'AEGIS-Vision'})
+                    with urllib.request.urlopen(req, timeout=1.5) as response:
+                        if response.status == 200:
+                            data = response.read()
+                            frame = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
+                            if frame is not None and frame.size > 0:
+                                with self.lock:
+                                    self.frame = frame
+                                    self.ret = True
+                                    self.mode = "ESP32_WIFI"
+                                time.sleep(0.04)
+                                continue
+                except Exception:
+                    pass
+
+            # 3. Fallback: Standby synthetic drone optical generator (with automatic 2s reconnect)
+            if not connected and self.running:
+                self.mode = "SYNTHETIC_SIM"
+                self.synth_t += 0.033
+                synth_frame = self._generate_synthetic_frame(self.synth_t)
+                with self.lock:
+                    self.frame = synth_frame
+                    self.ret = True
+                time.sleep(0.033)
 
     def _generate_synthetic_frame(self, t):
         """Generates a crisp optical drone camera feed with obstacles and survivors."""
@@ -235,7 +385,6 @@ class VideoStreamThread:
         px = int(w // 2 + np.sin(t * 0.8) * 60)
         py = int(h // 2 + np.cos(t * 0.4) * 20)
 
-        # Draw person figure
         # Head
         cv2.circle(img, (px, py - 45), 18, (180, 190, 190), -1)
         # Torso
@@ -258,46 +407,6 @@ class VideoStreamThread:
         img = np.clip(img.astype(np.int16) + noise, 0, 255).astype(np.uint8)
         return img
 
-    def update(self):
-        last_reconnect_attempt = time.time()
-
-        while self.running:
-            if self.cap and self.cap.isOpened():
-                ret, frame = self.cap.read()
-                if ret and frame is not None:
-                    with self.lock:
-                        self.ret = True
-                        self.frame = frame
-                else:
-                    # Stream drop: fallback to synthetic and attempt reconnect
-                    with self.lock:
-                        self.synth_t += 0.04
-                        self.frame = self._generate_synthetic_frame(self.synth_t)
-                        self.ret = True
-                    time.sleep(0.03)
-            else:
-                # Synthetic frame generation at 30 FPS
-                self.synth_t += 0.033
-                synth_frame = self._generate_synthetic_frame(self.synth_t)
-                with self.lock:
-                    self.frame = synth_frame
-                    self.ret = True
-                time.sleep(0.033)
-
-                # Periodic reconnect attempt to ESP32 every 8 seconds
-                if time.time() - last_reconnect_attempt > 8.0:
-                    last_reconnect_attempt = time.time()
-                    try:
-                        test_cap = cv2.VideoCapture(self.src)
-                        if test_cap.isOpened():
-                            ret, frame = test_cap.read()
-                            if ret and frame is not None:
-                                self.cap = test_cap
-                                self.mode = "ESP32_WIFI"
-                                print("[AEGIS] Reconnected to ESP32-CAM stream!")
-                    except Exception:
-                        pass
-
     def read(self):
         with self.lock:
             if self.frame is None:
@@ -306,8 +415,11 @@ class VideoStreamThread:
 
     def stop(self):
         self.running = False
-        if self.cap:
-            self.cap.release()
+        if getattr(self, 'cap', None):
+            try:
+                self.cap.release()
+            except Exception:
+                pass
 
 
 # ---------------------------------------------------------
@@ -684,9 +796,11 @@ def draw_thermal_hud(
 # MODEL
 # ---------------------------------------------------------
 
-model = YOLO(
-    MODEL_PATH
-)
+model = YOLO(MODEL_PATH)
+try:
+    model.to("cpu")
+except Exception:
+    pass
 
 
 # ---------------------------------------------------------
@@ -984,17 +1098,20 @@ def generate_proximity_frames():
 
         optical_frame = frame.copy()
 
-        # Run YOLO inference with broader sensitivity
+        # Run YOLO inference with broader sensitivity on CPU
         if frame_idx % INFERENCE_INTERVAL == 0:
-            results = model(optical_frame, conf=0.15, verbose=False)
             boxes = []
-            for r in results:
-                for b in r.boxes:
-                    coords = b.xyxy[0].cpu().numpy().astype(int)
-                    conf = float(b.conf[0].cpu().numpy())
-                    cls_id = int(b.cls[0].cpu().numpy())
-                    cls_name = model.names.get(cls_id, "OBSTACLE").upper()
-                    boxes.append((coords, conf, cls_name))
+            try:
+                results = model(optical_frame, conf=0.15, device="cpu", verbose=False)
+                for r in results:
+                    for b in r.boxes:
+                        coords = b.xyxy[0].cpu().numpy().astype(int)
+                        conf = float(b.conf[0].cpu().numpy())
+                        cls_id = int(b.cls[0].cpu().numpy())
+                        cls_name = model.names.get(cls_id, "OBSTACLE").upper()
+                        boxes.append((coords, conf, cls_name))
+            except Exception as e:
+                boxes = []
             
             # Fallback: if no YOLO class recognized (e.g. arbitrary desk object in center), detect primary center obstacle
             if len(boxes) == 0:
@@ -1128,6 +1245,30 @@ def get_proximity_data():
 
     ultrasonic_state["fused_shape"] = fused_shape
     return ultrasonic_state
+
+# ---------------------------------------------------------
+# DHT11 ENVIRONMENTAL TELEMETRY API
+# ---------------------------------------------------------
+
+@app.get("/dht11-data")
+@app.get("/environmental-data")
+def get_dht11_data():
+    global dht11_state
+    return dht11_state
+
+
+# ---------------------------------------------------------
+# COMBINED SENSORS TELEMETRY API
+# ---------------------------------------------------------
+
+@app.get("/sensors-telemetry")
+def get_sensors_telemetry():
+    global ultrasonic_state, dht11_state, current_detections_list
+    return {
+        "ultrasonic": ultrasonic_state,
+        "dht11": dht11_state,
+        "thermal_targets": current_detections_list
+    }
 
 
 # ---------------------------------------------------------

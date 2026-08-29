@@ -1,0 +1,424 @@
+/* =========================================================================
+   DHT11 ENVIRONMENTAL & ATMOSPHERIC INTELLIGENCE PANEL
+   Matches the exact 3D Drone card aesthetic:
+   - High-contrast crisp dark text (#172124)
+   - Frosted aerospace card backgrounds (rgba(235, 243, 245, 0.85))
+   - Subtle borders & clean technical drop shadows
+   - Interactive canvas visualizer
+   ========================================================================= */
+
+.dht-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #DCE6E8;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  overflow: hidden;
+  gap: 10px;
+}
+
+/* Header Bar */
+.dht-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(235, 243, 245, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 8px 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.dht-panel__header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dht-panel__back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #172124;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.dht-panel__back-btn:hover {
+  background: #E8F5F7;
+  border-color: #2D636B;
+  color: #2D636B;
+  transform: translateX(-2px);
+}
+
+.dht-panel__title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dht-panel__title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #172124;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dht-panel__title-icon {
+  color: #2D636B;
+}
+
+.dht-panel__badge {
+  background: #E8F5F7;
+  border: 1px solid #79B9C1;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #2D636B;
+  letter-spacing: 0.04em;
+}
+
+/* Header Right */
+.dht-panel__header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dht-panel__hw-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1px solid #79B9C1;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #172124;
+}
+
+.dht-panel__hw-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3BAAB6;
+  box-shadow: 0 0 8px #3BAAB6;
+}
+
+.dht-panel__unit-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.dht-panel__unit-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #5A6E72;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dht-panel__unit-btn--active {
+  background: #FFFFFF;
+  color: #172124;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Main Grid */
+.dht-panel__grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 12px;
+  min-height: 0;
+}
+
+/* Left Canvas Container */
+.dht-panel__canvas-container {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  outline: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  background: #070C0E;
+}
+
+.dht-panel__canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* HUD Overlay Badges */
+.dht-panel__hud-overlay {
+  position: absolute;
+  background: rgba(15, 26, 29, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(121, 185, 193, 0.35);
+  border-radius: 8px;
+  padding: 6px 12px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.dht-panel__hud-overlay--top-left {
+  top: 12px;
+  left: 12px;
+}
+
+.dht-panel__hud-overlay--top-right {
+  top: 12px;
+  right: 12px;
+}
+
+.dht-panel__hud-overlay--bottom {
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dht-panel__hud-tag {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #79B9C1;
+}
+
+.dht-panel__hud-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.dht-panel__hud-val small {
+  font-size: 10px;
+  color: #79B9C1;
+}
+
+.dht-panel__hud-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 1px;
+}
+
+.dht-panel__hud-status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #E2F0F2;
+}
+
+.dht-panel__hud-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3BAAB6;
+  box-shadow: 0 0 8px #3BAAB6;
+}
+
+/* Side Deck Cards */
+.dht-panel__side-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.dht-card {
+  background: rgba(235, 243, 245, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.dht-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dht-card__title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #172124;
+  text-transform: uppercase;
+}
+
+.dht-card__badge {
+  background: #E8F5F7;
+  border: 1px solid #79B9C1;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #2D636B;
+}
+
+.dht-card__badge--active {
+  background: rgba(59, 170, 182, 0.15);
+  color: #1E6B75;
+  border-color: #3BAAB6;
+}
+
+/* Metric Box Grid */
+.dht-metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.dht-metric-box {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.dht-metric-box__icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #E8F5F7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dht-metric-box__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.dht-metric-box__label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  color: #5A6E72;
+  letter-spacing: 0.04em;
+}
+
+.dht-metric-box__val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #172124;
+  line-height: 1.1;
+}
+
+.dht-metric-box__val small {
+  font-size: 10px;
+  color: #5A6E72;
+  margin-left: 2px;
+}
+
+/* Waveforms Row */
+.dht-waveform-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dht-waveform-item {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.dht-waveform-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  color: #5A6E72;
+  margin-bottom: 4px;
+}
+
+.dht-waveform-val {
+  color: #172124;
+  font-weight: 800;
+}
+
+.dht-sparkline-svg {
+  width: 100%;
+  height: 40px;
+}
+
+/* Specs List */
+.dht-specs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dht-spec-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Inter', sans-serif;
+  font-size: 9.5px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.dht-spec-label {
+  color: #5A6E72;
+  font-weight: 600;
+}
+
+.dht-spec-val {
+  color: #172124;
+  font-weight: 700;
+  text-align: right;
+}

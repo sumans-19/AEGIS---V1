@@ -41,37 +41,52 @@ const SparklineChart = () => (
 
 export default function SensorsHub({ onSelectSensor }) {
   const [ultrasonicDist, setUltrasonicDist] = React.useState('238.9');
+  const [dhtTemp, setDhtTemp] = React.useState('27.5');
+  const [dhtHum, setDhtHum] = React.useState('68.0');
+  const [dhtSource, setDhtSource] = React.useState('HARDWARE_COM9');
 
   React.useEffect(() => {
-    const fetchDist = async () => {
+    const fetchTelemetry = async () => {
       try {
-        const res = await fetch("http://localhost:5000/proximity-data");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.distance_cm) setUltrasonicDist(data.distance_cm.toFixed(1));
+        const [proxRes, dhtRes] = await Promise.all([
+          fetch("http://localhost:5000/proximity-data").catch(() => null),
+          fetch("http://localhost:5000/dht11-data").catch(() => null)
+        ]);
+        
+        if (proxRes && proxRes.ok) {
+          const proxData = await proxRes.json();
+          if (proxData.distance_cm) setUltrasonicDist(proxData.distance_cm.toFixed(1));
+        }
+
+        if (dhtRes && dhtRes.ok) {
+          const dhtData = await dhtRes.json();
+          if (dhtData.temperature_c !== undefined) setDhtTemp(dhtData.temperature_c.toFixed(1));
+          if (dhtData.humidity_pct !== undefined) setDhtHum(dhtData.humidity_pct.toFixed(1));
+          if (dhtData.source) setDhtSource(dhtData.source);
         }
       } catch (e) {}
     };
-    fetchDist();
-    const interval = setInterval(fetchDist, 1000);
+    fetchTelemetry();
+    const interval = setInterval(fetchTelemetry, 600);
     return () => clearInterval(interval);
   }, []);
 
   const sensors = [
     {
       id: 'dht11',
-      title: 'ENVIRONMENTAL SENSOR',
-      description: 'High-precision atmospheric monitoring for ambient temperature and humidity tracking.',
+      title: 'ENVIRONMENTAL SENSOR (DHT11)',
+      description: 'High-precision atmospheric monitoring for ambient temperature, relative humidity, and air density.',
       icon: Thermometer,
       image: '/assets/sensors/dht11.png',
       status: 'ACTIVE',
-      reading: '24.2',
+      reading: `${dhtTemp}`,
       unit: '°C',
+      subReading: `${dhtHum}% RH`,
       specs: [
-        { label: 'Range', value: '-20°C ~ 60°C' },
-        { label: 'Humidity', value: '20% ~ 90%' },
-        { label: 'Accuracy', value: '±1°C' },
-        { label: 'Update Rate', value: '0.5 Hz' }
+        { label: 'Ambient Temp', value: `${dhtTemp} °C` },
+        { label: 'Relative Humidity', value: `${dhtHum} %RH` },
+        { label: 'Telemetry Link', value: dhtSource },
+        { label: 'Sampling Rate', value: '2.0 Hz' }
       ],
       location: 'Left Wing - Outer Mount'
     },
@@ -94,7 +109,7 @@ export default function SensorsHub({ onSelectSensor }) {
     },
     {
       id: 'ultrasonic',
-      title: 'PROXIMITY RADAR',
+      title: 'PROXIMITY RADAR (HC-SR04)',
       description: 'High-precision ultrasonic obstacle detection and real-time shape fusion.',
       icon: Waves,
       image: '/assets/sensors/ultrasonic.png',
