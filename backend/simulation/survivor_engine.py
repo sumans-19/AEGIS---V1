@@ -107,6 +107,14 @@ def check_detections(world):
             if dist_2d < drone.scan_radius:
                 # Probability increases centered in scan cone
                 detection_prob = 1.0 - (dist_2d / drone.scan_radius)
+
+                # Scenario-specific visibility modifier (dense forest fog/mist)
+                # final_visual_detection_probability = detection_prob * visibility
+                if hasattr(world, 'visibility') and world.scenario == 'dense_forest':
+                    try:
+                        detection_prob = detection_prob * float(world.visibility)
+                    except Exception:
+                        pass
                 
                 # Scenario noise factor
                 noise = 0.0

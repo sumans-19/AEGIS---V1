@@ -47,6 +47,15 @@ function ScenarioIcon({ type, color }) {
           <circle cx="18" cy="24" r="1" strokeOpacity="0.3" />
         </svg>
       )
+    case 'dense_forest':
+      return (
+        <svg viewBox="0 0 32 32" style={iconStyle} fill="none" stroke={color} strokeWidth="1.5">
+          <path d="M16,28 L16,18" />
+          <path d="M16,18 L8,22 L16,8 L24,22 Z" />
+          <path d="M16,14 L10,18 L16,4 L22,18 Z" strokeOpacity="0.55" />
+          <line x1="4" y1="28" x2="28" y2="28" strokeOpacity="0.35" />
+        </svg>
+      )
     case 'cyclone':
       return (
         <svg viewBox="0 0 32 32" style={iconStyle} fill="none" stroke={color} strokeWidth="1.5">

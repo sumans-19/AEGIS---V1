@@ -64,6 +64,9 @@ class WorldState:
         self.water_level: float = 0.0
         self.wind_vector: np.ndarray = np.array([0.0, 0.0])
         self.hazard_zones: List[Dict] = [] # list of {center: [x,y], radius: r, type: str}
+        # Visibility factor (1.0 = clear, 0.0 = no visual visibility)
+        # Scenario-specific code can set this value (e.g., dense_forest reduced visibility)
+        self.visibility: float = 1.0
     
     def reset(self, scenario: str):
         self.scenario = scenario

@@ -4,6 +4,7 @@ import { OrbitControls, Stars, Sky, PerspectiveCamera, Html } from '@react-three
 import * as THREE from 'three'
 import { useSimStore } from '../../store/useSimStore'
 import Terrain from './Terrain'
+import { getForestHeight, getForestDensity, distToStream } from './DenseForestTerrain'
 import DroneModel from './DroneModel'
 import DroneLabel from '../DroneLabel'
 import { PanelRightClose, PanelRightOpen, Target } from 'lucide-react'
@@ -79,27 +80,209 @@ const SKY_CONFIG = {
   earthquake: { sunPosition: [30, 8, -50], turbidity: 20, rayleigh: 0.5 },
   tsunami: { sunPosition: [100, 40, 50], turbidity: 8, rayleigh: 2 },
   flood: { sunPosition: [50, 5, 30], turbidity: 18, rayleigh: 0.3 },
+  // Dense forest daytime: clearer, bluer sky
+  dense_forest: { sunPosition: [60, 45, 20], turbidity: 4, rayleigh: 2.2 },
 }
 
 const FOG_CONFIG = {
   earthquake: { color: '#1a1814', density: 0.0022 },
   tsunami: { color: '#0c1a2e', density: 0.0018 },
   flood: { color: '#1a1410', density: 0.0028 },
+  // Dense forest fog tuned to a subtle sky-blue (not white) for daytime atmospheric horizon
+  dense_forest: { color: '#cde9fb', density: 0.0010 },
+}
+
+// Procedural Day Sky mesh used only for Dense Forest daytime to guarantee a blue gradient
+function DaySky({ sunPosition = [60, 45, 20] }) {
+  const sunDir = useMemo(() => {
+    const v = new THREE.Vector3(...sunPosition).normalize()
+    return v
+  }, [sunPosition])
+
+  const mat = useMemo(() => new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    uniforms: {
+      topColor: { value: new THREE.Color('#70b7ff') },
+      bottomColor: { value: new THREE.Color('#dfefff') },
+      sunDirection: { value: sunDir },
+      sunColor: { value: new THREE.Color('#fff6e0') },
+      sunIntensity: { value: 1.2 },
+    },
+    vertexShader: `varying vec3 vWorldPosition; varying vec3 vNormal;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: `uniform vec3 topColor; uniform vec3 bottomColor; uniform vec3 sunDirection; uniform vec3 sunColor; uniform float sunIntensity; varying vec3 vWorldPosition; varying vec3 vNormal;
+      void main() {
+        // blend based on world up (y) component
+        float t = smoothstep(-0.2, 0.9, normalize(vNormal).y);
+        vec3 sky = mix(bottomColor, topColor, t);
+        // sun disc
+        float sunFactor = max(dot(normalize(vNormal), normalize(sunDirection)), 0.0);
+        float disc = pow(sunFactor, 200.0) * sunIntensity;
+        vec3 color = sky + sunColor * disc;
+        gl_FragColor = vec4(color, 1.0);
+      }`
+  }), [])
+
+  return (
+    <mesh geometry={new THREE.SphereGeometry(900, 32, 15)} material={mat} />
+  )
 }
 
 function SceneFog({ scenario }) {
   const { scene } = useThree()
+  const theme = useSimStore(s => s.theme)
+  const denseFogEnabled = useSimStore(s => s.denseForestFogEnabled)
   useEffect(() => {
     const config = FOG_CONFIG[scenario] || FOG_CONFIG.earthquake
-    scene.fog = new THREE.FogExp2(config.color, config.density)
-    return () => { scene.fog = null }
-  }, [scene, scenario])
+    // If Dense Forest + dark theme, force black background and fog to avoid bright horizon
+    if (scenario === 'dense_forest' && theme === 'dark') {
+      scene.background = new THREE.Color('#000000')
+      scene.fog = new THREE.FogExp2('#000000', config.density)
+    } else {
+      // Default behavior for other scenarios, but if dense forest fog toggle is enabled,
+      // strengthen the fog density so mist is visibly noticeable in the forest.
+      scene.background = null
+      if (scenario === 'dense_forest' && denseFogEnabled) {
+        // Use a modest denser fog for subtle horizon haze; avoid high values that wash out scene
+        const denseDensity = Math.max(config.density, 0.008)
+        scene.fog = new THREE.FogExp2(config.color, denseDensity)
+      } else {
+        scene.fog = new THREE.FogExp2(config.color, config.density)
+      }
+    }
+    return () => { scene.fog = null; scene.background = null }
+  }, [scene, scenario, theme, denseFogEnabled])
   return null
 }
 
-// ═══════════════════════════════════
+// Dense Forest localized mist component
+function DenseForestMist({ scenario }) {
+  const denseFogEnabled = useSimStore(s => s.denseForestFogEnabled)
+  const { scene, camera } = useThree()
+  const meshRef = useRef()
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const COUNT = 16 // conservative: fewer mist regions to avoid overdraw
+  // Precompute mist pockets based on terrain low areas
+  const pockets = useMemo(() => {
+    const out = []
+    const WORLD_HALF = 220
+    const rng = () => Math.random()
+    for (let i = 0; i < COUNT; i++) {
+      const x = -WORLD_HALF + rng() * (WORLD_HALF * 2)
+      const z = -WORLD_HALF + rng() * (WORLD_HALF * 2)
+      const y = getForestHeight(x, z)
+      // lower elevation -> stronger base
+      const elevFactor = Math.max(0, Math.min(1, (6 - (y + 6)) / 12))
+      const stream = distToStream(x, z)
+      const streamBoost = Math.max(0, (12 - stream) / 12)
+      const density = Math.max(0, Math.min(1, elevFactor * 0.7 + streamBoost * 0.5 + (1 - getForestDensity(x, z)) * 0.15))
+      // place mist slightly above ground
+      const baseHeight = y + 0.5 + Math.random() * 1.8
+      out.push({ x, z, y: baseHeight, density, phase: Math.random() * Math.PI * 2, speed: 0.02 + Math.random() * 0.04, scale: 12 + Math.random() * 36 })
+    }
+    return out
+  }, [])
+
+  // create a soft mist texture
+  const mistTex = useMemo(() => {
+    const size = 256
+    const canvas = document.createElement('canvas')
+    canvas.width = size; canvas.height = size
+    const ctx = canvas.getContext('2d')
+    const cx = size/2, cy = size/2, r = size/2
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+    // Use a subtle neutral-cool gradient with lower center alpha to avoid bright white cores
+    grad.addColorStop(0, 'rgba(200,220,230,0.65)')
+    grad.addColorStop(0.55, 'rgba(190,210,220,0.28)')
+    grad.addColorStop(1, 'rgba(180,200,210,0)')
+    ctx.fillStyle = grad
+    ctx.fillRect(0,0,size,size)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping
+    tex.needsUpdate = true
+    return tex
+  }, [])
+
+  // material shared across instances
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ map: mistTex, transparent: true, depthWrite: false, depthTest: true, opacity: 0.0, toneMapped: false, color: new THREE.Color(0xcde9fb) }), [mistTex])
+
+  // progress 0..1 for formation/dissipation
+  const progressRef = useRef(0)
+  const targetRef = useRef(0)
+
+  useEffect(() => {
+    targetRef.current = denseFogEnabled ? 1 : 0
+  }, [denseFogEnabled])
+
+  useFrame((state, delta) => {
+    // lerp progress towards target (smooth build/dissipate)
+    const p = progressRef.current
+    const t = targetRef.current
+    const speed = 0.5 // controls how many seconds to reach ~1 (1/s)
+    progressRef.current = THREE.MathUtils.lerp(p, t, Math.min(1, delta * speed))
+
+    const camY = camera.position.y
+    // camera factor: lower camera -> more mist influence
+    const camFactor = 1 - Math.min(1, Math.max(0, (camY - 2) / 30))
+
+    const elapsed = state.clock.elapsedTime
+    if (!meshRef.current) return
+    pockets.forEach((pk, i) => {
+      // drifting offsets
+      const dx = Math.sin(elapsed * pk.speed + pk.phase) * 0.6
+      const dz = Math.cos(elapsed * (pk.speed * 0.8) + pk.phase * 0.7) * 0.4
+      const x = pk.x + dx
+      const z = pk.z + dz
+      const y = pk.y
+      // instance scale depends on pocket scale
+      // scale conservatively to avoid giant planes; keep low height (flat bank)
+      const scale = pk.scale * (0.45 + 0.55 * pk.density) * (0.35 + 0.65 * progressRef.current)
+      dummy.position.set(x, y, z)
+      // horizontal plane (flat mist bank)
+      dummy.rotation.set(-Math.PI/2, 0, 0)
+      dummy.scale.set(scale, scale * 0.22, 1)
+      dummy.updateMatrix()
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+      // set per-instance opacity via color alpha (vertexColors unsupported here), instead adjust material.opacity using combined factor averaged
+    })
+    meshRef.current.instanceMatrix.needsUpdate = true
+
+    // adjust overall opacity by pocket-weighted average * progress * camera factor
+    let avgDensity = 0
+    for (const pk of pockets) avgDensity += pk.density
+    avgDensity = pockets.length ? avgDensity / pockets.length : 0.5
+    // cap final opacity to avoid white wash
+    const base = THREE.MathUtils.clamp(0.08 + avgDensity * 0.45, 0.02, 0.48)
+    mat.opacity = base * progressRef.current * (0.6 + 0.6 * camFactor)
+    // subtle color shift with time for natural blending
+    const hueShift = Math.sin(elapsed * 0.05) * 0.01
+    // keep color near a soft blue-gray, avoid pushing channels >1
+    mat.color.setRGB(0.76 + hueShift * 0.2, 0.84 + hueShift * 0.12, 0.9)
+
+    // hide mesh when fully off to avoid any accidental overdraw
+    if (meshRef.current) meshRef.current.visible = progressRef.current > 0.005
+  })
+
+  // Only render in dense forest scenario (but keep component mounted for smooth dissipation)
+  return (
+    <group visible={scenario === 'dense_forest'}>
+      <instancedMesh ref={meshRef} args={[null, null, COUNT]}>
+        {/* horizontal plane used as soft mist billboard; instances are scaled and positioned above */}
+        <planeGeometry args={[1, 1]} />
+        <primitive object={mat} attach="material" />
+      </instancedMesh>
+    </group>
+  )
+}
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // DRONE BASE PLATFORM (helipad)
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function DroneBasePlatform() {
   const padOffsets = [
     { x: -10, z: -10 },
@@ -201,9 +384,9 @@ function DroneBasePlatform() {
   )
 }
 
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // REGION SELECTION MODE (two clicks)
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function RegionSelectMode({ onRegionSelected }) {
   const [firstCorner, setFirstCorner] = useState(null)
   const [hover, setHover] = useState(null)
@@ -269,9 +452,9 @@ function RegionSelectMode({ onRegionSelected }) {
   )
 }
 
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // REGION VISUALIZATION
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function RegionRect({ x1, z1, x2, z2, opacity = 0.08 }) {
   const cx = (x1 + x2) / 2
   const cz = (z1 + z2) / 2
@@ -302,25 +485,64 @@ function RegionRect({ x1, z1, x2, z2, opacity = 0.08 }) {
   )
 }
 
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // SEED MODE (constrained to region)
-// ═══════════════════════════════════
-function SeedMode({ onSeed, searchRegion }) {
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+function SeedMode({ onSeed, searchRegion, scenario }) {
+  const ptrDownRef = useRef(null)
+  const movedRef = useRef(false)
+  const lastWheelRef = useRef(0)
+
+  const onPointerDown = (e) => {
+    e.stopPropagation()
+    if (e.button !== 0) return
+    ptrDownRef.current = { clientX: e.clientX, clientY: e.clientY, point: { x: e.point.x, z: e.point.z } }
+    movedRef.current = false
+  }
+
+  const onPointerMove = (e) => {
+    if (!ptrDownRef.current) return
+    const dx = e.clientX - ptrDownRef.current.clientX
+    const dy = e.clientY - ptrDownRef.current.clientY
+    if (Math.sqrt(dx * dx + dy * dy) > 6) movedRef.current = true
+  }
+
+  const onPointerUp = (e) => {
+    e.stopPropagation()
+    if (e.button !== 0) return
+    // Do not place if pointer moved significantly (drag)
+    if (movedRef.current) { ptrDownRef.current = null; return }
+    // Do not place if recent wheel event (user zoomed)
+    if (performance.now() - lastWheelRef.current < 200) { ptrDownRef.current = null; return }
+
+    const { x, z } = e.point
+    // Dense forest allows seeding anywhere (no region required)
+    if (scenario === 'dense_forest') {
+      onSeed(x, z)
+      ptrDownRef.current = null
+      return
+    }
+    // For other scenarios, only allow seeding within the search region
+    if (searchRegion &&
+      x >= searchRegion.x1 && x <= searchRegion.x2 &&
+      z >= searchRegion.z1 && z <= searchRegion.z2) {
+      onSeed(x, z)
+    }
+    ptrDownRef.current = null
+  }
+
+  const onWheel = (e) => {
+    lastWheelRef.current = performance.now()
+  }
+
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, 0.1, 0]}
-      onPointerDown={(e) => {
-        e.stopPropagation()
-        if (e.button !== 0) return
-        const { x, z } = e.point
-        // Only allow seeding within the search region
-        if (searchRegion &&
-          x >= searchRegion.x1 && x <= searchRegion.x2 &&
-          z >= searchRegion.z1 && z <= searchRegion.z2) {
-          onSeed(x, z)
-        }
-      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onWheel={onWheel}
     >
       <planeGeometry args={[500, 500]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -328,9 +550,9 @@ function SeedMode({ onSeed, searchRegion }) {
   )
 }
 
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // SURVIVOR FIGURE
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function SurvivorFigure({ pos, status, confidence, alive }) {
   const isDead = !alive
   const isRecovering = status === 'RESCUED'
@@ -370,9 +592,9 @@ function SurvivorFigure({ pos, status, confidence, alive }) {
   )
 }
 
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // CAMERA CONTROLLER (POV Mode)
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function CameraController() {
   const povMode = useSimStore(s => s.povMode)
   const selectedDroneId = useSimStore(s => s.selectedDrone)
@@ -409,10 +631,14 @@ function CameraController() {
   return null
 }
 
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // MAIN SCENE
-// ═══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export default function Scene3D({ drones = [] }) {
+  const scenario = useSimStore(s => s.scenario)
+  const missionPhase = useSimStore(s => s.missionPhase)
+  const setMissionPhase = useSimStore(s => s.setMissionPhase)
+  const denseForestBoundary = useSimStore(s => s.denseForestBoundary)
   const controlsRef = useRef()
   const rawDrones = useSimStore(s => s.drones)
   const displayDrones = useEdgeCaseScript(rawDrones)
@@ -429,7 +655,6 @@ export default function Scene3D({ drones = [] }) {
 
   const survivors = useSimStore(s => s.survivors)
   const seedSurvivor = useSimStore(s => s.seedSurvivor)
-  const scenario = useSimStore(s => s.scenario)
   const theme = useSimStore(s => s.theme)
   const rightPanelExpanded = useSimStore(s => s.rightPanelExpanded)
   const setRightPanelExpanded = useSimStore(s => s.setRightPanelExpanded)
@@ -437,19 +662,24 @@ export default function Scene3D({ drones = [] }) {
   const povMode = useSimStore(s => s.povMode)
   const setPovMode = useSimStore(s => s.setPovMode)
 
-  const missionPhase = useSimStore(s => s.missionPhase)
   const searchRegion = useSimStore(s => s.searchRegion)
   const setSearchRegion = useSimStore(s => s.setSearchRegion)
-  const setMissionPhase = useSimStore(s => s.setMissionPhase)
   const addNotification = useSimStore(s => s.addNotification)
 
   const isSelectingOrSeeding = ['SELECT_REGION', 'SEED_SURVIVORS'].includes(missionPhase)
+
+  // For dense_forest scenario, start in seed-first flow
+  useEffect(() => {
+    if (scenario === 'dense_forest' && missionPhase === 'IDLE') {
+      setMissionPhase('SEED_SURVIVORS')
+    }
+  }, [scenario, missionPhase, setMissionPhase])
 
   const handleRegionSelected = (region) => {
     setSearchRegion(region)
     setMissionPhase('SEED_SURVIVORS')
     addNotification(
-      `Search region defined: ${Math.abs(region.x2 - region.x1).toFixed(0)}m × ${Math.abs(region.z2 - region.z1).toFixed(0)}m. Click within the region to place survivors.`,
+      `Search region defined: ${Math.abs(region.x2 - region.x1).toFixed(0)}m Ã— ${Math.abs(region.z2 - region.z1).toFixed(0)}m. Click within the region to place survivors.`,
       'success'
     )
   }
@@ -479,8 +709,10 @@ export default function Scene3D({ drones = [] }) {
             minDistance={10}
             maxDistance={400}
             makeDefault
-            enableRotate={!isSelectingOrSeeding}
-            enablePan={!isSelectingOrSeeding}
+            // Allow orbit/pan/zoom during Dense Forest seeding
+            enableRotate={!(isSelectingOrSeeding) || (scenario === 'dense_forest' && missionPhase === 'SEED_SURVIVORS')}
+            enablePan={!(isSelectingOrSeeding) || (scenario === 'dense_forest' && missionPhase === 'SEED_SURVIVORS')}
+            enableZoom={true}
           />
         )}
         <CameraController />
@@ -488,26 +720,33 @@ export default function Scene3D({ drones = [] }) {
         {/* Atmosphere */}
         <SceneFog scenario={scenario} />
 
-        {/* Enhanced Sky */}
-        <Sky
-          sunPosition={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).sunPosition}
-          turbidity={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).turbidity}
-          rayleigh={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).rayleigh}
-        />
+        {/* Enhanced Sky: use custom DaySky for Dense Forest daytime to guarantee blue gradient; keep Sky for other scenarios */}
+        {scenario === 'dense_forest' && theme !== 'dark' ? (
+          <DaySky sunPosition={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).sunPosition} />
+        ) : (
+          !(scenario === 'dense_forest' && theme === 'dark') && (
+            <Sky
+              sunPosition={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).sunPosition}
+              turbidity={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).turbidity}
+              rayleigh={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).rayleigh}
+            />
+          )
+        )}
         <Stars radius={200} depth={80} count={4000} factor={4} saturation={0} fade speed={0.5} />
 
         {/* Natural lighting */}
         <hemisphereLight
           args={[
-            scenario === 'tsunami' ? '#87CEEB' : scenario === 'flood' ? '#8B7355' : '#C4A882',
+            scenario === 'tsunami' ? '#87CEEB' : scenario === 'flood' ? '#8B7355' : scenario === 'dense_forest' ? '#A8C9A0' : '#C4A882',
             '#362a1a',
             theme === 'dark' ? 0.35 : 0.6
           ]}
         />
         <ambientLight intensity={theme === 'dark' ? 0.15 : 0.5} />
+        {/* Base directional light used as general fill; for Dense Forest daytime we add a dedicated sun light below */}
         <directionalLight
           position={[50, 80, 30]}
-          intensity={theme === 'dark' ? 0.8 : 1.8}
+          intensity={theme === 'dark' ? 0.8 : (scenario === 'dense_forest' && theme !== 'dark' ? 0.35 : 1.8)}
           castShadow
           shadow-mapSize={[2048, 2048]}
           shadow-bias={-0.0005}
@@ -519,8 +758,66 @@ export default function Scene3D({ drones = [] }) {
           shadow-camera-far={500}
         />
 
+        {/* Moon + moonlight for Dense Forest night mode only */}
+        {scenario === 'dense_forest' && theme === 'dark' && (
+          <group>
+            {/* Visible moon sphere */}
+            <mesh position={[60, 110, 20]} renderOrder={1000}>
+              <sphereGeometry args={[6, 32, 32]} />
+              <meshBasicMaterial color={'#fbf7e6'} toneMapped={false} />
+            </mesh>
+
+            {/* Soft moonlight: cool, subtle directional light (no extra expensive shadows) */}
+            <directionalLight
+              color={'#cfeeff'}
+              intensity={0.6}
+              position={[60, 110, 20]}
+              castShadow={false}
+            />
+
+            {/* Very soft fill to keep deep shadows readable, low intensity */}
+            <ambientLight intensity={0.08} />
+          </group>
+        )}
+
+        {/* Sun + sunlight for Dense Forest daytime only */}
+        {scenario === 'dense_forest' && theme !== 'dark' && (() => {
+          const sunPos = (SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).sunPosition || [60, 45, 20]
+          // place sun far away so it appears distant
+          const sunVec = new THREE.Vector3(...sunPos).normalize().multiplyScalar(300)
+          const sunArr = [sunVec.x, sunVec.y, sunVec.z]
+          return (
+            <group>
+              {/* visible sun */}
+              <mesh position={sunArr} renderOrder={1000}>
+                <sphereGeometry args={[8, 16, 16]} />
+                <meshBasicMaterial color={'#fff7e0'} toneMapped={false} />
+              </mesh>
+
+              {/* directional sunlight matching sun position */}
+              <directionalLight
+                position={sunArr}
+                color={'#fff6d9'}
+                intensity={1.05}
+                castShadow
+                shadow-mapSize={[2048, 2048]}
+                shadow-bias={-0.0005}
+                shadow-camera-left={-180}
+                shadow-camera-right={180}
+                shadow-camera-top={180}
+                shadow-camera-bottom={-180}
+                shadow-camera-near={0.5}
+                shadow-camera-far={800}
+              />
+            </group>
+          )
+        })()}
+
         {/* Terrain */}
         <Terrain scenario={scenario} />
+
+        {/* Dense Forest localized mist (visual only) */}
+        <DenseForestMist scenario={scenario} />
 
         {/* Drone Base Platform */}
         <DroneBasePlatform />
@@ -564,7 +861,12 @@ export default function Scene3D({ drones = [] }) {
 
         {/* Seed mode */}
         {missionPhase === 'SEED_SURVIVORS' && (
-          <SeedMode onSeed={handleSeed} searchRegion={searchRegion} />
+          <SeedMode onSeed={handleSeed} searchRegion={scenario === 'dense_forest' ? null : searchRegion} scenario={scenario} />
+        )}
+
+        {/* Dense forest boundary visualization */}
+        {denseForestBoundary && denseForestBoundary.buffered && (
+          <BoundaryPolygon polygon={denseForestBoundary.buffered} />
         )}
       </Canvas>
 
@@ -618,6 +920,33 @@ export default function Scene3D({ drones = [] }) {
         </div>
       )}
     </div>
+  )
+}
+
+// Render the buffered polygon boundary as a line loop and faint fill
+function BoundaryPolygon({ polygon }) {
+  const points = useMemo(() => polygon.map(p => new THREE.Vector3(p.x, 0.5, p.z)), [polygon])
+  const geom = useMemo(() => new THREE.BufferGeometry().setFromPoints(points.concat(points[0])), [points])
+
+  const shape = useMemo(() => {
+    const s = new THREE.Shape()
+    if (!polygon || polygon.length === 0) return s
+    s.moveTo(polygon[0].x, polygon[0].z)
+    for (let i = 1; i < polygon.length; i++) s.lineTo(polygon[i].x, polygon[i].z)
+    s.closePath()
+    return s
+  }, [polygon])
+
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <shapeGeometry args={[shape]} />
+        <meshBasicMaterial color="#70b7ff" transparent opacity={0.06} side={THREE.DoubleSide} />
+      </mesh>
+      <lineLoop geometry={geom} position={[0, 0.5, 0]}>
+        <lineBasicMaterial color="#00e5ff" linewidth={2} />
+      </lineLoop>
+    </group>
   )
 }
 

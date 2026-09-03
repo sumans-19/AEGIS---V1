@@ -68,6 +68,17 @@ const scenarios = [
     icon: 'cyclone',
     clickable: false,
   },
+  {
+    id: 'dense_forest',
+    title: 'DENSE FOREST',
+    location: 'Western Ghats, India',
+    details: 'Dense canopy · Natural terrain · Trail & clearing SAR',
+    accent: '#2d8a4e',
+    status: 'SIMULATION READY',
+    statusColor: '#00ff88',
+    icon: 'dense_forest',
+    clickable: true,
+  },
 ]
 
 export default function ScenarioGrid() {

@@ -56,6 +56,9 @@ export const useSimStore = create(
       // ── Search Region ──
       searchRegion: null, // { x1, z1, x2, z2 }
 
+      // ── Dense Forest Boundary (convex hull + buffer) ──
+      denseForestBoundary: null, // { polygon: [{x,z}], buffered: [{x,z}], buffer: number }
+
       // ── Drone Paths (keyed by drone id) ──
       deployPaths: {},
       searchPaths: {},
@@ -79,6 +82,9 @@ export const useSimStore = create(
       rightPanelExpanded: false,
       activeSidebarTab: 'droneview',
       seedModeActive: false,
+      // Dense Forest fog toggle (frontend-only control)
+      denseForestFogEnabled: false,
+      toggleDenseForestFog: () => set(s => ({ denseForestFogEnabled: !s.denseForestFogEnabled })),
       fullMapMode: false,
       coordinationPanelOpen: false,
       bottomPanelCollapsed: false,
@@ -91,6 +97,19 @@ export const useSimStore = create(
       setMissionPhase: (phase) => set({ missionPhase: phase }),
 
       setSearchRegion: (region) => set({ searchRegion: region }),
+
+      setDenseForestBoundary: (boundary) => set(state => ({
+        denseForestBoundary: boundary,
+        // also set searchRegion to bounding box for compatibility
+        searchRegion: boundary ? {
+          x1: Math.min(...boundary.buffered.map(p => p.x)),
+          x2: Math.max(...boundary.buffered.map(p => p.x)),
+          z1: Math.min(...boundary.buffered.map(p => p.z)),
+          z2: Math.max(...boundary.buffered.map(p => p.z)),
+        } : null
+      })),
+
+      clearDenseForestBoundary: () => set({ denseForestBoundary: null }),
 
       // ── Deploy ──
       startDeploy: (paths) => set({

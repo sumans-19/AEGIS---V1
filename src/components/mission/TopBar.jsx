@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
 import { computeDeployPaths, computeReturnPaths, DRONE_BASE } from '../../hooks/useDroneMovement'
+import { computeConvexHull, bufferPolygon } from '../../utils/geometry'
 
 const PHASE_LABELS = {
   IDLE: 'STANDBY',
@@ -44,11 +45,14 @@ export default function TopBar({ onClose }) {
   const setFullMapMode = useSimStore(s => s.setFullMapMode)
   const theme = useSimStore(s => s.theme)
   const toggleTheme = useSimStore(s => s.toggleTheme)
+  const denseForestFogEnabled = useSimStore(s => s.denseForestFogEnabled)
+  const toggleDenseForestFog = useSimStore(s => s.toggleDenseForestFog)
   const searchRegion = useSimStore(s => s.searchRegion)
   const survivors = useSimStore(s => s.survivors)
   const drones = useSimStore(s => s.drones)
 
   const setMissionPhase = useSimStore(s => s.setMissionPhase)
+  const setDenseForestBoundary = useSimStore(s => s.setDenseForestBoundary)
   const startDeploy = useSimStore(s => s.startDeploy)
   const startReturn = useSimStore(s => s.startReturn)
   const addNotification = useSimStore(s => s.addNotification)
@@ -75,6 +79,32 @@ export default function TopBar({ onClose }) {
   const handleFinishSeedingAndDeploy = () => {
     setMissionPhase('READY_TO_DEPLOY')
     handleStartMission()
+  }
+
+  const handleGenerateBoundary = () => {
+    // Only for dense forest: compute hull from seeded survivors and buffer
+    const seeded = survivors.filter(s => String(s.id).startsWith('SURV-'))
+    if (seeded.length < 1) return
+    const pts = seeded.map(s => ({ x: s.pos[0], z: s.pos[2] }))
+    const hull = computeConvexHull(pts)
+    if (!hull || hull.length === 0) return
+    const buffered = bufferPolygon(hull, 12)
+    const boundary = { polygon: hull, buffered, buffer: 12 }
+    setDenseForestBoundary(boundary)
+    // compute deploy paths to bounding box and start deploy
+    const bbox = {
+      x1: Math.min(...buffered.map(p => p.x)),
+      x2: Math.max(...buffered.map(p => p.x)),
+      z1: Math.min(...buffered.map(p => p.z)),
+      z2: Math.max(...buffered.map(p => p.z)),
+    }
+    const paths = computeDeployPaths(bbox)
+    startDeploy(paths)
+    addNotification('Search boundary generated. Launching drones to perimeter.', 'system')
+    // mark drones deploying
+    drones.forEach(d => {
+      useSimStore.getState().updateDrone(d.id, { status: 'DEPLOYING' })
+    })
   }
 
   const handleEndTask = () => {
@@ -250,6 +280,15 @@ export default function TopBar({ onClose }) {
           <button onClick={toggleTheme} style={iconBtnStyle} title="Toggle Day/Night View">
             {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
           </button>
+          {scenario === 'dense_forest' && (
+            <button
+              onClick={() => toggleDenseForestFog()}
+              style={{ ...iconBtnStyle, background: denseForestFogEnabled ? 'rgba(121,185,193,0.22)' : iconBtnStyle.background, color: denseForestFogEnabled ? '#79B9C1' : iconBtnStyle.color }}
+              title={denseForestFogEnabled ? 'Disable Fog / Mist' : 'Enable Fog / Mist'}
+            >
+              {denseForestFogEnabled ? 'Fog Active' : 'Fog / Mist'}
+            </button>
+          )}
           <button onClick={() => setFullMapMode(!fullMapMode)} style={iconBtnStyle} title="Toggle Full View">
             <Maximize size={13} color={fullMapMode ? "#79B9C1" : "currentColor"} />
           </button>
@@ -271,12 +310,16 @@ export default function TopBar({ onClose }) {
         )}
 
         {missionPhase === 'SEED_SURVIVORS' && seededSurvivors.length > 0 && (
-          <ActionButton
-            onClick={handleFinishSeedingAndDeploy}
-            icon={Rocket}
-            label="DEPLOY DRONES"
-            color="#58ba8a"
-          />
+          scenario === 'dense_forest' ? (
+            <ActionButton onClick={handleGenerateBoundary} icon={MapPin} label="GENERATE BOUNDARY" color="#58ba8a" />
+          ) : (
+            <ActionButton
+              onClick={handleFinishSeedingAndDeploy}
+              icon={Rocket}
+              label="DEPLOY DRONES"
+              color="#58ba8a"
+            />
+          )
         )}
 
         {missionPhase === 'ALL_FOUND' && (

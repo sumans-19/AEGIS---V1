@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useSimStore } from '../store/useSimStore'
-import { isDeployComplete, isReturnComplete, computeSearchPaths } from './useDroneMovement'
+import { isDeployComplete, isReturnComplete, computeSearchPaths, computeSearchPathsFromPolygon } from './useDroneMovement'
 
 export function useSimulation() {
   const {
@@ -39,7 +39,12 @@ export function useSimulation() {
           deployChecked.current = true
 
           // Compute search paths & transition
-          const sPaths = computeSearchPaths(store.searchRegion)
+          let sPaths = null
+          if (store.denseForestBoundary && store.denseForestBoundary.buffered) {
+            sPaths = computeSearchPathsFromPolygon(store.denseForestBoundary.buffered)
+          } else {
+            sPaths = computeSearchPaths(store.searchRegion)
+          }
           useSimStore.getState().startSearch(sPaths)
           useSimStore.getState().addNotification('All drones arrived. Search operation commencing.', 'success')
           useSimStore.getState().addEvent({
@@ -85,22 +90,28 @@ export function useSimulation() {
             })
 
             if (detectingDrone) {
-              const conf = 70 + Math.floor(Math.random() * 28)
-              useSimStore.getState().updateSurvivor(survivor.id, {
-                detected: true,
-                status: 'DETECTED',
-                detectedBy: detectingDrone.callsign,
-                confidence: conf,
-              })
-              useSimStore.getState().addEvent({
-                time: Math.floor(currentTime),
-                message: `${detectingDrone.callsign} detected survivor at [${sx.toFixed(0)}, ${sz.toFixed(0)}]. Confidence ${conf}%. Thermal ${survivor.body_temp?.toFixed(1) || '37.0'}°C.`,
-                type: 'survivor',
-              })
-              useSimStore.getState().addNotification(
-                `Survivor detected by ${detectingDrone.callsign}! Confidence: ${conf}%`,
-                'detection'
-              )
+              // Scenario-specific visibility modifier for visual detection (dense_forest fog/mist)
+              const visibilityModifier = (store.scenario === 'dense_forest') ? 0.6 : 1.0
+
+              // Make frontend seeded survivor detection probabilistic under fog
+              if (Math.random() < visibilityModifier) {
+                const conf = Math.floor(70 * visibilityModifier) + Math.floor(Math.random() * 28)
+                useSimStore.getState().updateSurvivor(survivor.id, {
+                  detected: true,
+                  status: 'DETECTED',
+                  detectedBy: detectingDrone.callsign,
+                  confidence: conf,
+                })
+                useSimStore.getState().addEvent({
+                  time: Math.floor(currentTime),
+                  message: `${detectingDrone.callsign} detected survivor at [${sx.toFixed(0)}, ${sz.toFixed(0)}]. Confidence ${conf}%. Thermal ${survivor.body_temp?.toFixed(1) || '37.0'}°C.`,
+                  type: 'survivor',
+                })
+                useSimStore.getState().addNotification(
+                  `Survivor detected by ${detectingDrone.callsign}! Confidence: ${conf}%`,
+                  'detection'
+                )
+              }
             }
           })
         }

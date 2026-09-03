@@ -147,6 +147,7 @@ export default function SettingsView() {
                 <option value="flood">FLOOD (PAKISTAN)</option>
                 <option value="avalanche">AVALANCHE (HINDU KUSH)</option>
                 <option value="cyclone">CYCLONE (ODISHA)</option>
+                <option value="dense_forest">DENSE FOREST (WESTERN GHATS)</option>
               </select>
             </div>
           </div>

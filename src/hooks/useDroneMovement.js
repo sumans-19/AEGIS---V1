@@ -2,6 +2,7 @@
 // Replaces orbit-based movement with A* grid navigation through city road corridors
 
 import { useSimStore } from '../store/useSimStore'
+import { pointInPolygon } from '../utils/geometry'
 
 // ── Constants matching Terrain.jsx building grid ──
 export const GRID_COUNT = 12
@@ -290,6 +291,64 @@ export function computeSearchPaths(searchRegion) {
     const rev = [...wps].reverse()
     result[i + 1] = [...wps, ...rev]
   }
+  return result
+}
+
+export function computeSearchPathsFromPolygon(polygon) {
+  if (!polygon || polygon.length === 0) return {}
+  // Compute bounding box
+  const x1 = Math.min(...polygon.map(p => p.x))
+  const x2 = Math.max(...polygon.map(p => p.x))
+  const z1 = Math.min(...polygon.map(p => p.z))
+  const z2 = Math.max(...polygon.map(p => p.z))
+
+  const result = {}
+  const activeCount = getActiveDronesCount({ x1, x2, z1, z2 })
+
+  // Filter road nodes to those inside polygon
+  const allNodes = ROAD_NODES.filter(n => n.x >= x1 && n.x <= x2 && n.z >= z1 && n.z <= z2)
+  const insideNodes = allNodes.filter(n => pointInPolygon({ x: n.x, z: n.z }, polygon))
+  const cols = {}
+  insideNodes.forEach(n => { if (!cols[n.gi]) cols[n.gi] = []; cols[n.gi].push(n) })
+  const colKeys = Object.keys(cols).map(Number).sort((a, b) => a - b)
+  const perDrone = Math.max(1, Math.ceil(colKeys.length / activeCount))
+
+  for (let i = 0; i < 5; i++) {
+    const pad = BASE_PADS[i]
+    if (i >= activeCount) {
+      result[i + 1] = [{ x: pad.x, z: pad.z }, { x: pad.x, z: pad.z }]
+      continue
+    }
+
+    const myCols = colKeys.slice(i * perDrone, (i + 1) * perDrone)
+    if (myCols.length < 1) {
+      const sx = x1 + (x2 - x1) * ((i + 0.5) / activeCount)
+      const centerNode = findNearestNode(sx, (z1 + z2) / 2)
+      result[i + 1] = [{ x: centerNode.x, z: centerNode.z }, { x: centerNode.x, z: centerNode.z }]
+      continue
+    }
+
+    const wps = []
+    let fwd = true
+    let prevNode = null
+    for (const ck of myCols) {
+      const nodes = cols[ck].sort((a, b) => fwd ? a.z - b.z : b.z - a.z)
+      for (const n of nodes) {
+        if (prevNode) {
+          const pathSegment = astar(prevNode, n)
+          wps.push(...pathSegment.slice(1))
+        } else {
+          wps.push({ x: n.x, z: n.z })
+        }
+        prevNode = n
+      }
+      fwd = !fwd
+    }
+
+    const rev = [...wps].reverse()
+    result[i + 1] = [...wps, ...rev]
+  }
+
   return result
 }
 

@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react'
+import DenseForestTerrain from './DenseForestTerrain'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useSimStore } from '../../store/useSimStore'
@@ -8,7 +9,7 @@ function seededRandom(seed) {
   return x - Math.floor(x)
 }
 
-// ── Procedural Texture Generators ──
+// â”€â”€ Procedural Texture Generators â”€â”€
 const textureCache = {}
 
 export function getProceduralTexture(type = 'concrete', size = 512) {
@@ -168,7 +169,7 @@ export function getParticleTexture(type = 'fire') {
   return texture
 }
 
-// ── Realistic Props ──
+// â”€â”€ Realistic Props â”€â”€
 function RealisticTree({ position, scale = 1, seed = 0 }) {
   const isDead = seededRandom(seed) > 0.8
   const height = 3 + seededRandom(seed + 1) * 3
@@ -255,7 +256,7 @@ function AbandonedVehicle({ position, rotation = [0, 0, 0], seed = 0 }) {
   )
 }
 
-// ── Realistic dead/damaged tree ──
+// â”€â”€ Realistic dead/damaged tree â”€â”€
 function DeadTree({ position, seed = 0 }) {
   const lean = (seededRandom(seed + 50) - 0.5) * 0.6
   const sc = 0.6 + seededRandom(seed + 51) * 0.5
@@ -278,7 +279,7 @@ function DeadTree({ position, seed = 0 }) {
   )
 }
 
-// ── Particle Fire Effect (Optimized) ──
+// â”€â”€ Particle Fire Effect (Optimized) â”€â”€
 function Fire({ position, intensity = 1, spread = null }) {
   const meshRef = useRef()
   const particleCount = spread ? 24 : 12
@@ -336,7 +337,7 @@ function Fire({ position, intensity = 1, spread = null }) {
   )
 }
 
-// ── Billboard Smoke ──
+// â”€â”€ Billboard Smoke â”€â”€
 function Smoke({ position, scale = 1 }) {
   const meshRef = useRef()
   const particleCount = 10
@@ -395,7 +396,7 @@ function Smoke({ position, scale = 1 }) {
   )
 }
 
-// ── Dust Particles (Optimized) ──
+// â”€â”€ Dust Particles (Optimized) â”€â”€
 function DustParticles({ count = 80, area = [200, 20, 200] }) {
   const meshRef = useRef()
   const dummy = useMemo(() => new THREE.Object3D(), [])
@@ -432,7 +433,7 @@ function DustParticles({ count = 80, area = [200, 20, 200] }) {
   )
 }
 
-// ── Emergency Lights (Beacon Pulse) ──
+// â”€â”€ Emergency Lights (Beacon Pulse) â”€â”€
 function EmergencyLight({ position }) {
   const matRef = useRef()
   useFrame((state) => {
@@ -456,7 +457,7 @@ function EmergencyLight({ position }) {
   )
 }
 
-// ── Ground crack/fissure ──
+// â”€â”€ Ground crack/fissure â”€â”€
 function GroundCrack({ start, end, width = 0.4 }) {
   const midX = (start[0] + end[0]) / 2
   const midZ = (start[1] + end[1]) / 2
@@ -473,7 +474,7 @@ function GroundCrack({ start, end, width = 0.4 }) {
   )
 }
 
-// ── Road ──
+// â”€â”€ Road â”€â”€
 function Road({ start, end, width = 4 }) {
   const midX = (start[0] + end[0]) / 2
   const midZ = (start[1] + end[1]) / 2
@@ -608,7 +609,7 @@ function EarthquakeTerrain() {
           const roofColor = ROOF_SHADES[roofIdx]
 
           if (damageLevel < 0.35) {
-            // FULLY COLLAPSED — rubble pile
+            // FULLY COLLAPSED â€” rubble pile
             const chunks = 4 + Math.floor(rand * 5)
             for (let c = 0; c < chunks; c++) {
               const cw = 2 + rand * 5
@@ -661,7 +662,7 @@ function EarthquakeTerrain() {
               }
             }
           } else if (damageLevel < 0.6) {
-            // PARTIALLY COLLAPSED — leaning/broken building
+            // PARTIALLY COLLAPSED â€” leaning/broken building
             const height = 8 + rand * 15
             const w = 7 + rand * 5
             const d = 7 + rand * 5
@@ -740,7 +741,7 @@ function EarthquakeTerrain() {
               topFiresPlaced++
             }
 
-            // Small cracks on some intact buildings — nearby rubble
+            // Small cracks on some intact buildings â€” nearby rubble
             if (seededRandom(seed + 50) > 0.6) {
               rubble.push({
                 position: [x + w * 0.5 + 1, 0.3, z],
@@ -774,7 +775,7 @@ function EarthquakeTerrain() {
     <group>
       <DustParticles count={300} area={[300, 30, 300]} />
       
-      {/* Ground — dusty/cracked earth */}
+      {/* Ground â€” dusty/cracked earth */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[500, 500]} />
         <meshStandardMaterial
@@ -895,7 +896,7 @@ function EarthquakeTerrain() {
   )
 }
 
-// ── Tsunami components (Optimized) ──
+// â”€â”€ Tsunami components (Optimized) â”€â”€
 function Water({ level = 0 }) {
   const waterRef = useRef()
   
@@ -1286,6 +1287,7 @@ export default function Terrain({ scenario }) {
     case 'earthquake': return <EarthquakeTerrain />
     case 'tsunami': return <TsunamiTerrain />
     case 'flood': return <FloodTerrain />
+    case 'dense_forest': return <DenseForestTerrain />
     default: return <EarthquakeTerrain />
   }
 }
