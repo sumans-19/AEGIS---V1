@@ -44,9 +44,9 @@ export default function SensorsHub({ onSelectSensor }) {
   const [dhtTemp, setDhtTemp] = React.useState('27.5');
   const [dhtHum, setDhtHum] = React.useState('68.0');
   const [dhtSource, setDhtSource] = React.useState('HARDWARE_COM9');
-  const [inaVolt, setInaVolt] = React.useState('5.13');
-  const [inaCurr, setInaCurr] = React.useState('27.5');
-  const [inaPow, setInaPow] = React.useState('140.0');
+  const [inaVolt, setInaVolt] = React.useState('0.00');
+  const [inaCurr, setInaCurr] = React.useState('0.0');
+  const [inaPow, setInaPow] = React.useState('0.0');
   const [inaSource, setInaSource] = React.useState('HARDWARE_COM9');
 
   React.useEffect(() => {

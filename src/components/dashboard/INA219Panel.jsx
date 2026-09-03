@@ -8,24 +8,24 @@ import './INA219Panel.css';
 
 export default function INA219Panel({ onBack }) {
   const [telemetry, setTelemetry] = useState({
-    bus_voltage_v: 5.13,
-    shunt_voltage_mv: 2.75,
-    load_voltage_v: 5.13,
-    current_ma: 27.5,
-    current_a: 0.028,
-    power_mw: 140.0,
-    power_w: 0.14,
-    energy_mwh: 18.4,
-    capacity_mah: 3.65,
+    bus_voltage_v: 0.0,
+    shunt_voltage_mv: 0.0,
+    load_voltage_v: 0.0,
+    current_ma: 0.0,
+    current_a: 0.0,
+    power_mw: 0.0,
+    power_w: 0.0,
+    energy_mwh: 0.0,
+    capacity_mah: 0.0,
     efficiency_pct: 98.4,
-    ripple_mv: 12.0,
-    estimated_runtime_min: 184,
+    ripple_mv: 0.0,
+    estimated_runtime_min: 999,
     power_status: 'OPTIMAL / NOMINAL',
     status: 'ACTIVE',
     source: 'HARDWARE_COM9',
-    history_volt: [5.12, 5.13, 5.13, 5.12, 5.13, 5.14, 5.13],
-    history_curr: [26.8, 27.2, 27.5, 27.1, 27.5, 27.8, 27.5],
-    history_pow: [137.0, 139.5, 140.0, 138.8, 140.0, 141.2, 140.0],
+    history_volt: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    history_curr: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    history_pow: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
   });
 
   const [unitMode, setUnitMode] = useState('STANDARD'); // 'STANDARD' (V, mA, mW) or 'HIGH_UNIT' (V, A, W)
@@ -49,39 +49,31 @@ export default function INA219Panel({ onBack }) {
         const res = await fetch('http://localhost:5000/ina219-data');
         if (res.ok && isMounted) {
           const data = await res.json();
+          const volt = Math.max(0, Number(data.bus_voltage_v ?? 0.0));
+          const curr = Number(data.current_ma ?? 0.0);
+          const pow = Math.max(0, Number(data.power_mw ?? 0.0));
+
           setTelemetry(prev => ({
             ...prev,
             ...data,
-            history_volt: data.history_volt || prev.history_volt,
-            history_curr: data.history_curr || prev.history_curr,
-            history_pow: data.history_pow || prev.history_pow,
+            bus_voltage_v: volt,
+            load_voltage_v: volt,
+            current_ma: curr,
+            current_a: Number((curr / 1000).toFixed(3)),
+            power_mw: pow,
+            power_w: Number((pow / 1000).toFixed(3)),
+            history_volt: data.history_volt || (prev.history_volt ? prev.history_volt.concat([volt]).slice(-25) : [volt]),
+            history_curr: data.history_curr || (prev.history_curr ? prev.history_curr.concat([curr]).slice(-25) : [curr]),
+            history_pow: data.history_pow || (prev.history_pow ? prev.history_pow.concat([pow]).slice(-25) : [pow]),
           }));
         }
       } catch (err) {
-        // Fallback smooth drift if disconnected
-        if (isMounted) {
-          setTelemetry(prev => {
-            const driftV = (Math.random() - 0.5) * 0.02;
-            const driftC = (Math.random() - 0.5) * 0.8;
-            const newV = Math.round((prev.bus_voltage_v + driftV) * 100) / 100;
-            const newC = Math.round((prev.current_ma + driftC) * 10) / 10;
-            const newP = Math.round((newV * newC) * 10) / 10;
-            return {
-              ...prev,
-              bus_voltage_v: newV,
-              current_ma: newC,
-              current_a: Math.round((newC / 1000) * 1000) / 1000,
-              power_mw: newP,
-              power_w: Math.round((newP / 1000) * 1000) / 1000,
-              shunt_voltage_mv: Math.round(newC * 0.1 * 100) / 100,
-            };
-          });
-        }
+        // Keep current telemetry on fetch error
       }
     };
 
     fetchINA();
-    const interval = setInterval(fetchINA, 400);
+    const interval = setInterval(fetchINA, 300);
     return () => {
       isMounted = false;
       clearInterval(interval);
@@ -126,9 +118,9 @@ export default function INA219Panel({ onBack }) {
       const cy = h / 2;
 
       const currentTel = telemetryRef.current;
-      const volt = currentTel.bus_voltage_v || 5.13;
-      const curr = currentTel.current_ma || 27.5;
-      const pow = currentTel.power_mw || 140.0;
+      const volt = currentTel.bus_voltage_v !== undefined ? currentTel.bus_voltage_v : 0.0;
+      const curr = currentTel.current_ma !== undefined ? currentTel.current_ma : 0.0;
+      const pow = currentTel.power_mw !== undefined ? currentTel.power_mw : (volt * curr);
 
       // 1. Deep Aerospace Background (Exact Match to DHT11 / Radar Canvas)
       const bgGrad = ctx.createRadialGradient(cx, cy, 30, cx, cy, Math.max(w, h) * 0.75);
