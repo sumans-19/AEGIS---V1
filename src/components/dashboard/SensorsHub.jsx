@@ -1,5 +1,5 @@
-import React from 'react';
-import { Camera, Zap, Waves, Thermometer, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Camera, Zap, Waves, Thermometer, X, ChevronDown } from 'lucide-react';
 import './SensorsHub.css';
 
 const SparklineChart = () => (
@@ -39,7 +39,7 @@ const SparklineChart = () => (
   </svg>
 );
 
-export default function SensorsHub({ onSelectSensor }) {
+export default function SensorsHub({ onSelectSensor, selectedDrone, onSelectDrone }) {
   const [ultrasonicDist, setUltrasonicDist] = React.useState('238.9');
   const [dhtTemp, setDhtTemp] = React.useState('27.5');
   const [dhtHum, setDhtHum] = React.useState('68.0');
@@ -48,6 +48,19 @@ export default function SensorsHub({ onSelectSensor }) {
   const [inaCurr, setInaCurr] = React.useState('0.0');
   const [inaPow, setInaPow] = React.useState('0.0');
   const [inaSource, setInaSource] = React.useState('HARDWARE_COM9');
+  
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   React.useEffect(() => {
     const fetchTelemetry = async () => {
@@ -159,6 +172,53 @@ export default function SensorsHub({ onSelectSensor }) {
 
   return (
     <div className="sensors-hub">
+      <div className="sensors-hub-header" style={{
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        padding: '0 24px 16px 24px',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+        marginBottom: '20px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', color: '#172124', fontSize: '18px', letterSpacing: '2px' }}>SENSOR FLEET OVERVIEW</h2>
+          <span style={{ padding: '4px 8px', background: 'rgba(121, 185, 193, 0.2)', color: '#17545C', fontSize: '10px', borderRadius: '4px', fontWeight: 800 }}>LIVE MONGODB SYNC</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <label style={{ color: '#71888D', fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 800, letterSpacing: '0.05em' }}>TARGET UNIT:</label>
+          <div className="custom-drone-select" ref={dropdownRef}>
+            <div 
+              className="custom-drone-select__selected" 
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
+              <span>{`UAV-0${selectedDrone.split('-')[1] || '1'} (${['', 'ARJUN', 'BHIMA', 'KARNA', 'KRISHNA', 'RAM'][parseInt(selectedDrone.split('-')[1]) || 1]})`}</span>
+              <ChevronDown size={14} color="#71888D" />
+            </div>
+            {dropdownOpen && (
+              <div className="custom-drone-select__dropdown">
+                {[
+                  { value: 'UAV-01', label: 'UAV-01 (ARJUN)' },
+                  { value: 'UAV-02', label: 'UAV-02 (BHIMA)' },
+                  { value: 'UAV-03', label: 'UAV-03 (KARNA)' },
+                  { value: 'UAV-04', label: 'UAV-04 (KRISHNA)' },
+                  { value: 'UAV-05', label: 'UAV-05 (RAM)' }
+                ].map(opt => (
+                  <div 
+                    key={opt.value}
+                    className={`custom-drone-select__option ${selectedDrone === opt.value ? 'selected' : ''}`}
+                    onClick={() => {
+                      onSelectDrone(opt.value);
+                      setDropdownOpen(false);
+                    }}
+                  >
+                    {opt.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
       <div className="sensors-grid">
         {sensors.map(sensor => (
           <div key={sensor.id} className="light-card">

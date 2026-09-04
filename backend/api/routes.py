@@ -1,3 +1,4 @@
+from backend.simulation.world_state import LogEntry
 from fastapi import APIRouter, WebSocket, Response, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from api.api_websocket import hub
@@ -355,3 +356,310 @@ async def websocket_endpoint(websocket: WebSocket):
                     assign_drone_target(d_id, np.array([target[0], 25, target[1]]))
     except:
         hub.disconnect(websocket)
+
+
+# ==============================================================================
+# SENSOR DATA ARCHITECTURE & 2-MINUTE WINDOW ENDPOINTS
+# ==============================================================================
+from db import mongo
+from simulation.sensor_manager import sensor_manager
+
+
+def _serialize_mongo(obj):
+    """Helper to convert datetime / ObjectIds to JSON-serializable types."""
+    if isinstance(obj, list):
+        return [_serialize_mongo(i) for i in obj]
+    if isinstance(obj, dict):
+        return {k: _serialize_mongo(v) for k, v in obj.items()}
+    if hasattr(obj, "isoformat"):
+        return obj.isoformat()
+    return obj
+
+
+@router.get("/api/sensors")
+async def get_all_sensors():
+    """List all registered sensors along with active collection window and latest consolidated window."""
+    registry = mongo.get_sensor_registry()
+    result = []
+    for s in registry:
+        s_id = s.get("sensor_id")
+        collector = sensor_manager.get_collector(s_id)
+        status_summary = collector.get_status_summary() if collector else {}
+        result.append({
+            **_serialize_mongo(s),
+            "telemetry": _serialize_mongo(status_summary)
+        })
+    return JSONResponse(content=_serialize_mongo(result))
+
+
+@router.get("/api/sensors/{sensor_id}/latest")
+async def get_sensor_latest(sensor_id: str):
+    """Returns real-time telemetry and 2-minute window progress for a specific sensor."""
+    collector = sensor_manager.get_collector(sensor_id)
+    if not collector:
+        return JSONResponse(status_code=404, content={"error": f"Sensor '{sensor_id}' not found"})
+    summary = collector.get_status_summary()
+    return JSONResponse(content=_serialize_mongo(summary))
+
+
+@router.get("/api/sensors/{sensor_id}/windows")
+async def get_sensor_windows(sensor_id: str, limit: int = 20):
+    """Query historical 2-minute consolidated windows from MongoDB."""
+    collector = sensor_manager.get_collector(sensor_id)
+    actual_id = collector.sensor_id if collector else sensor_id
+    windows = mongo.get_sensor_windows(actual_id, limit=limit)
+    return JSONResponse(content=_serialize_mongo(windows))
+
+
+@router.get("/api/sensors/{sensor_id}/snapshots")
+async def get_sensor_snapshots(sensor_id: str, limit: int = 20):
+    """Query manual snapshots captured by operators from MongoDB."""
+    collector = sensor_manager.get_collector(sensor_id)
+    actual_id = collector.sensor_id if collector else sensor_id
+    snapshots = mongo.get_sensor_snapshots(actual_id, limit=limit)
+    return JSONResponse(content=_serialize_mongo(snapshots))
+
+
+@router.post("/api/sensors/{sensor_id}/snapshot")
+async def capture_sensor_snapshot(sensor_id: str):
+    """Execute an instantaneous manual snapshot capture into MongoDB."""
+    collector = sensor_manager.get_collector(sensor_id)
+    if not collector:
+        return JSONResponse(status_code=404, content={"error": f"Sensor '{sensor_id}' not found"})
+    snapshot_doc = collector.capture_manual_snapshot()
+    return JSONResponse(content={
+        "status": "CAPTURED",
+        "message": f"Manual snapshot saved to MongoDB collection 'sensor_snapshots'",
+        "snapshot": _serialize_mongo(snapshot_doc)
+    })
+
+
+@router.post("/api/sensors/{sensor_id}/freeze")
+async def freeze_sensor_ui(sensor_id: str):
+    """Locks visual telemetry value on card without interrupting background collection."""
+    collector = sensor_manager.get_collector(sensor_id)
+    if not collector:
+        return JSONResponse(status_code=404, content={"error": f"Sensor '{sensor_id}' not found"})
+    res = collector.freeze_ui()
+    return JSONResponse(content=_serialize_mongo(res))
+
+
+@router.post("/api/sensors/{sensor_id}/unfreeze")
+async def unfreeze_sensor_ui(sensor_id: str):
+    """Unlocks visual telemetry and returns to live data display."""
+    collector = sensor_manager.get_collector(sensor_id)
+    if not collector:
+        return JSONResponse(status_code=404, content={"error": f"Sensor '{sensor_id}' not found"})
+    res = collector.unfreeze_ui()
+    return JSONResponse(content=_serialize_mongo(res))
+
+
+@router.post("/api/sensors/raw")
+async def ingest_raw_sensor_data(request: Request):
+    """Ingests raw sensor readings from external hardware (Arduino, ESP32, Serial)."""
+    try:
+        data = await request.json()
+        sensor_id = data.get("sensor_id")
+        measurements = data.get("measurements", {})
+        source = data.get("source", {"interface": "SERIAL", "port": "COM9"})
+        is_valid = data.get("is_valid", True)
+        
+        collector = sensor_manager.get_collector(sensor_id)
+        if collector:
+            collector.record_reading(measurements, source, is_valid=is_valid)
+            return JSONResponse(content={"status": "ingested", "sensor_id": collector.sensor_id})
+        else:
+            return JSONResponse(status_code=404, content={"error": f"Sensor {sensor_id} not registered"})
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
+
+# ==============================================================================
+# AI DECISION GROQ ENDPOINT
+# ==============================================================================
+import os
+from groq import Groq
+
+# Load Groq API key from environment variable (set in .env or system env)
+_groq_api_key = os.getenv("GROQ_API_KEY", "")
+if _groq_api_key:
+    os.environ["GROQ_API_KEY"] = _groq_api_key
+groq_client = Groq(api_key=_groq_api_key or None)
+
+@router.post("/api/ai/analyze")
+async def ai_analyze_telemetry(request: Request):
+    """Uses Groq API to analyze 2-minute sensor window and return drone instructions."""
+    try:
+        data = await request.json()
+        
+        # Build prompt from sensor data
+        drone = data.get("droneName", "Unknown Unit")
+        sensors = data.get("sensors", {})
+        
+        prompt = f"""
+You are AEGIS, an advanced autonomous drone fleet commander.
+Analyze the following sensor data from {drone}.
+
+SENSOR TELEMETRY:
+- Environmental (DHT11): {sensors.get('dht11', 'N/A')}
+- Power (INA219): {sensors.get('ina219', 'N/A')}
+- Proximity (Radar): {sensors.get('radar', 'N/A')}
+- Reconnaissance (Camera): {sensors.get('cam', 'N/A')}
+
+RULES:
+- If Camera targets > 0 and Radar is close, take evasive or backtrack action.
+- If Temp is > 30°C, mark as danger zone/fire hazard and warn other drones.
+- Your response must contain exactly two sections.
+- First section must start with "DETAILS:" followed by your analysis.
+- Second section must start with "ACTION:" followed by your military directive.
+- Do not include markdown like ** or ```.
+"""
+
+        completion = groq_client.chat.completions.create(
+            model="qwen/qwen3.8-27b",
+            messages=[
+                {"role": "system", "content": "You are a tactical military drone AI."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=150,
+        )
+        
+        raw_response = completion.choices[0].message.content.strip()
+        
+        details = "N/A"
+        action = raw_response
+        
+        if "DETAILS:" in raw_response and "ACTION:" in raw_response:
+            parts = raw_response.split("ACTION:")
+            details_part = parts[0].replace("DETAILS:", "").strip()
+            action_part = parts[1].strip()
+            details = details_part
+            action = action_part
+        elif "ACTION:" in raw_response:
+            parts = raw_response.split("ACTION:")
+            action = parts[1].strip()
+            details = parts[0].strip()
+
+        return JSONResponse(content={"status": "success", "details": details, "action": action})
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e), "instruction": "AI OFFLINE: CONNECTION TO COMMAND NODE FAILED."})
+
+# ==============================================================================
+# SENSOR DATA PUSH TO DB ENDPOINT
+# ==============================================================================
+@router.post("/api/sensors/push")
+async def push_sensor_data_to_db(request: Request):
+    """Saves parsed consolidated sensor data windows to dedicated MongoDB collections."""
+    try:
+        data = await request.json()
+        import uuid
+        import datetime
+        
+        # Parse Timestamps
+        ts_str = data.get("timestamp", "")
+        start_time, end_time = ts_str, ts_str
+        if "-" in ts_str:
+            parts = ts_str.split("-")
+            start_time = parts[0].strip()
+            end_time = parts[1].strip()
+
+        drone = data.get("droneName", "Unknown")
+        sensors = data.get("sensors", {})
+        
+        # 1. Parse DHT11
+        dht11_str = sensors.get("dht11", "")
+        temp = hum = air = None
+        if "|" in dht11_str:
+            try:
+                temp = float(dht11_str.split("|")[0].replace("°C", "").strip())
+                hum = float(dht11_str.split("|")[1].replace("%", "").strip())
+                air = float(dht11_str.split("|")[2].replace("Air Dens:", "").replace("kg/m³", "").strip())
+            except Exception: pass
+            
+        doc_dht11 = {
+            "window_id": str(uuid.uuid4()),
+            "drone_name": drone, 
+            "window_start": start_time, 
+            "window_end": end_time,
+            "measurements": {"temperature_c": temp, "humidity_pct": hum, "air_density": air},
+            "raw_string": dht11_str,
+            "pushed_at": datetime.datetime.utcnow().isoformat()
+        }
+
+        # 2. Parse INA219
+        ina_str = sensors.get("ina219", "")
+        volt = curr = power = None
+        if "|" in ina_str:
+            try:
+                volt = float(ina_str.split("|")[0].replace("V", "").strip())
+                curr = float(ina_str.split("|")[1].replace("mA", "").strip())
+                power = float(ina_str.split("|")[2].replace("Pow:", "").replace("W", "").strip())
+            except Exception: pass
+
+        doc_ina219 = {
+            "window_id": str(uuid.uuid4()),
+            "drone_name": drone, 
+            "window_start": start_time, 
+            "window_end": end_time,
+            "measurements": {"bus_voltage_v": volt, "current_ma": curr, "power_w": power},
+            "raw_string": ina_str,
+            "pushed_at": datetime.datetime.utcnow().isoformat()
+        }
+
+        # 3. Parse Radar
+        radar_str = sensors.get("radar", "")
+        dist = zone = None
+        if "cm" in radar_str:
+            try:
+                dist = float(radar_str.split("cm")[0].strip())
+                if "(" in radar_str:
+                    zone = radar_str.split("(")[1].replace(")", "").strip()
+            except Exception: pass
+
+        doc_radar = {
+            "window_id": str(uuid.uuid4()),
+            "drone_name": drone, 
+            "window_start": start_time, 
+            "window_end": end_time,
+            "measurements": {"distance_cm": dist}, "zone": zone,
+            "raw_string": radar_str,
+            "pushed_at": datetime.datetime.utcnow().isoformat()
+        }
+
+        # 4. Parse Camera
+        cam_str = sensors.get("cam", "")
+        targets = lock = None
+        if "TARGET" in cam_str:
+            try:
+                targets_part = cam_str.split("TARGET")[0].strip()
+                if "S" in targets_part:
+                    targets_part = targets_part.replace("S", "").strip()
+                targets = int(targets_part)
+                if "(" in cam_str:
+                    lock = float(cam_str.split("(")[1].replace("% LOCK)", "").strip())
+            except Exception: pass
+
+        doc_cam = {
+            "window_id": str(uuid.uuid4()),
+            "drone_name": drone, 
+            "window_start": start_time, 
+            "window_end": end_time,
+            "measurements": {"detected_targets": targets, "confidence_pct": lock},
+            "raw_string": cam_str,
+            "pushed_at": datetime.datetime.utcnow().isoformat()
+        }
+
+        # Dispatch to 4 separate collections
+        collection_map = {
+            "dht11_environmental_windows": doc_dht11,
+            "ina219_power_windows": doc_ina219,
+            "hcsr04_radar_windows": doc_radar,
+            "esp32_camera_windows": doc_cam
+        }
+        mongo.insert_split_sensor_docs(collection_map)
+        
+        return JSONResponse(content={"status": "success"})
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})

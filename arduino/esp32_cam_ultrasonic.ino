@@ -27,8 +27,8 @@
 #include "esp_http_server.h"
 
 // ── WiFi Credentials ──
-const char* ssid     = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid     = "test";
+const char* password = "12345689";
 
 // ── Ultrasonic HC-SR04 Pin Configuration ──
 // NOTE: GPIO 12 and 13 are safe for ultrasonic on AI-Thinker ESP32-CAM

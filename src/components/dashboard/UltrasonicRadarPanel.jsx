@@ -9,7 +9,27 @@ const PROXIMITY_STREAM_URL = import.meta.env.VITE_PROXIMITY_STREAM_URL || "http:
 const PROXIMITY_API_URL = import.meta.env.VITE_PROXIMITY_API_URL || "http://localhost:5000/proximity-data";
 const HEALTH_URL = import.meta.env.VITE_THERMAL_HEALTH_URL || "http://localhost:5000/health";
 
-export default function UltrasonicRadarPanel({ onBack }) {
+export default function UltrasonicRadarPanel({ onBack, selectedDrone }) {
+  const [isFrozen, setIsFrozen] = useState(false);
+
+  const handleFreeze = async () => {
+    const newFreeze = !isFrozen;
+    setIsFrozen(newFreeze);
+    try {
+      await fetch('http://localhost:5000/api/sensors/freeze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sensor_id: 'SENSOR-HCSR04-01',
+          unit_id: selectedDrone || 'UAV-01',
+          is_frozen: newFreeze
+        })
+      });
+    } catch (e) {
+      console.error('Failed to freeze sensor:', e);
+    }
+  };
+
   const [streamStatus, setStreamStatus] = useState('live'); // connecting, live, error
   const [sysTime, setSysTime] = useState('');
   const [unitMode, setUnitMode] = useState('CM'); // 'CM' or 'M'
@@ -184,6 +204,21 @@ export default function UltrasonicRadarPanel({ onBack }) {
             <span className="ultrasonic-panel__hw-dot" />
             <span>{telemetry.source} // 40 kHz // 9600 BAUD</span>
           </div>
+          <button 
+            onClick={handleFreeze}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 12px', borderRadius: '6px',
+              border: `1px solid ${isFrozen ? '#3BAAB6' : 'rgba(13, 36, 40, 0.15)'}`,
+              background: isFrozen ? 'rgba(59, 170, 182, 0.15)' : 'rgba(13, 36, 40, 0.05)',
+              color: isFrozen ? '#3BAAB6' : '#0D2428',
+              fontSize: '11px', fontWeight: 'bold', cursor: 'pointer',
+              fontFamily: 'var(--font-mono)'
+            }}
+          >
+            <ShieldAlert size={14} />
+            {isFrozen ? 'UNFREEZE DATA' : 'FREEZE DATA'}
+          </button>
           <div className="ultrasonic-panel__unit-toggle">
             <button
               className={`ultrasonic-panel__unit-btn ${unitMode === 'CM' ? 'ultrasonic-panel__unit-btn--active' : ''}`}

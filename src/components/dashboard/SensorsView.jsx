@@ -7,6 +7,7 @@ import INA219Panel from './INA219Panel';
 
 export default function SensorsView() {
   const [activeSensor, setActiveSensor] = useState(null);
+  const [selectedDrone, setSelectedDrone] = useState('UAV-01');
 
   const handleSelectSensor = (sensorId) => {
     if (
@@ -31,15 +32,19 @@ export default function SensorsView() {
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
       {activeSensor === 'thermal' ? (
-        <ThermalReconPanel onBack={handleBackToHub} />
+        <ThermalReconPanel onBack={handleBackToHub} selectedDrone={selectedDrone} />
       ) : activeSensor === 'ultrasonic' ? (
-        <UltrasonicRadarPanel onBack={handleBackToHub} />
+        <UltrasonicRadarPanel onBack={handleBackToHub} selectedDrone={selectedDrone} />
       ) : (activeSensor === 'dht11' || activeSensor === 'smoke') ? (
-        <DHT11Panel onBack={handleBackToHub} />
+        <DHT11Panel onBack={handleBackToHub} selectedDrone={selectedDrone} />
       ) : (activeSensor === 'ina219' || activeSensor === 'power' || activeSensor === 'battery') ? (
-        <INA219Panel onBack={handleBackToHub} />
+        <INA219Panel onBack={handleBackToHub} selectedDrone={selectedDrone} />
       ) : (
-        <SensorsHub onSelectSensor={handleSelectSensor} />
+        <SensorsHub 
+          onSelectSensor={handleSelectSensor} 
+          selectedDrone={selectedDrone}
+          onSelectDrone={setSelectedDrone}
+        />
       )}
     </div>
   );

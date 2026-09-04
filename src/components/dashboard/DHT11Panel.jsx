@@ -5,7 +5,27 @@ import {
 } from 'lucide-react';
 import './DHT11Panel.css';
 
-export default function DHT11Panel({ onBack }) {
+export default function DHT11Panel({ onBack, selectedDrone }) {
+  const [isFrozen, setIsFrozen] = useState(false);
+
+  const handleFreeze = async () => {
+    const newFreeze = !isFrozen;
+    setIsFrozen(newFreeze);
+    try {
+      await fetch('http://localhost:5000/api/sensors/freeze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sensor_id: 'SENSOR-DHT11-01',
+          unit_id: selectedDrone || 'UAV-01',
+          is_frozen: newFreeze
+        })
+      });
+    } catch (e) {
+      console.error('Failed to freeze sensor:', e);
+    }
+  };
+
   const [telemetry, setTelemetry] = useState({
     temperature_c: 27.5,
     temperature_f: 81.5,
@@ -479,6 +499,21 @@ export default function DHT11Panel({ onBack }) {
             <span className="dht-panel__hw-dot" />
             <span>{telemetry.source} // 9600 BAUD</span>
           </div>
+          <button 
+            onClick={handleFreeze}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 12px', borderRadius: '6px',
+              border: `1px solid ${isFrozen ? '#3BAAB6' : 'rgba(13, 36, 40, 0.15)'}`,
+              background: isFrozen ? 'rgba(59, 170, 182, 0.15)' : 'rgba(13, 36, 40, 0.05)',
+              color: isFrozen ? '#3BAAB6' : '#0D2428',
+              fontSize: '11px', fontWeight: 'bold', cursor: 'pointer',
+              fontFamily: 'var(--font-mono)'
+            }}
+          >
+            <ShieldAlert size={14} />
+            {isFrozen ? 'UNFREEZE DATA' : 'FREEZE DATA'}
+          </button>
           <div className="dht-panel__unit-toggle">
             <button
               className={`dht-panel__unit-btn ${unit === 'C' ? 'dht-panel__unit-btn--active' : ''}`}

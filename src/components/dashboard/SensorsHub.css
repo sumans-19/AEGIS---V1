@@ -244,3 +244,66 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(138, 203, 210, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
+
+/* ── CUSTOM DRONE SELECT ── */
+.custom-drone-select {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.custom-drone-select__selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #172124;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03), inset 0 1px 0 #FFFFFF;
+  transition: all 0.22s ease;
+  user-select: none;
+}
+
+.custom-drone-select__selected:hover {
+  background: #F7FBFC;
+  border-color: rgba(121, 185, 193, 0.8);
+}
+
+.custom-drone-select__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.custom-drone-select__option {
+  padding: 10px 12px;
+  color: #2E3E42;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.custom-drone-select__option:hover {
+  background: #B9DCE1;
+  color: #172124;
+}
+
+.custom-drone-select__option.selected {
+  background: rgba(121, 185, 193, 0.15);
+  color: #17545C;
+}

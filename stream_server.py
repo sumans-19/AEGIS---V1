@@ -30,7 +30,7 @@ app.add_middleware(
 # CONFIGURATION & STATE
 # ---------------------------------------------------------
 
-ESP32_STREAM_URL = "http://172.21.58.236:81/stream"
+ESP32_STREAM_URL = "http://10.31.169.236/stream"
 
 MODEL_PATH = "yolov8n.pt"
 
@@ -1406,6 +1406,139 @@ def get_sensors_telemetry():
         "thermal_targets": current_detections_list
     }
 
+
+# ---------------------------------------------------------
+# 2-MINUTE LIVE SENSOR WINDOW AGGREGATOR
+# ---------------------------------------------------------
+
+import collections, datetime as _dt
+
+WINDOW_DURATION_SECONDS = 120  # 2-minute rolling window
+
+_window_lock = threading.Lock()
+
+# Ring buffer of completed 2-min windows (keep last 50)
+completed_windows = collections.deque(maxlen=50)
+
+# Accumulator for in-progress window
+_wnd_accum = {
+    "start_time": None,
+    "temp_samples": [], "hum_samples": [], "air_dens_samples": [],
+    "volt_samples": [], "curr_samples": [], "pow_samples": [],
+    "dist_samples": [], "target_counts": [], "confidences": [],
+}
+
+def _window_aggregator_thread():
+    """Runs in background. Reads live sensor state every second and aggregates 2-min windows."""
+    global _wnd_accum, completed_windows
+    while True:
+        try:
+            now = time.time()
+            with _window_lock:
+                if _wnd_accum["start_time"] is None:
+                    _wnd_accum["start_time"] = now
+
+                # Sample current sensor state
+                _wnd_accum["temp_samples"].append(dht11_state.get("temperature_c", 0))
+                _wnd_accum["hum_samples"].append(dht11_state.get("humidity_pct", 0))
+                _wnd_accum["air_dens_samples"].append(dht11_state.get("air_density_kg_m3", 1.18))
+                _wnd_accum["volt_samples"].append(ina219_state.get("bus_voltage_v", 0))
+                _wnd_accum["curr_samples"].append(ina219_state.get("current_ma", 0))
+                _wnd_accum["pow_samples"].append(ina219_state.get("power_w", 0))
+                _wnd_accum["dist_samples"].append(ultrasonic_state.get("distance_cm", 300))
+                targets = len(current_detections_list)
+                conf_list = [d.get("confidence", 0) for d in current_detections_list]
+                _wnd_accum["target_counts"].append(targets)
+                _wnd_accum["confidences"].append(max(conf_list) if conf_list else 0)
+
+                elapsed = now - _wnd_accum["start_time"]
+
+                if elapsed >= WINDOW_DURATION_SECONDS:
+                    # Finalize window
+                    def avg(lst): return round(sum(lst) / len(lst), 2) if lst else 0
+
+                    wstart = _dt.datetime.fromtimestamp(_wnd_accum["start_time"])
+                    wend   = _dt.datetime.fromtimestamp(now)
+                    ts_label = f"{wstart.strftime('%I:%M %p')} - {wend.strftime('%I:%M %p')}"
+
+                    dist_avg = avg(_wnd_accum["dist_samples"])
+                    if dist_avg < 45:
+                        zone = "CRITICAL: COLLISION RISK"
+                    elif dist_avg < 120:
+                        zone = "WARN: OBSTACLE"
+                    elif dist_avg < 250:
+                        zone = "SAFE ZONE"
+                    else:
+                        zone = "CLEAR"
+
+                    target_max = max(_wnd_accum["target_counts"]) if _wnd_accum["target_counts"] else 0
+                    conf_max = max(_wnd_accum["confidences"]) if _wnd_accum["confidences"] else 0
+
+                    if target_max > 0 and conf_max > 0:
+                        cam_str = f"{target_max} TARGET{'S' if target_max != 1 else ''} ({int(conf_max * 100)}% LOCK)"
+                    else:
+                        cam_str = "0 TARGETS"
+
+                    temp_v = avg(_wnd_accum["temp_samples"])
+                    hum_v = avg(_wnd_accum["hum_samples"])
+                    air_v = avg(_wnd_accum["air_dens_samples"])
+
+                    window_doc = {
+                        "id": int(now * 1000),
+                        "droneName": "UAV-01 (ARJUN)",   # fixed for single-drone HW setup
+                        "timestamp": ts_label,
+                        "window_start": wstart.isoformat(),
+                        "window_end": wend.isoformat(),
+                        "sensors": {
+                            "dht11": f"{temp_v}°C | {hum_v}% | Air Dens: {air_v} kg/m³",
+                            "ina219": f"{avg(_wnd_accum['volt_samples'])}V | {avg(_wnd_accum['curr_samples'])}mA | Pow: {avg(_wnd_accum['pow_samples'])}W",
+                            "radar": f"{dist_avg}cm ({zone})",
+                            "cam": cam_str,
+                        },
+                        "source": dht11_state.get("source", "HARDWARE"),
+                        "pushed": False,
+                        "analyzed": False,
+                        "isAnalyzing": False,
+                        "aiDetails": None,
+                        "aiAction": None,
+                    }
+                    completed_windows.appendleft(window_doc)
+
+                    # Reset accumulator
+                    _wnd_accum = {
+                        "start_time": None,
+                        "temp_samples": [], "hum_samples": [], "air_dens_samples": [],
+                        "volt_samples": [], "curr_samples": [], "pow_samples": [],
+                        "dist_samples": [], "target_counts": [], "confidences": [],
+                    }
+        except Exception as ex:
+            print(f"[WINDOW AGG] Error: {ex}")
+
+        time.sleep(1)
+
+_agg_thread = threading.Thread(target=_window_aggregator_thread, daemon=True)
+_agg_thread.start()
+
+@app.get("/sensor-windows")
+def get_sensor_windows():
+    """Returns list of completed 2-min aggregation windows for AI Decision Panel."""
+    with _window_lock:
+        return list(completed_windows)
+
+@app.get("/sensor-window-status")
+def get_window_status():
+    """Returns progress of the current in-progress 2-min window (for live countdown)."""
+    with _window_lock:
+        start = _wnd_accum["start_time"]
+        if start is None:
+            return {"elapsed": 0, "remaining": WINDOW_DURATION_SECONDS, "progress_pct": 0}
+        elapsed = time.time() - start
+        remaining = max(0, WINDOW_DURATION_SECONDS - elapsed)
+        return {
+            "elapsed": round(elapsed, 1),
+            "remaining": round(remaining, 1),
+            "progress_pct": round(min(100, (elapsed / WINDOW_DURATION_SECONDS) * 100), 1)
+        }
 
 # ---------------------------------------------------------
 # RUN SERVER
