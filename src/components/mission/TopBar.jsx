@@ -62,32 +62,60 @@ export default function TopBar({ onClose }) {
     addNotification('Click two points on the terrain to define the search area.', 'guide')
   }
 
-  const handleStartMission = () => {
+  const handleStartMission = async () => {
     if (!searchRegion) return
-    const paths = computeDeployPaths(searchRegion)
-    startDeploy(paths)
-    addNotification('Launch sequence initiated. Drones departing base.', 'system')
-    drones.forEach(d => {
-      useSimStore.getState().updateDrone(d.id, { status: 'DEPLOYING' })
-    })
+    
+    // Build survivors payload for the backend (only seeded survivors with SURV- prefix)
+    const survivorsPayload = seededSurvivors.map(s => ({
+      id: s.id,
+      pos: s.pos || [0, 0, 0],
+      x: s.pos?.[0] || 0,
+      z: s.pos?.[2] || 0,
+    }))
+    
+    // Notify the backend to start its mission engine with our region and survivors
+    try {
+      const res = await fetch('http://localhost:8000/api/simulation/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          scenario, 
+          searchRegion,
+          survivors: survivorsPayload,
+        })
+      })
+      if (!res.ok) throw new Error('Backend returned ' + res.status)
+      
+      addNotification(`Mission deployed. AEGIS AI Engine active. ${survivorsPayload.length} survivor(s) seeded.`, 'system')
+      
+      // Also kick off the frontend visual deploy animation
+      const { computeDeployPaths } = await import('../../hooks/useDroneMovement')
+      const deployPaths = computeDeployPaths(searchRegion)
+      startDeploy(deployPaths)
+      
+    } catch (e) {
+      console.error('Failed to start backend engine:', e)
+      addNotification('Error connecting to AEGIS backend. Check that backend is running on port 8000.', 'error')
+      // Fall back: start frontend-only simulation anyway
+      const { computeDeployPaths } = await import('../../hooks/useDroneMovement')
+      const deployPaths = computeDeployPaths(searchRegion)
+      startDeploy(deployPaths)
+    }
   }
 
   const handleFinishSeedingAndDeploy = () => {
-    setMissionPhase('READY_TO_DEPLOY')
     handleStartMission()
   }
 
-  const handleEndTask = () => {
-    const positions = {}
-    drones.forEach(d => {
-      positions[d.id] = { x: d.pos?.[0] || 0, z: d.pos?.[2] || 0 }
-    })
-    const paths = computeReturnPaths(positions)
-    startReturn(paths)
-    addNotification('Return to base initiated. All drones recalling.', 'system')
-    drones.forEach(d => {
-      useSimStore.getState().updateDrone(d.id, { status: 'RETURNING' })
-    })
+  const handleEndTask = async () => {
+    try {
+      await fetch('http://localhost:8000/api/simulation/stop', { method: 'POST' })
+
+      addNotification('Return to base initiated. Mission complete.', 'system')
+      setMissionPhase('RETURNING')
+    } catch (e) {
+      console.error('Failed to stop backend engine:', e)
+    }
   }
 
   const handleReset = () => {

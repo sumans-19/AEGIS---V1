@@ -469,6 +469,19 @@ export default function CoordinationPanel({ onClose }) {
         {/* ── RIGHT: Commands + Events ──────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', background: 'rgba(235, 243, 245, 0.98)', borderLeft: '1px solid rgba(0, 0, 0, 0.08)', overflow: 'hidden', width: '380px' }}>
 
+          {/* Swarm Rebalancing Stats */}
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)', background: 'rgba(212, 168, 68, 0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '9px', color: '#8B6B1B', letterSpacing: '0.06em', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>SWARM REBALANCES</div>
+              <div style={{ fontSize: '12px', color: '#8B6B1B', fontWeight: 800, fontFamily: 'var(--font-primary)' }}>{coordData?.total_rebalances || 0}</div>
+            </div>
+            {coordData?.rebalance_events?.slice(-2).map((ev, i) => (
+              <div key={i} style={{ fontSize: '8.5px', color: '#8B6B1B', marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
+                [{ev.time.toFixed(0)}s] {ev.drone} → Zone {ev.new_zone}
+              </div>
+            ))}
+          </div>
+
           {/* Zone coverage */}
           <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }}>
             <div style={{ fontSize: '9px', color: '#55666B', letterSpacing: '0.06em', marginBottom: '6px', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>ZONE {zoneLabel} SCAN PROGRESS</div>

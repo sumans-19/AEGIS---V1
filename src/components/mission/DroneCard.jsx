@@ -125,7 +125,7 @@ export default function DroneCard({ drone }) {
         }} />
       </div>
 
-      {/* Bottom row: Alt, Speed, Battery % */}
+      {/* Bottom row: Alt, Speed, Battery %, Signal */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -139,6 +139,9 @@ export default function DroneCard({ drone }) {
         <span>ALT <strong style={{ color: '#172124', fontSize: '8.5px' }}>{Math.round(drone.pos?.[1] || 0)}m</strong></span>
         <span>SPD <strong style={{ color: '#172124', fontSize: '8.5px' }}>{Math.round(drone.speed || 0)}m/s</strong></span>
         <span>BAT <strong style={{ color: drone.battery < 20 ? '#dc3545' : '#1a565e', fontSize: '8.5px' }}>{Math.round(drone.battery || 0)}%</strong></span>
+        <span>SIG <strong style={{ color: drone.mesh_connected ? '#2e7d5a' : '#dc3545', fontSize: '8.5px' }}>
+          {drone.mesh_connected ? `${Math.max(0, 100 - (drone.relay_chain?.length || 0) * 15)}%` : 'LOST'}
+        </strong></span>
       </div>
     </div>
   )

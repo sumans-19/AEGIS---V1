@@ -34,7 +34,9 @@ def log_system(message: str) -> None:
     print(f"[SYSTEM] {message}")
 
 
-def make_ai_log_entry(sim_time: float, drone_id: int, action: str, reason: str) -> LogEntry:
+def make_ai_log_entry(
+    sim_time: float, drone_id: int, action: str, reason: str
+) -> LogEntry:
     return LogEntry(
         time=sim_time,
         drone_id=drone_id,

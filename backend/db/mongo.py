@@ -7,7 +7,7 @@ logger = logging.getLogger("aegis_mongo")
 # Use ENV for flexibility (local + Atlas)
 MONGO_URI = os.getenv(
     "MONGO_URI",
-    "mongodb+srv://richa:Exam%407890@cluster0.r1u15je.mongodb.net/aegis_ai?retryWrites=true&w=majority"
+    "mongodb+srv://richa:Exam%407890@cluster0.r1u15je.mongodb.net/aegis_ai?retryWrites=true&w=majority",
 )
 DB_NAME = "aegis_ai"
 COLLECTION_NAME = "drone_experiences"
@@ -23,9 +23,7 @@ def init_mongo():
 
     try:
         client = MongoClient(
-            MONGO_URI,
-            serverSelectionTimeoutMS=2000,  # fast fail
-            connectTimeoutMS=2000
+            MONGO_URI, serverSelectionTimeoutMS=2000, connectTimeoutMS=2000  # fast fail
         )
 
         # Force connection check

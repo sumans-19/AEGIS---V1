@@ -50,20 +50,22 @@ for _ in range(10000):
     else:
         action = "CONTINUE_MISSION"
 
-    rows.append([
-        battery,
-        propeller,
-        cpu_temp,
-        signal,
-        thermal,
-        lidar,
-        obstacle,
-        moisture,
-        smoke,
-        altitude,
-        speed,
-        action
-    ])
+    rows.append(
+        [
+            battery,
+            propeller,
+            cpu_temp,
+            signal,
+            thermal,
+            lidar,
+            obstacle,
+            moisture,
+            smoke,
+            altitude,
+            speed,
+            action,
+        ]
+    )
 
 # -------------------------
 # SAVE CSV
@@ -73,20 +75,22 @@ with open("drone_dataset.csv", "w", newline="") as f:
 
     writer = csv.writer(f)
 
-    writer.writerow([
-        "battery",
-        "propeller_health",
-        "cpu_temperature",
-        "signal_strength",
-        "thermal_status",
-        "lidar_status",
-        "obstacle_distance",
-        "moisture_level",
-        "smoke_density",
-        "altitude",
-        "speed",
-        "action"
-    ])
+    writer.writerow(
+        [
+            "battery",
+            "propeller_health",
+            "cpu_temperature",
+            "signal_strength",
+            "thermal_status",
+            "lidar_status",
+            "obstacle_distance",
+            "moisture_level",
+            "smoke_density",
+            "altitude",
+            "speed",
+            "action",
+        ]
+    )
 
     writer.writerows(rows)
 

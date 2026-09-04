@@ -116,6 +116,56 @@ export default function RadarView() {
       
       ctx.restore()
 
+      // ── 3.5. LIDAR TERRAIN MAPPING ────────────────────
+      const gridSize = 12
+      const spacing = 22
+      const offset = (gridSize * spacing) / 2
+      
+      ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)'
+      ctx.lineWidth = 1.5
+      
+      for (let gx = 0; gx < gridSize; gx++) {
+        for (let gz = 0; gz < gridSize; gz++) {
+          const seed = gx * 100 + gz
+          const typeRand = seededRandom(seed + 10)
+          
+          if (typeRand >= 0.12 && typeRand < 0.92) {
+            const cx = gx * spacing - offset + spacing / 2 + (seededRandom(seed + 1) - 0.5) * 3
+            const cz = gz * spacing - offset + spacing / 2 + (seededRandom(seed + 2) - 0.5) * 3
+            
+            const damageLevel = seededRandom(seed + 3)
+            let w = 0, h = 0
+            if (damageLevel < 0.35) {
+              // Rubble (ignored by LiDAR map for clarity)
+              continue
+            } else if (damageLevel < 0.6) {
+              w = 7 + seededRandom(seed) * 5
+              h = 7 + seededRandom(seed) * 5
+            } else {
+              w = 6 + seededRandom(seed) * 6
+              h = 6 + seededRandom(seed) * 6
+            }
+            
+            const dx = (cx - pos[0])
+            const dz = (cz - pos[2])
+            const dist = Math.sqrt(dx * dx + dz * dz)
+            
+            // Only draw buildings within radar range
+            if (dist < 120) {
+              const bx = centerX + (dx / 100) * radius
+              const by = centerY + (dz / 100) * radius
+              const bw = (w / 100) * radius
+              const bh = (h / 100) * radius
+              
+              ctx.strokeRect(bx - bw/2, by - bh/2, bw, bh)
+              // Fill with faint color to represent structure
+              ctx.fillStyle = 'rgba(0, 229, 255, 0.05)'
+              ctx.fillRect(bx - bw/2, by - bh/2, bw, bh)
+            }
+          }
+        }
+      }
+
       // ── 4. BLIPS (Drones & Survivors) ────────────────
       const maxRange = 100 // mapped to radius
       

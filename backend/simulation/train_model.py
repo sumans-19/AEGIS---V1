@@ -25,20 +25,14 @@ y = df["action"]
 # -------------------------
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42
+    X, y, test_size=0.2, random_state=42
 )
 
 # -------------------------
 # MODEL
 # -------------------------
 
-model = RandomForestClassifier(
-    n_estimators=100,
-    random_state=42
-)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
 
 # -------------------------
 # TRAIN
@@ -52,10 +46,7 @@ model.fit(X_train, y_train)
 
 predictions = model.predict(X_test)
 
-accuracy = accuracy_score(
-    y_test,
-    predictions
-)
+accuracy = accuracy_score(y_test, predictions)
 
 print(f"Accuracy: {accuracy * 100:.2f}%")
 

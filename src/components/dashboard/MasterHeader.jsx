@@ -26,68 +26,6 @@ function WirelessIcon() {
   );
 }
 
-/* Realistic Glossy Liquid Paint / Water Drips with Specular Highlights & Physics on the Right End */
-function RealisticLiquidDrips() {
-  return (
-    <svg
-      className="master-header__realistic-drips"
-      viewBox="0 0 450 36"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id="liquidGradRight" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#20292B" />
-          <stop offset="60%" stopColor="#172124" />
-          <stop offset="100%" stopColor="#0F1618" />
-        </linearGradient>
-
-        <radialGradient id="dropHighlightRight" cx="35%" cy="30%" r="65%">
-          <stop offset="0%" stopColor="rgba(255, 255, 255, 0.55)" />
-          <stop offset="40%" stopColor="rgba(255, 255, 255, 0.08)" />
-          <stop offset="100%" stopColor="rgba(0, 0, 0, 0.6)" />
-        </radialGradient>
-      </defs>
-
-      {/* Main Flowing Dripping Silhouette with multiple drops matching reference image */}
-      <path
-        d="M0 0 H450 
-           C440 0 435 3 430 6 C425 10 422 15 418 15 C414 15 412 8 408 4 C404 0 398 0 392 0
-           C384 0 380 6 376 12 C372 19 370 26 366 26 C362 26 360 15 356 8 C352 2 344 0 336 0
-           C328 0 324 7 320 15 C316 23 314 31 310 31 C306 31 304 18 300 10 C296 2 288 0 280 0
-           C272 0 268 6 264 13 C260 20 260 27 256 27 C252 27 250 16 246 9 C242 2 234 0 226 0
-           C218 0 214 8 210 18 C206 28 204 35 200 35 C196 35 194 20 190 12 C186 3 178 0 170 0
-           C162 0 158 7 154 16 C150 25 148 32 144 32 C140 32 138 18 134 10 C130 2 122 0 114 0
-           C106 0 102 6 98 13 C94 20 92 26 88 26 C84 26 82 16 78 9 C74 2 66 0 58 0
-           C50 0 46 5 42 11 C38 18 36 24 32 24 C28 24 26 14 22 7 C18 1 12 0 0 0 Z"
-        fill="url(#liquidGradRight)"
-      />
-
-      {/* Hanging Liquid Teardrops with Specular Highlights */}
-      <circle cx="200" cy="34" r="3.2" fill="#172124" />
-      <circle cx="199.2" cy="33.2" r="1.4" fill="url(#dropHighlightRight)" />
-
-      <circle cx="144" cy="31" r="3.0" fill="#172124" />
-      <circle cx="143.2" cy="30.2" r="1.3" fill="url(#dropHighlightRight)" />
-
-      <circle cx="310" cy="30" r="2.8" fill="#172124" />
-      <circle cx="309.2" cy="29.3" r="1.2" fill="url(#dropHighlightRight)" />
-
-      <circle cx="366" cy="25" r="2.4" fill="#172124" />
-      <circle cx="365.3" cy="24.3" r="1.0" fill="url(#dropHighlightRight)" />
-
-      <circle cx="256" cy="26" r="2.2" fill="#172124" />
-      <circle cx="255.3" cy="25.3" r="0.9" fill="url(#dropHighlightRight)" />
-
-      {/* Separated Falling Micro Droplets */}
-      <circle cx="200" cy="40" r="1.4" fill="#172124" />
-      <circle cx="144" cy="37" r="1.2" fill="#172124" />
-      <circle cx="310" cy="35.5" r="1.1" fill="#172124" />
-    </svg>
-  );
-}
-
 export default function MasterHeader({ activeTab = 'overview' }) {
   const scenario = useSimStore(s => s.scenario);
   const backendConnected = useSimStore(s => s.backendConnected);
@@ -126,10 +64,8 @@ export default function MasterHeader({ activeTab = 'overview' }) {
         </svg>
       </div>
 
-      {/* Main Light Header Area with Realistic Liquid Drips on the Right Side */}
+      {/* Main Light Header Area */}
       <div className="master-header__main-area">
-        {/* Realistic Liquid Dripping Design along the top-right end of the header */}
-        <RealisticLiquidDrips />
 
         <div className="master-header__title-block">
           <h1 className="master-header__title">{meta.title}</h1>

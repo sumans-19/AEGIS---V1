@@ -6,7 +6,6 @@ from simulation.swarm_failover import request_nearest_sensor
 from simulation.rl_engine import calculate_reward
 from simulation.ai_logging import log_ai_brain, log_failover, log_rl
 
-
 _CHARGING_STATIONS = [
     [45, 0, 45],
     [-45, 0, 45],
@@ -31,11 +30,24 @@ def apply_ai_decision(drone, decision, all_drones, *, verbose: bool = True):
 
     if action == "RETURN_TO_BASE":
         drone.status = "RETURNING"
-        nearest = min(
-            _CHARGING_STATIONS,
-            key=lambda s: np.linalg.norm(np.array(s) - drone.pos),
-        )
-        drone.current_target = np.array([nearest[0], 25, nearest[2]])
+
+        # Release any assigned task
+        if drone.current_task_id:
+            from simulation.world_state import world
+
+            task = world.task_queue.get(drone.current_task_id)
+            if task:
+                task.assigned_drone_id = None
+            drone.current_task_id = None
+            drone.current_task_type = None
+
+        stations = [[45, 0, 45], [-45, 0, 45], [45, 0, -45], [-45, 0, -45], [0, 0, 0]]
+        nearest = min(stations, key=lambda s: np.linalg.norm(np.array(s) - drone.pos))
+        drone.current_target = np.array([nearest[0], 50, nearest[2]])
+        drone.trajectory = []  # clear path
+
+    elif action == "RL_ADVISORY":
+        pass  # Advisory only, no physical override
 
     elif action == "AUTONOMOUS_MODE":
         drone.autonomous_mode = True
@@ -44,7 +56,15 @@ def apply_ai_decision(drone, decision, all_drones, *, verbose: bool = True):
         drone.vel *= 0.5
 
     elif action == "REROUTE":
-        drone.direction += 45
+        drone.heading += 45
+        drone.trajectory = []
+        drone.current_target = None
+
+    elif action == "AVOID_OBSTACLE":
+        drone.heading += 90
+        drone.vel *= 0.5
+        drone.trajectory = []
+        drone.current_target = None
 
     elif action == "INCREASE_ALTITUDE":
         drone.altitude += 5

@@ -1,7 +1,6 @@
 """Offline DQN training from MongoDB replay buffer."""
 
 import torch
-import torch.nn as nn
 import sys
 import os
 
@@ -16,7 +15,9 @@ def train():
     print("[TRAIN] Training started")
 
     if not MONGO_AVAILABLE:
-        print("[ERROR] MongoDB connection is unavailable. Cannot load training experiences.")
+        print(
+            "[ERROR] MongoDB connection is unavailable. Cannot load training experiences."
+        )
         sys.exit(1)
 
     # STEP 5: Fetch experiences using safe helper
@@ -31,7 +32,7 @@ def train():
         "CONTINUE_MISSION": 0,
         "RETURN_TO_BASE": 1,
         "REQUEST_NEAREST_SENSOR": 2,
-        "REROUTE": 3
+        "REROUTE": 3,
     }
 
     states = []
@@ -44,21 +45,25 @@ def train():
         ns = d["next_state"]
 
         # STEP 4: Normalized inputs
-        states.append([
-            s["battery"] / 100.0,
-            s["signal"] / 100.0,
-            s["cpu"] / 100.0,
-            float(s["thermal"]),
-            s["obstacle"] / 10.0
-        ])
+        states.append(
+            [
+                s["battery"] / 100.0,
+                s["signal"] / 100.0,
+                s["cpu"] / 100.0,
+                float(s["thermal"]),
+                s["obstacle"] / 10.0,
+            ]
+        )
 
-        next_states.append([
-            ns["battery"] / 100.0,
-            ns["signal"] / 100.0,
-            ns["cpu"] / 100.0,
-            float(ns["thermal"]),
-            ns["obstacle"] / 10.0
-        ])
+        next_states.append(
+            [
+                ns["battery"] / 100.0,
+                ns["signal"] / 100.0,
+                ns["cpu"] / 100.0,
+                float(ns["thermal"]),
+                ns["obstacle"] / 10.0,
+            ]
+        )
 
         act = d["action"]
         if isinstance(act, str):
@@ -86,7 +91,9 @@ def train():
             model.load_state_dict(torch.load(model_path, map_location="cpu"))
             print("[TRAIN] Loaded existing dqn_model.pth to resume training.")
         except Exception as e:
-            print(f"[WARN] Could not load existing model weights ({e}). Starting fresh.")
+            print(
+                f"[WARN] Could not load existing model weights ({e}). Starting fresh."
+            )
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     gamma = 0.95

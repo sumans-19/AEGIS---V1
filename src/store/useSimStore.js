@@ -11,11 +11,11 @@ const STORE_BASE_PADS = [
 ]
 
 const INITIAL_DRONES = [
-  { id: 1, name: 'Arjun', callsign: 'Arjun', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[0].x, STORE_BASE_PADS[0].y, STORE_BASE_PADS[0].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
-  { id: 2, name: 'Bhima', callsign: 'Bhima', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[1].x, STORE_BASE_PADS[1].y, STORE_BASE_PADS[1].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
-  { id: 3, name: 'Karna', callsign: 'Karna', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[2].x, STORE_BASE_PADS[2].y, STORE_BASE_PADS[2].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
-  { id: 4, name: 'Krishna', callsign: 'Krishna', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[3].x, STORE_BASE_PADS[3].y, STORE_BASE_PADS[3].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
-  { id: 5, name: 'Ram', callsign: 'Ram', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[4].x, STORE_BASE_PADS[4].y, STORE_BASE_PADS[4].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 1, name: 'Falcon', callsign: 'Falcon', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[0].x, STORE_BASE_PADS[0].y, STORE_BASE_PADS[0].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 2, name: 'Eagle', callsign: 'Eagle', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[1].x, STORE_BASE_PADS[1].y, STORE_BASE_PADS[1].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 3, name: 'Hawk', callsign: 'Hawk', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[2].x, STORE_BASE_PADS[2].y, STORE_BASE_PADS[2].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 4, name: 'Raven', callsign: 'Raven', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[3].x, STORE_BASE_PADS[3].y, STORE_BASE_PADS[3].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
+  { id: 5, name: 'Owl', callsign: 'Owl', status: 'IDLE', battery: 100, pos: [STORE_BASE_PADS[4].x, STORE_BASE_PADS[4].y, STORE_BASE_PADS[4].z], trail: [], trajectory: [], scan_radius: 15, altitude: 2, speed: 0, isSimulated: false },
 ]
 
 export const useSimStore = create(
@@ -49,6 +49,8 @@ export const useSimStore = create(
       // ── Entities ──
       drones: INITIAL_DRONES,
       survivors: [],
+      threats: [],
+      sensorHistory: {}, // { droneId: [{ time, battery, speed, altitude, signal, gps_status }] }
       eventLog: [],
       selectedDrone: null,
       zoneCoverage: 0,
@@ -172,8 +174,55 @@ export const useSimStore = create(
 
           return {
             backendConnected: true,
-            drones: state.drones,
+            drones: state.drones.map(sd => {
+              const bd = msg.drones?.find(d => d.id === sd.id)
+              if (!bd) return sd
+              return {
+                ...sd,
+                pos: bd.pos,
+                battery: bd.battery,
+                status: bd.status,
+                speed: bd.speed || 0,
+                signal: bd.signal,
+                cpu: bd.cpu,
+                gps_status: bd.gps_status,
+                action: sd.isSimulated ? sd.action : bd.action,
+                reason: sd.isSimulated ? sd.reason : bd.reason,
+                nearby: bd.nearby,
+              }
+            }),
             survivors: state.survivors,
+            threats: msg.threats || [],
+            sensorHistory: (() => {
+              // Only clone arrays that actually get new data
+              const newHist = state.sensorHistory
+              let changed = false
+              const updates = {}
+              msg.drones?.forEach(d => {
+                const existing = newHist[d.id] || []
+                const newEntry = {
+                  time: msg.sim_time,
+                  battery: Math.round(d.battery),
+                  speed: Math.round(d.speed || 0),
+                  altitude: Math.round(d.pos?.[1] || 0),
+                  signal: d.mesh_connected ? Math.max(0, 100 - (d.relay_chain?.length || 0) * 15) : 0,
+                  gps_status: d.gps_status,
+                  // New advanced sensors
+                  imu_accel: d.sensors?.imu_accel || [0,0,0],
+                  imu_gyro: d.sensors?.imu_gyro || [0,0,0],
+                  baro_hpa: d.sensors?.baro_hpa || 1013.25,
+                  lidar_dist: d.sensors?.lidar_dist || 0,
+                  co2_ppm: d.sensors?.co2_ppm || 400.0,
+                  battery_voltage: d.sensors?.battery_voltage || 14.8,
+                }
+                const updated = [...existing, newEntry]
+                // keep last 50 readings per drone to avoid memory bloat
+                if (updated.length > 50) updated.shift()
+                updates[d.id] = updated
+                changed = true
+              })
+              return changed ? { ...newHist, ...updates } : newHist
+            })(),
             zoneCoverage: msg.zone_coverage_pct ?? state.zoneCoverage,
             waterLevel: msg.water_level ?? state.waterLevel,
             terrainChanged: msg.terrain_changed ?? state.terrainChanged,

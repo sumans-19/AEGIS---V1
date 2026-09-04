@@ -9,6 +9,7 @@ import DroneLabel from '../DroneLabel'
 import { PanelRightClose, PanelRightOpen, Target } from 'lucide-react'
 import { useEdgeCaseScript } from '../../hooks/useEdgeCaseScript'
 import { DRONE_BASE, getDronePosition } from '../../hooks/useDroneMovement'
+import { dronePositionRegistry } from '../../hooks/dronePositionRegistry'
 
 function normalizeBackendDrone(d) {
   if (!d) return null
@@ -33,6 +34,8 @@ function normalizeBackendDrone(d) {
     action,
     reason,
     nearby: d.nearby ?? d.nearby_drone_id ?? null,
+    mesh_connected: d.mesh_connected ?? true,
+    relay_chain: d.relay_chain ?? [],
   }
 }
 
@@ -43,14 +46,24 @@ function DroneLabelFollower({ simDrone, aiDrone }) {
 
   useFrame(() => {
     if (!groupRef.current) return
-    const pos = getDronePosition(simDrone)
-    if (Number.isNaN(pos.x) || Number.isNaN(pos.y) || Number.isNaN(pos.z)) return
-    groupRef.current.position.set(pos.x, pos.y, pos.z)
+    // Read from the position registry — this is the ACTUAL lerped 3D position
+    // that DroneModel writes every frame after smoothing.
+    // Using getDronePosition() here would compute the RAW target (no lerp),
+    // causing the label to jump ahead of the drone body.
+    const registryPos = dronePositionRegistry.get(simDrone.id)
+    if (registryPos) {
+      groupRef.current.position.copy(registryPos)
+    } else {
+      // Fallback before first frame is rendered
+      const pos = getDronePosition(simDrone)
+      if (!Number.isNaN(pos.x) && !Number.isNaN(pos.y) && !Number.isNaN(pos.z)) {
+        groupRef.current.position.set(pos.x, pos.y, pos.z)
+      }
+    }
   })
 
   const activeDrone = useMemo(() => {
     if (aiDrone) return aiDrone
-    // Fallback: use sim drone data (backend offline / mission not started)
     return {
       id: simDrone.id,
       callsign: simDrone.callsign || `DRONE-${simDrone.id}`,
@@ -79,12 +92,14 @@ const SKY_CONFIG = {
   earthquake: { sunPosition: [30, 8, -50], turbidity: 20, rayleigh: 0.5 },
   tsunami: { sunPosition: [100, 40, 50], turbidity: 8, rayleigh: 2 },
   flood: { sunPosition: [50, 5, 30], turbidity: 18, rayleigh: 0.3 },
+  war_zone: { sunPosition: [0, 20, -100], turbidity: 50, rayleigh: 3.0 },
 }
 
 const FOG_CONFIG = {
   earthquake: { color: '#1a1814', density: 0.0022 },
   tsunami: { color: '#0c1a2e', density: 0.0018 },
   flood: { color: '#1a1410', density: 0.0028 },
+  war_zone: { color: '#222325', density: 0.003 },
 }
 
 function SceneFog({ scenario }) {
@@ -224,8 +239,8 @@ function RegionSelectMode({ onRegionSelected }) {
             const z1 = Math.min(firstCorner.z, pt.z)
             const x2 = Math.max(firstCorner.x, pt.x)
             const z2 = Math.max(firstCorner.z, pt.z)
-            // Minimum 30m region
-            if (x2 - x1 > 30 && z2 - z1 > 30) {
+            // Minimum 20m region (was 30m — too strict for small test areas)
+            if (x2 - x1 > 20 && z2 - z1 > 20) {
               onRegionSelected({ x1, z1, x2, z2 })
             }
             setFirstCorner(null)
@@ -322,9 +337,9 @@ function SeedMode({ onSeed, searchRegion }) {
 }
 
 // ═══════════════════════════════════
-// SURVIVOR FIGURE
+// SURVIVOR FIGURE (memoized, no pointLight)
 // ═══════════════════════════════════
-function SurvivorFigure({ pos, status, confidence, alive }) {
+const SurvivorFigure = memo(function SurvivorFigure({ pos, status, confidence, alive }) {
   const isDead = !alive
   const isRecovering = status === 'RESCUED'
   const isDetected = status === 'DETECTED'
@@ -341,27 +356,47 @@ function SurvivorFigure({ pos, status, confidence, alive }) {
       {/* Body */}
       <mesh position={[0, 0.8, 0]}>
         <capsuleGeometry args={[0.25, 1.1, 8, 16]} />
-        <meshStandardMaterial color={color} />
+        <meshStandardMaterial color={color} emissive={!isDead && !isDetected ? '#ff6b2b' : '#000000'} emissiveIntensity={!isDead && !isDetected ? 0.6 : 0} />
       </mesh>
       {/* Head */}
       <mesh position={[0, 1.8, 0]}>
-        <sphereGeometry args={[0.2, 16, 16]} />
-        <meshStandardMaterial color={color} />
+        <sphereGeometry args={[0.2, 8, 8]} />
+        <meshStandardMaterial color={color} emissive={!isDead && !isDetected ? '#ff6b2b' : '#000000'} emissiveIntensity={!isDead && !isDetected ? 0.6 : 0} />
       </mesh>
       {/* Detection ring */}
       {isDetected && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
-          <ringGeometry args={[1.5, 2, 32]} />
+          <ringGeometry args={[1.5, 2, 16]} />
           <meshBasicMaterial color="#00e5ff" transparent opacity={0.5} side={THREE.DoubleSide} />
         </mesh>
       )}
-      {/* SOS pulse for undetected */}
-      {!isDetected && !isDead && (
-        <pointLight color="#ff6b2b" intensity={3} distance={8} position={[0, 2.5, 0]} />
-      )}
     </group>
   )
-}
+})
+
+// ═══════════════════════════════════
+// THREAT FIGURE (memoized, no pointLight, no Html)
+// ═══════════════════════════════════
+const ThreatFigure = memo(function ThreatFigure({ pos, type, severity, confidence }) {
+  const isCritical = severity === 'critical'
+  const color = isCritical ? '#dc3545' : '#ffc107'
+
+  return (
+    <group position={pos}>
+      {/* Warning Box */}
+      <mesh position={[0, 1.5, 0]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.8} />
+      </mesh>
+      
+      {/* Alert Ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
+        <ringGeometry args={[1.5, 2, 16]} />
+        <meshBasicMaterial color={color} transparent opacity={0.6} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  )
+})
 
 // ═══════════════════════════════════
 // CAMERA CONTROLLER (POV Mode)
@@ -403,6 +438,55 @@ function CameraController() {
 }
 
 // ═══════════════════════════════════
+// MESH NETWORK RELAY LINES
+// ═══════════════════════════════════
+function MeshNetworkLines({ drones, aiById }) {
+  const lineData = useMemo(() => {
+    const lines = []
+    drones.forEach(d => {
+      const ai = aiById.get(d.id)
+      if (!ai || !ai.mesh_connected) return
+      
+      const chain = ai.relay_chain || []
+      let startPos = d.pos
+      
+      if (chain.length > 0) {
+        // Line from this drone to its parent
+        const parentId = chain[chain.length - 1]
+        const parent = drones.find(p => p.id === parentId)
+        if (parent && startPos && parent.pos) {
+          lines.push([new THREE.Vector3(...startPos), new THREE.Vector3(...parent.pos)])
+        }
+      } else {
+        // Line from this drone to base station
+        if (startPos) {
+          lines.push([new THREE.Vector3(...startPos), new THREE.Vector3(DRONE_BASE.x, DRONE_BASE.y, DRONE_BASE.z)])
+        }
+      }
+    })
+    return lines
+  }, [drones, aiById])
+
+  return (
+    <group>
+      {lineData.map((pts, i) => (
+        <line key={i}>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={2}
+              array={new Float32Array([pts[0].x, pts[0].y, pts[0].z, pts[1].x, pts[1].y, pts[1].z])}
+              itemSize={3}
+            />
+          </bufferGeometry>
+          <lineBasicMaterial color="#6d28d9" transparent opacity={0.4} linewidth={2} />
+        </line>
+      ))}
+    </group>
+  )
+}
+
+// ═══════════════════════════════════
 // MAIN SCENE
 // ═══════════════════════════════════
 export default function Scene3D({ drones = [] }) {
@@ -421,6 +505,7 @@ export default function Scene3D({ drones = [] }) {
   }, [stableDrones])
 
   const survivors = useSimStore(s => s.survivors)
+  const threats = useSimStore(s => s.threats) // Added threats hook
   const seedSurvivor = useSimStore(s => s.seedSurvivor)
   const scenario = useSimStore(s => s.scenario)
   const theme = useSimStore(s => s.theme)
@@ -483,12 +568,12 @@ export default function Scene3D({ drones = [] }) {
           turbidity={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).turbidity}
           rayleigh={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).rayleigh}
         />
-        <Stars radius={200} depth={80} count={8000} factor={4} saturation={0} fade speed={0.5} />
+        <Stars radius={200} depth={80} count={2000} factor={4} saturation={0} fade speed={0.5} />
 
         {/* Natural lighting */}
         <hemisphereLight
           args={[
-            scenario === 'tsunami' ? '#87CEEB' : scenario === 'flood' ? '#8B7355' : '#C4A882',
+            scenario === 'tsunami' ? '#87CEEB' : scenario === 'flood' ? '#8B7355' : scenario === 'war_zone' ? '#69747a' : '#C4A882',
             '#362a1a',
             theme === 'dark' ? 0.35 : 0.6
           ]}
@@ -498,13 +583,13 @@ export default function Scene3D({ drones = [] }) {
           position={[50, 80, 30]}
           intensity={theme === 'dark' ? 0.8 : 1.8}
           castShadow
-          shadow-mapSize={[4096, 4096]}
-          shadow-camera-left={-250}
-          shadow-camera-right={250}
-          shadow-camera-top={250}
-          shadow-camera-bottom={-250}
+          shadow-mapSize={[2048, 2048]}
+          shadow-camera-left={-150}
+          shadow-camera-right={150}
+          shadow-camera-top={150}
+          shadow-camera-bottom={-150}
           shadow-camera-near={0.5}
-          shadow-camera-far={500}
+          shadow-camera-far={350}
         />
 
         {/* Terrain */}
@@ -524,6 +609,9 @@ export default function Scene3D({ drones = [] }) {
           </group>
         )), [displayDrones, aiById])}
 
+        {/* Mesh Network Links */}
+        <MeshNetworkLines drones={displayDrones} aiById={aiById} />
+
         {/* Survivors */}
         {survivors.map(survivor => (
           <SurvivorFigure
@@ -532,6 +620,17 @@ export default function Scene3D({ drones = [] }) {
             status={survivor.status}
             confidence={survivor.confidence || 1.0}
             alive={survivor.body_temp > 35}
+          />
+        ))}
+
+        {/* Threats */}
+        {threats.map(threat => (
+          <ThreatFigure
+            key={`threat-${threat.id}`}
+            pos={threat.pos}
+            type={threat.type}
+            severity={threat.severity}
+            confidence={threat.confidence}
           />
         ))}
 
