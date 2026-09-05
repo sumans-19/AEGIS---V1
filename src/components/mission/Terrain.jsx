@@ -278,13 +278,9 @@ function DeadTree({ position, seed = 0 }) {
   )
 }
 
-<<<<<<< HEAD
-// ── Particle Fire Effect (Optimized) ──
-function Fire({ position, intensity = 1, spread = null }) {
-=======
 // ── Particle Fire Effect ──
 function Fire({ position, intensity = 1, spread = null, noLight = false }) {
->>>>>>> origin/threejsimplementation
+  const flickerRef = useRef()
   const meshRef = useRef()
   const particleCount = spread ? 24 : 12
   
@@ -324,13 +320,9 @@ function Fire({ position, intensity = 1, spread = null, noLight = false }) {
       meshRef.current.setMatrixAt(i, dummy.matrix)
     })
     meshRef.current.instanceMatrix.needsUpdate = true
-<<<<<<< HEAD
-=======
-
     if (flickerRef.current && !noLight) {
       flickerRef.current.intensity = intensity * (3 + Math.sin(t * 15 + position[0] * 3) * 2.0 + Math.cos(t * 22) * 1.5)
     }
->>>>>>> origin/threejsimplementation
   })
 
   return (
@@ -344,10 +336,7 @@ function Fire({ position, intensity = 1, spread = null, noLight = false }) {
           depthWrite={false}
         />
       </instancedMesh>
-<<<<<<< HEAD
-=======
       {!noLight && <pointLight ref={flickerRef} color="#FF5500" intensity={4} distance={spread ? 60 * intensity : 35 * intensity} position={[position[0], position[1] + (spread ? 5 : 3), position[2]]} />}
->>>>>>> origin/threejsimplementation
     </group>
   )
 }

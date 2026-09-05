@@ -1,3 +1,4 @@
+from numpy import random
 import numpy as np
 from typing import List, Optional, Tuple, Dict
 from dataclasses import dataclass, field
@@ -22,11 +23,7 @@ class DroneState:
     scan_radius: float = 15.0  # current thermal scan cone radius in metres
     radius: float = 40.0  # orbit radius
     phaseOffset: float = 0.0  # orbit start angle
-<<<<<<< HEAD
-    orbitSpeed: float = 1.0   # angular velocity
-    assigned_zone: Tuple[int, int, int, int] = (0, 0, 10, 10) # (x1,y1,x2,y2) grid indices
 
-=======
     orbitSpeed: float = 1.0  # angular velocity
     assigned_zone: Tuple[int, int, int, int] = (
         0,
@@ -130,7 +127,7 @@ class DroneState:
             self.recent_events.append("AUTONOMOUS_MODE_ENABLED")
 
 
->>>>>>> origin/threejsimplementation
+
 @dataclass
 class Survivor:
     id: int

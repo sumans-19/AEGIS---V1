@@ -8,12 +8,9 @@ import RadarView from './RadarView'
 import AreaMap from './AreaMap'
 import SurvivorsLog from './SurvivorsLog'
 import PathfindingView from './PathfindingView'
-<<<<<<< HEAD
 import ObstacleLogPanel from './ObstacleLogPanel'
-=======
 import TelemetryHUD from './TelemetryHUD'
 import SensorLogView from './SensorLogView'
->>>>>>> origin/threejsimplementation
 
 export default function RightPanel() {
   const selectedDrone = useSimStore(s => s.selectedDrone)
@@ -31,11 +28,8 @@ export default function RightPanel() {
     areamap: AreaMap,
     survivors: SurvivorsLog,
     pathfinding: PathfindingView,
-<<<<<<< HEAD
     obstaclelog: ObstacleLogPanel,
-=======
     sensors: SensorLogView,
->>>>>>> origin/threejsimplementation
   }
 
   const ActiveTab = tabContent[activeSidebarTab] || DroneView

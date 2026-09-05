@@ -9,9 +9,7 @@ import RightPanel from '../components/mission/RightPanel'
 import NotificationPanel from '../components/mission/NotificationPanel'
 import EdgeCaseOverlay from '../components/mission/EdgeCaseOverlay'
 import CoordinationPanel from '../components/mission/CoordinationPanel'
-import SideRightPanel from '../panels/RightPanel'
-import SideNotificationPanel from '../panels/NotificationPanel'
-import SideCoordinationPanel from '../panels/CoordinationPanel'
+
 import SimulationPanel from '../components/mission/SimulationPanel'
 import { PanelLeftOpen, ChevronUp, ChevronDown } from 'lucide-react'
 

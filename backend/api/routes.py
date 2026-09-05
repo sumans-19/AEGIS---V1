@@ -1,4 +1,4 @@
-from backend.simulation.world_state import LogEntry
+from simulation.world_state import LogEntry
 from fastapi import APIRouter, WebSocket, Response, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from api.api_websocket import hub
@@ -470,7 +470,11 @@ from groq import Groq
 _groq_api_key = os.getenv("GROQ_API_KEY", "")
 if _groq_api_key:
     os.environ["GROQ_API_KEY"] = _groq_api_key
-groq_client = Groq(api_key=_groq_api_key or None)
+try:
+    groq_client = Groq(api_key=_groq_api_key) if _groq_api_key else None
+except Exception as e:
+    groq_client = None
+    print(f"Warning: Groq API key not set or invalid. AI features will be disabled. Error: {e}")
 
 @router.post("/api/ai/analyze")
 async def ai_analyze_telemetry(request: Request):

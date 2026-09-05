@@ -579,11 +579,7 @@ export default function Scene3D({ drones = [] }) {
           turbidity={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).turbidity}
           rayleigh={(SKY_CONFIG[scenario] || SKY_CONFIG.earthquake).rayleigh}
         />
-<<<<<<< HEAD
         <Stars radius={200} depth={80} count={4000} factor={4} saturation={0} fade speed={0.5} />
-=======
-        <Stars radius={200} depth={80} count={2000} factor={4} saturation={0} fade speed={0.5} />
->>>>>>> origin/threejsimplementation
 
         {/* Natural lighting */}
         <hemisphereLight
@@ -599,18 +595,11 @@ export default function Scene3D({ drones = [] }) {
           intensity={theme === 'dark' ? 0.8 : 1.8}
           castShadow
           shadow-mapSize={[2048, 2048]}
-<<<<<<< HEAD
           shadow-bias={-0.0005}
           shadow-camera-left={-250}
           shadow-camera-right={250}
           shadow-camera-top={250}
           shadow-camera-bottom={-250}
-=======
-          shadow-camera-left={-150}
-          shadow-camera-right={150}
-          shadow-camera-top={150}
-          shadow-camera-bottom={-150}
->>>>>>> origin/threejsimplementation
           shadow-camera-near={0.5}
           shadow-camera-far={350}
         />

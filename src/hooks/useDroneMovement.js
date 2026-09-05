@@ -358,18 +358,12 @@ export function getDronePosition(drone, timeOffset = 0) {
 
     case 'DEPLOYING': {
       const path = deployPaths[drone.id]
-<<<<<<< HEAD
-      const startTime = deployStartTime || now
-
-      if (!path) {
-=======
       const startTime = deployStartTime || (now - 0.1)
       if (!deployStartTime) {
         useSimStore.setState({ deployStartTime: startTime })
       }
       // Inactive drones (no deploy path) just sit on pad
       if (!path || path.length < 2) {
->>>>>>> origin/threejsimplementation
         const pad = BASE_PADS[(drone.id - 1) % 5]
         return { x: pad.x, y: pad.y, z: pad.z }
       }

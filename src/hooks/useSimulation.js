@@ -135,13 +135,8 @@ export function useSimulation() {
     const interval = setInterval(() => {
       const store = useSimStore.getState()
 
-<<<<<<< HEAD
-      // ── Increment simulation time (4Hz) ──
-      useSimStore.getState().incrementTime(0.25)
-=======
       // Increment simulation clock
       store.incrementTime(0.2)
->>>>>>> origin/threejsimplementation
 
       // ═══ PHASE: DEPLOYING ═══
       if (store.missionPhase === 'DEPLOYING' && !deployTransitioned.current) {
@@ -278,11 +273,7 @@ export function useSimulation() {
         }
       }
 
-<<<<<<< HEAD
     }, 250)
-=======
-    }, BACKEND_POLL_INTERVAL_MS)
->>>>>>> origin/threejsimplementation
 
     return () => clearInterval(interval)
   }, [simulationRunning, missionPhase])

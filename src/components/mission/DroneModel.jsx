@@ -130,7 +130,6 @@ export default function DroneModel({ drone, index }) {
       groupRef.current.rotation.y += diff * 0.1
     }
 
-<<<<<<< HEAD
     // ── Store position back (THROTTLED to 1Hz) ──
     // Updating Zustand state in useFrame causes massive re-renders. Throttle to 1Hz.
     const nowMs = performance.now()
@@ -148,10 +147,9 @@ export default function DroneModel({ drone, index }) {
         }
       }
     }
-=======
+    
     // ── Write live position to registry (for camera views) ──
     setDronePosition(drone.id, groupRef.current.position, _mv.current.lengthSq() > 0.00005 ? _mv.current : null)
->>>>>>> origin/threejsimplementation
 
     // ── Rotor animation ──
     const isIdle = ['IDLE', 'SELECT_REGION', 'SEED_SURVIVORS', 'COMPLETED'].includes(missionPhase)
@@ -243,88 +241,9 @@ export default function DroneModel({ drone, index }) {
   return (
     <group>
       <group ref={groupRef}>
-<<<<<<< HEAD
-        <group scale={[droneScale, droneScale, droneScale]}>
-          {/* Aerodynamic Lower Chassis */}
-          <mesh castShadow scale={[1.2, 0.4, 1.4]} position={[0, 0, 0]}>
-            <sphereGeometry args={[0.5, 32, 16]} />
-            <meshStandardMaterial color={darkDetail} metalness={0.8} roughness={0.4} />
-          </mesh>
 
-          {/* Upper Canopy */}
-          <mesh castShadow scale={[1.15, 0.5, 1.35]} position={[0, 0.05, 0]}>
-            <sphereGeometry args={[0.5, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-            <meshStandardMaterial color={bodyColor} metalness={0.4} roughness={0.2} />
-          </mesh>
-
-          {/* Rear heat sinks */}
-          <mesh position={[0, 0, -0.6]} scale={[0.6, 0.2, 0.2]}>
-            <boxGeometry args={[1, 1, 1]} />
-            <meshStandardMaterial color="#111" metalness={0.9} roughness={0.6} />
-          </mesh>
-
-          {/* Sensor Core */}
-          <mesh position={[0, -0.15, 0]}>
-            <cylinderGeometry args={[0.2, 0.2, 0.5, 32]} />
-            <meshStandardMaterial color={scanColor} emissive={scanColor} emissiveIntensity={isSelected ? 4 : 2} />
-          </mesh>
-
-          {/* 4 Arms + Rotors */}
-          {[0, 1, 2, 3].map(i => {
-            const angle = (i * Math.PI) / 2 + Math.PI / 4
-            const ax = Math.cos(angle)
-            const az = Math.sin(angle)
-            return (
-              <group key={i} position={[ax * 0.8, 0, az * 0.8]}>
-                <mesh rotation={[0, -angle, Math.PI / 12]} position={[-ax * 0.3, 0.05, -az * 0.3]} castShadow>
-                  <boxGeometry args={[1.2, 0.08, 0.15]} />
-                  <meshStandardMaterial color={darkDetail} metalness={0.9} roughness={0.3} />
-                </mesh>
-                <mesh position={[0, 0.15, 0]} castShadow>
-                  <cylinderGeometry args={[0.15, 0.18, 0.3, 24]} />
-                  <meshStandardMaterial color="#aaa" metalness={1} roughness={0.2} />
-                  <mesh position={[0, 0.16, 0]}>
-                    <cylinderGeometry args={[0.08, 0.08, 0.05, 16]} />
-                    <meshStandardMaterial color="#333" metalness={0.8} />
-                  </mesh>
-                </mesh>
-                <mesh ref={el => rotorRefs.current[i] = el} position={[0, 0.35, 0]}>
-                  <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <cylinderGeometry args={[0.8, 0.8, 0.01, 32]} />
-                    <meshStandardMaterial color="#111" transparent opacity={0.25} depthWrite={false} />
-                  </mesh>
-                  <mesh rotation={[Math.PI / 2, 0, 0]}>
-                    <ringGeometry args={[0.77, 0.8, 32]} />
-                    <meshBasicMaterial color="#fff" transparent opacity={0.15} side={THREE.DoubleSide} depthWrite={false} />
-                  </mesh>
-                </mesh>
-                <mesh position={[0, -0.05, 0]}>
-                  <sphereGeometry args={[0.05, 8, 8]} />
-                  <meshBasicMaterial color={i === 0 || i === 1 ? "#ff2222" : "#00ff66"} />
-                </mesh>
-              </group>
-            )
-          })}
-
-          {/* Camera Gimbal */}
-          <group position={[0, -0.2, 0.5]}>
-            <mesh position={[0, -0.1, -0.1]} castShadow>
-              <boxGeometry args={[0.15, 0.2, 0.15]} />
-              <meshStandardMaterial color={darkDetail} metalness={0.8} roughness={0.2} />
-            </mesh>
-            <mesh position={[0, -0.3, 0]} castShadow>
-              <sphereGeometry args={[0.18, 24, 24]} />
-              <meshStandardMaterial color="#333" metalness={0.9} roughness={0.1} />
-            </mesh>
-            <mesh position={[0, -0.35, 0.1]} rotation={[0.4, 0, 0]}>
-              <cylinderGeometry args={[0.08, 0.08, 0.15, 16]} />
-              <meshStandardMaterial color="#000" metalness={1} roughness={0} />
-            </mesh>
-          </group>
-=======
         <group scale={[0.6, 0.6, 0.6]}>
           <DetailedDroneModel propellersRunning={isFlying} />
->>>>>>> origin/threejsimplementation
         </group>
 
         <pointLight ref={lightRef} color={scanColor} distance={20} intensity={2.5} position={[0, -2, 0]} />

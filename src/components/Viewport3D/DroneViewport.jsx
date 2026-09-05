@@ -8,7 +8,7 @@ import OrbitRings from './OrbitRings';
 import { IconInfo } from '../Common/Icons';
 import './DroneViewport.css';
 
-<<<<<<< HEAD
+
 // Hotspot placements corresponding to physical components on the drone
 const HOTSPOTS = [
   { id: 'gps',          name: 'GPS MODULE',      position: [ 0.0,  0.60, -0.15] },
@@ -19,17 +19,7 @@ const HOTSPOTS = [
   { id: 'smoke',        name: 'SMOKE SENSOR',    position: [ 0.42, 0.28,  0.38] },
   { id: 'battery',      name: 'BATTERY PACK',    position: [ 0.0,  0.46, -0.48] },
   { id: 'camera',       name: 'FPV CAMERA',      position: [ 0.0, -0.06,  1.04] },
-=======
-const HOTSPOTS = [
-  { id: 'gps',      name: 'GPS MODULE',      position: [ 0.0,  0.88, -0.10] },
-  { id: 'imu',      name: 'IMU SENSOR',      position: [ 0.0,  0.65,  0.0 ] },
-  { id: 'thermal',  name: 'THERMAL CAMERA',  position: [-0.15, -0.22,  0.86] },
-  { id: 'lidar',    name: 'OBSTACLE LIDAR',  position: [ 0.0,  0.80,  0.20] },
-  { id: 'altitude', name: 'ALTITUDE SENSOR', position: [ 0.0, -0.20, -0.15] },
-  { id: 'smoke',    name: 'SMOKE SENSOR',    position: [ 0.45, 0.10,  0.25] },
-  { id: 'battery',  name: 'BATTERY PACK',    position: [ 0.0,  0.20, -0.90] },
-  { id: 'camera',   name: 'FPV CAMERA',      position: [ 0.0,  0.12,  0.95] },
->>>>>>> origin/threejsimplementation
+
 ];
 
 // Play/Pause SVG Icons
@@ -168,33 +158,12 @@ export default function DroneViewport({
         <directionalLight position={[0, -4, 4]} intensity={0.12} color="#E2F0F2" />
 
         <group position={[0, 0, 0]}>
-<<<<<<< HEAD
-          <DroneModel wireframe={wireframe} xray={xrayView} propellersRunning={propellersRunning} />
-
-          {showSensorZones && HOTSPOTS.map(spot => {
-            const matchedSensor = sensors.find(s => s.id === spot.id) || sensors[2];
-            const isSelected = selectedSensor?.id === spot.id;
-            return (
-              <SensorHotspot
-                key={spot.id}
-                position={spot.position}
-                name={spot.name}
-                sensor={matchedSensor}
-                isActive={isSelected}
-                onClick={() => onSensorSelect(matchedSensor.id)}
-                showLabels={showLabels}
-              />
-            );
-          })}
-=======
           <DroneModel wireframe={wireframe} xray={xrayView} propellersRunning={propellersRunning} onSensorClick={onSensorSelect} />
->>>>>>> origin/threejsimplementation
         </group>
 
         <CameraAnimator selectedSensorId={selectedSensor?.id} controlsRef={controlsRef} />
 
-        {/* Ground Concentric Orbit Rings */}
-        <OrbitRings />
+
 
         {/* Soft Circular Ground Shadow (No rectangular edges!) */}
         <mesh position={[0, -0.52, 0]} rotation={[-Math.PI / 2, 0, 0]}>
