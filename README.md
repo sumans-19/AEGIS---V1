@@ -32,36 +32,36 @@ A React + Three.js 3D tactical interface with a Python/FastAPI backend, showing 
 ## 2. Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ TRACK A — FLIGHT VALIDATION (🟢 VALIDATED)                    │
-│                                                                 │
-│  Companion Computer (your laptop, standing in for Jetson/Pi)   │
-│    ├─ sensor_state.py    → builds unified sensor JSON          │
-│    ├─ decide()           → rule-based decision engine          │
-│    ├─ validate()         → safety-bound command clamping       │
-│    └─ MAVSDK             → sends PositionNedYaw commands        │
-│              │ MAVLink (UDP 14540)                              │
-│              ▼                                                  │
-│  PX4 SITL (Docker) ──── Gazebo (walls/disaster_zone world)      │
-│              │                                                  │
-│              ▼                                                  │
-│  QGroundControl (passive monitor, MAVLink 14550)                 │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│ TRACK A — FLIGHT VALIDATION (VALIDATED)                           │
+│                                                                   │
+│  Companion Computer (your laptop, standing in for Jetson/Pi)      │
+│    ├─ sensor_state.py    → builds unified sensor JSON             │
+│    ├─ decide()           → rule-based decision engine             │
+│    ├─ validate()         → safety-bound command clamping          │
+│    └─ MAVSDK             → sends PositionNedYaw commands          │
+│              │ MAVLink (UDP 14540)                                │
+│              ▼                                                    │
+│  PX4 SITL (Docker) ──── Gazebo (walls/disaster_zone world)        │
+│              │                                                    │
+│              ▼                                                    │
+│  QGroundControl (passive monitor, MAVLink 14550)                  │
+└───────────────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────┐
-│ TRACK B — MISSION DASHBOARD (🟡 SIMULATED)                     │
-│                                                                 │
-│  React + Three.js (Fiber/Drei) — 3D disaster scene,             │
-│  5-drone swarm telemetry, thermal feed, pathfinding view         │
-│              │ WebSocket                                        │
-│              ▼                                                  │
-│  FastAPI backend — physics loop, A* pathfinding,                │
-│  zone allocation, scenario engine                                │
-│              │                                                  │
-│              ├─ Hardware stream server (ESP32-CAM/Arduino) 🟡    │
-│              ├─ AI decision layer (rule-based; LLM optional) 🔵  │
-│              └─ MongoDB Atlas (telemetry persistence) 🔵         │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│ TRACK B — MISSION DASHBOARD (SIMULATED)                           │
+│                                                                   │
+│  React + Three.js (Fiber/Drei) — 3D disaster scene,               │
+│  5-drone swarm telemetry, thermal feed, pathfinding view          │
+│              │ WebSocket                                          │
+│              ▼                                                    │
+│  FastAPI backend — physics loop, A* pathfinding,                  │
+│  zone allocation, scenario engine                                 │
+│              │                                                    │
+│              ├─ Hardware stream server (ESP32-CAM/Arduino)        │
+│              ├─ AI decision layer (rule-based; LLM optional)      │
+│              └─ MongoDB Atlas (telemetry persistence)             │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 **Honest note on the two tracks:** they are not yet wired together (Track A's MAVSDK output isn't currently streamed into Track B's dashboard, and vice versa). If time allows, bridging this via a WebSocket from Track A into Track B's frontend is the single highest-value integration step — see Future Enhancements.
