@@ -207,10 +207,53 @@ function CarbonArm({ start, end, materials }) {
   );
 }
 
+/* ---- DETAILED SPINNING LIDAR PUCK ---- */
+function SpinningLidar({ materials, spinning, onClick }) {
+  const ref = React.useRef();
+  useFrame((_, dt) => {
+    if (ref.current && spinning) {
+      ref.current.rotation.y -= dt * 15;
+    }
+  });
+  return (
+    <group position={[0.0, 0.52, 0.25]} onClick={(e) => { e.stopPropagation(); onClick?.('lidar'); }}>
+      {/* Heavy metallic base */}
+      <mesh material={materials.motorSilver} position={[0, -0.04, 0]}>
+        <cylinderGeometry args={[0.07, 0.08, 0.04, 32]} />
+      </mesh>
+      {/* Ribbed heatsink base */}
+      {[0, 1, 2, 3].map(i => (
+        <mesh key={i} material={materials.motorDark} position={[0, -0.02 + i * 0.005, 0]}>
+          <cylinderGeometry args={[0.075, 0.075, 0.003, 32]} />
+        </mesh>
+      ))}
+      {/* Outer transparent protective dome/glass */}
+      <mesh material={materials.lensGlass} position={[0, 0.03, 0]}>
+        <cylinderGeometry args={[0.065, 0.07, 0.08, 32]} />
+      </mesh>
+      {/* Spinning optical core */}
+      <mesh ref={ref} material={materials.camBlack} position={[0, 0.03, 0]}>
+        <cylinderGeometry args={[0.045, 0.045, 0.06, 16]} />
+        {/* Laser lenses */}
+        <mesh material={materials.tealLed} position={[0, 0.01, 0.04]}>
+          <boxGeometry args={[0.02, 0.015, 0.01]} />
+        </mesh>
+        <mesh material={materials.tealLed} position={[0, -0.01, 0.04]}>
+          <boxGeometry args={[0.02, 0.015, 0.01]} />
+        </mesh>
+      </mesh>
+      {/* Top cap */}
+      <mesh material={materials.motorSilver} position={[0, 0.075, 0]}>
+        <cylinderGeometry args={[0.065, 0.065, 0.01, 32]} />
+      </mesh>
+    </group>
+  );
+}
+
 /* =========================================================================
    MAIN EXPORT COMPONENT
    ========================================================================= */
-export default function DroneModel({ wireframe = false, xray = false, propellersRunning = true }) {
+export default function DroneModel({ wireframe = false, xray = false, propellersRunning = true, onSensorClick }) {
   const op = xray ? 0.18 : 1;
   const tr = xray;
   const wf = wireframe;
@@ -1026,31 +1069,142 @@ export default function DroneModel({ wireframe = false, xray = false, propellers
         <mesh position={[0, -0.165, 0]} material={tealLed}>
           <torusGeometry args={[0.038, 0.007, 6, 18]} />
         </mesh>
+        {/* THERMAL SENSOR LENS (Offset on Gimbal) */}
+        <group position={[-0.10, -0.055, 0.14]} onClick={(e) => { e.stopPropagation(); onSensorClick?.('thermal'); }}>
+          <mesh rotation={[Math.PI / 2, 0, 0]} material={camBlack}>
+            <cylinderGeometry args={[0.04, 0.04, 0.08, 24]} />
+          </mesh>
+          {/* Ribbed thermal barrel */}
+          {[0,1,2].map(i => (
+            <mesh key={i} position={[0, 0, 0.02 - i*0.015]} rotation={[Math.PI / 2, 0, 0]} material={motorDark}>
+              <cylinderGeometry args={[0.043, 0.043, 0.005, 24]} />
+            </mesh>
+          ))}
+          {/* Germanium dark lens */}
+          <mesh position={[0, 0, 0.04]} rotation={[Math.PI / 2, 0, 0]} material={seamDark}>
+            <sphereGeometry args={[0.035, 16, 16, 0, Math.PI*2, 0, Math.PI/2]} />
+          </mesh>
+        </group>
       </group>
 
       {/* =========================================================
           6. TOP GPS / NAVIGATION MAST
          ========================================================= */}
-      {/* Stalk Base Pad */}
-      <mesh position={[0, 0.38, -0.10]} material={motorDark}>
-        <cylinderGeometry args={[0.056, 0.070, 0.038, 16]} />
-      </mesh>
-      {/* Mast Stem */}
-      <mesh position={[0, 0.46, -0.10]} material={seamDark}>
-        <cylinderGeometry args={[0.013, 0.015, 0.140, 12]} />
-      </mesh>
-      {/* GPS Puck Sensor */}
-      <mesh position={[0, 0.54, -0.10]} material={motorDark}>
-        <cylinderGeometry args={[0.040, 0.056, 0.036, 16]} />
-      </mesh>
-      {/* Antenna Dome Cap */}
-      <mesh position={[0, 0.555, -0.10]} material={panelGrey}>
-        <sphereGeometry args={[0.036, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
-      </mesh>
-      {/* Top Navigation LED */}
-      <mesh position={[0, 0.56, -0.10]} material={tealLed}>
-        <sphereGeometry args={[0.014, 10, 8]} />
-      </mesh>
+      <group onClick={(e) => { e.stopPropagation(); onSensorClick?.('gps'); }}>
+        {/* Stalk Base Pad */}
+        <mesh position={[0, 0.58, -0.10]} material={motorDark}>
+          <cylinderGeometry args={[0.056, 0.070, 0.038, 16]} />
+        </mesh>
+        {/* Mast Stem */}
+        <mesh position={[0, 0.65, -0.10]} material={seamDark}>
+          <cylinderGeometry args={[0.013, 0.015, 0.140, 12]} />
+        </mesh>
+        {/* GPS Puck Sensor */}
+        <mesh position={[0, 0.73, -0.10]} material={motorDark}>
+          <cylinderGeometry args={[0.040, 0.056, 0.036, 16]} />
+        </mesh>
+        <mesh position={[0, 0.73, -0.10]} material={motorSilver}>
+          <torusGeometry args={[0.040, 0.005, 8, 16]} />
+        </mesh>
+        {/* Antenna Dome Cap */}
+        <mesh position={[0, 0.745, -0.10]} material={panelGrey}>
+          <sphereGeometry args={[0.036, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+        </mesh>
+        {/* Top Navigation LED */}
+        <mesh position={[0, 0.75, -0.10]} material={tealLed}>
+          <sphereGeometry args={[0.014, 10, 8]} />
+        </mesh>
+      </group>
+
+      {/* =========================================================
+          7. NEW SEARCH & RESCUE SENSORS
+         ========================================================= */}
+      
+      {/* OBSTACLE LIDAR (Animated) */}
+      <SpinningLidar materials={{ seamDark, camBlack, lensGlass, motorSilver, motorDark, tealLed }} spinning={propellersRunning} onClick={onSensorClick} />
+
+      {/* FPV PILOT CAMERA (Fixed in Nose) */}
+      <group position={[0.0, 0.08, 0.86]} rotation={[-0.1, 0, 0]} onClick={(e) => { e.stopPropagation(); onSensorClick?.('camera'); }}>
+        {/* Boxy heatsink body */}
+        <mesh material={motorDark}>
+          <boxGeometry args={[0.07, 0.07, 0.09]} />
+        </mesh>
+        {/* Lens barrel */}
+        <mesh material={camBlack} position={[0, 0, 0.05]} rotation={[Math.PI/2, 0, 0]}>
+          <cylinderGeometry args={[0.03, 0.035, 0.05, 32]} />
+        </mesh>
+        {/* Glass lens */}
+        <mesh position={[0, 0, 0.07]} material={lensGlass}>
+          <sphereGeometry args={[0.025, 16, 16, 0, Math.PI*2, 0, Math.PI/2]} />
+        </mesh>
+        <mesh position={[0, 0, 0.07]} material={motorSilver} rotation={[Math.PI/2, 0, 0]}>
+          <torusGeometry args={[0.027, 0.003, 16, 32]} />
+        </mesh>
+      </group>
+
+      {/* IMU SENSOR ACCESS PLATE (Top Center Spine) */}
+      <group position={[0.0, 0.60, 0.0]} onClick={(e) => { e.stopPropagation(); onSensorClick?.('imu'); }}>
+        <mesh material={motorDark}>
+          <boxGeometry args={[0.18, 0.03, 0.18]} />
+        </mesh>
+        <mesh material={seamDark} position={[0, 0.015, 0]}>
+          <boxGeometry args={[0.14, 0.005, 0.14]} />
+        </mesh>
+        <mesh material={panelGrey} position={[0, 0.018, 0]}>
+          <boxGeometry args={[0.12, 0.002, 0.12]} />
+        </mesh>
+        {/* Tiny screws */}
+        {[[-0.04,-0.04],[0.04,-0.04],[-0.04,0.04],[0.04,0.04]].map((pos, i) => (
+          <mesh key={i} material={motorSilver} position={[pos[0], 0.02, pos[1]]}>
+            <cylinderGeometry args={[0.004, 0.004, 0.002, 8]} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* SMOKE SENSOR / AIR SAMPLER (Right Side Intake) */}
+      <group position={[0.32, 0.05, 0.25]} rotation={[0, 0, -Math.PI/2]} onClick={(e) => { e.stopPropagation(); onSensorClick?.('smoke'); }}>
+        <mesh material={camBlack}>
+          <cylinderGeometry args={[0.06, 0.06, 0.05, 24]} />
+        </mesh>
+        <mesh position={[0, 0.025, 0]} material={motorSilver}>
+          <ringGeometry args={[0.04, 0.06, 24]} />
+        </mesh>
+        <mesh position={[0, 0.02, 0]} material={seamDark}>
+          <circleGeometry args={[0.05, 24]} />
+        </mesh>
+        {/* Micro fan blades (static) */}
+        {[0,1,2,3,4].map(i => (
+          <mesh key={i} rotation={[0, 0, (i * Math.PI*2) / 5]} position={[0, 0.021, 0]} material={motorSilver}>
+            <boxGeometry args={[0.01, 0.08, 0.002]} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* BATTERY PACK HATCH (Rear Compartment) */}
+      <group position={[0.0, 0.15, -0.85]} rotation={[0.4, 0, 0]} onClick={(e) => { e.stopPropagation(); onSensorClick?.('battery'); }}>
+        <mesh material={motorDark}>
+          <boxGeometry args={[0.26, 0.22, 0.1]} />
+        </mesh>
+        {/* Ribbed battery surface */}
+        {[0,1,2,3,4,5].map(i => (
+          <mesh key={i} material={camBlack} position={[0, -0.08 + i*0.03, 0.05]}>
+            <boxGeometry args={[0.22, 0.01, 0.005]} />
+          </mesh>
+        ))}
+        {/* Battery Charge Indicator Strip */}
+        <mesh position={[-0.08, 0.08, 0.052]} material={tealLed}>
+          <boxGeometry args={[0.04, 0.015, 0.004]} />
+        </mesh>
+        <mesh position={[-0.03, 0.08, 0.052]} material={tealLed}>
+          <boxGeometry args={[0.04, 0.015, 0.004]} />
+        </mesh>
+        <mesh position={[0.02, 0.08, 0.052]} material={tealLed}>
+          <boxGeometry args={[0.04, 0.015, 0.004]} />
+        </mesh>
+        <mesh position={[0.07, 0.08, 0.052]} material={seamDark}>
+          <boxGeometry args={[0.04, 0.015, 0.004]} />
+        </mesh>
+      </group>
 
     </group>
   );

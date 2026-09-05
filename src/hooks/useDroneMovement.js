@@ -1,5 +1,5 @@
 // ── Pathfinding & Mission-Phase-Aware Drone Movement ──
-// Replaces orbit-based movement with A* grid navigation through city road corridors
+// Full-area search coverage with safe altitude above buildings
 
 import { useSimStore } from '../store/useSimStore'
 
@@ -18,31 +18,42 @@ export const BASE_PADS = [
   { x: -180, y: 2, z: -180 },
 ]
 
-// ── Speeds (m/s) ──
-const DEPLOY_SPEED = 22
-const SEARCH_SPEED = 10
-const RETURN_SPEED = 24
-export const DEPLOY_STAGGER = 2.5 // seconds between drone launches
+// ── Speeds (units/s) ──
+// Deploy/return slower so flight is smooth and visible along road paths
+const DEPLOY_SPEED = 18
+const SEARCH_SPEED = 12
+const RETURN_SPEED = 22
+export const DEPLOY_STAGGER = 0.6 // seconds between drone launches
+
+// ── Safe altitudes ──
+const SEARCH_ALT = 45    // well above tallest building (~33m)
+const DEPLOY_ALT = 50    // cruise altitude during deploy
+const TAKEOFF_ALT = 8    // ground-level lift before route begins
 
 // ═══════════════════════════════════════════
-// ROAD INTERSECTION GRAPH
-// Roads form a 13×13 grid of intersections
+// ROAD INTERSECTION GRAPH (13×13 grid)
 // ═══════════════════════════════════════════
 const TOTAL_NODES = GRID_COUNT + 1 // 13
 const ROAD_NODES = []
+const ROAD_NODE_MAP = {}   // key: "gi_gj" → node (fixes A* neighbor lookup)
+
 for (let i = 0; i < TOTAL_NODES; i++) {
   for (let j = 0; j < TOTAL_NODES; j++) {
-    ROAD_NODES.push({
-      id: i * TOTAL_NODES + j,
+    const node = {
+      id: ROAD_NODES.length,  // sequential array index — NOT gi*TOTAL+gj
       x: i * SPACING - CITY_OFFSET,
       z: j * SPACING - CITY_OFFSET,
       gi: i,
       gj: j,
-    })
+    }
+    ROAD_NODES.push(node)
+    ROAD_NODE_MAP[`${i}_${j}`] = node
   }
 }
 
-function nodeId(i, j) { return i * TOTAL_NODES + j }
+function getNode(gi, gj) {
+  return ROAD_NODE_MAP[`${gi}_${gj}`] || null
+}
 
 function findNearestNode(x, z) {
   let best = null, bestD = Infinity
@@ -54,33 +65,35 @@ function findNearestNode(x, z) {
 }
 
 // ═══════════════════════════════════════════
-// A* PATHFINDING ON ROAD GRID
+// A* PATHFINDING ON ROAD GRID (fixed neighbor lookup)
 // ═══════════════════════════════════════════
 function heuristic(a, b) {
   return Math.abs(a.x - b.x) + Math.abs(a.z - b.z)
 }
 
 function astar(startNode, endNode) {
+  if (!startNode || !endNode) return []
   if (startNode.id === endNode.id) return [{ x: endNode.x, z: endNode.z }]
 
   const open = new Set([startNode.id])
   const cameFrom = {}
-  const g = new Map()
-  const f = new Map()
+  const g = {}
+  const f = {}
 
   for (const n of ROAD_NODES) {
-    g.set(n.id, Infinity)
-    f.set(n.id, Infinity)
+    g[n.id] = Infinity
+    f[n.id] = Infinity
   }
-  g.set(startNode.id, 0)
-  f.set(startNode.id, heuristic(startNode, endNode))
+  g[startNode.id] = 0
+  f[startNode.id] = heuristic(startNode, endNode)
 
   while (open.size > 0) {
     let cur = null, minF = Infinity
     for (const id of open) {
-      if (f.get(id) < minF) { minF = f.get(id); cur = ROAD_NODES[id] }
+      if (f[id] < minF) { minF = f[id]; cur = ROAD_NODES[id] }
     }
     if (!cur) break
+
     if (cur.id === endNode.id) {
       const path = []
       let c = cur.id
@@ -93,20 +106,22 @@ function astar(startNode, endNode) {
     }
     open.delete(cur.id)
 
-    for (const [di, dj] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+    // Use ROAD_NODE_MAP for correct neighbor lookup (fixes the A* bug)
+    for (const [di, dj] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
       const ni = cur.gi + di, nj = cur.gj + dj
       if (ni < 0 || ni >= TOTAL_NODES || nj < 0 || nj >= TOTAL_NODES) continue
-      const nid = nodeId(ni, nj)
-      const tentG = g.get(cur.id) + SPACING
-      if (tentG < g.get(nid)) {
-        cameFrom[nid] = cur.id
-        g.set(nid, tentG)
-        f.set(nid, tentG + heuristic(ROAD_NODES[nid], endNode))
-        open.add(nid)
+      const neighbor = getNode(ni, nj)
+      if (!neighbor) continue
+      const tentG = g[cur.id] + SPACING
+      if (tentG < g[neighbor.id]) {
+        cameFrom[neighbor.id] = cur.id
+        g[neighbor.id] = tentG
+        f[neighbor.id] = tentG + heuristic(neighbor, endNode)
+        open.add(neighbor.id)
       }
     }
   }
-  // Fallback direct line
+  // Fallback: direct waypoints
   return [{ x: startNode.x, z: startNode.z }, { x: endNode.x, z: endNode.z }]
 }
 
@@ -146,7 +161,7 @@ function posOnPath(path, elapsed, speed, loop = false) {
   if (path.length === 1) return { x: path[0].x, z: path[0].z, progress: 1 }
   const total = pathDist(path)
   if (total === 0) return { x: path[0].x, z: path[0].z, progress: 1 }
-  const traveled = loop ? (elapsed * speed) % total : elapsed * speed;
+  const traveled = loop ? (elapsed * speed) % total : Math.min(elapsed * speed, total)
   if (traveled >= total) {
     const l = path[path.length - 1]
     return { x: l.x, z: l.z, progress: 1 }
@@ -173,120 +188,136 @@ function posOnPath(path, elapsed, speed, loop = false) {
 // ZONE DISTRIBUTION LOGIC
 // ═══════════════════════════════════════════
 export function getActiveDronesCount(searchRegion) {
-  if (!searchRegion) return 0;
-  const w = Math.abs(searchRegion.x2 - searchRegion.x1);
-  const d = Math.abs(searchRegion.z2 - searchRegion.z1);
-  const area = w * d;
-  if (area < 4000) return 1;
-  if (area < 12000) return 2;
-  if (area < 25000) return 3;
-  if (area < 45000) return 4;
-  return 5;
+  if (!searchRegion) return 0
+  const w = Math.abs(searchRegion.x2 - searchRegion.x1)
+  const d = Math.abs(searchRegion.z2 - searchRegion.z1)
+  const area = w * d
+  // Lower thresholds so even small hand-drawn regions get at least 1 active drone
+  if (area < 2000)  return 1
+  if (area < 8000)  return 2
+  if (area < 20000) return 3
+  if (area < 38000) return 4
+  return 5
 }
 
 // ═══════════════════════════════════════════
-// DEPLOY PATHS: Base → Search Region (Grid Locked)
+// DEPLOY PATHS: Base → Search Region entry point (via road grid)
 // ═══════════════════════════════════════════
 export function computeDeployPaths(searchRegion) {
   if (!searchRegion) return {}
   const { x1, z1, x2, z2 } = searchRegion
   const result = {}
-  
-  const activeCount = getActiveDronesCount(searchRegion)
 
-  const allNodes = ROAD_NODES.filter(n => n.x >= x1 && n.x <= x2 && n.z >= z1 && n.z <= z2)
-  const cols = {}
-  allNodes.forEach(n => { if (!cols[n.gi]) cols[n.gi] = []; cols[n.gi].push(n) })
-  const colKeys = Object.keys(cols).map(Number).sort((a, b) => a - b)
-  const perDrone = Math.max(1, Math.ceil(colKeys.length / activeCount))
+  const activeCount = getActiveDronesCount(searchRegion)
 
   for (let i = 0; i < 5; i++) {
     const pad = BASE_PADS[i]
     if (i >= activeCount) {
-      result[i + 1] = [{ x: pad.x, z: pad.z }, { x: pad.x, z: pad.z }]
-      continue;
+      // Inactive drones: null path so isDeployComplete skips them entirely
+      result[i + 1] = null
+      continue
     }
 
-    const myCols = colKeys.slice(i * perDrone, (i + 1) * perDrone)
-    let targetNode = null
-    
-    if (myCols.length > 0) {
-      const firstCol = cols[myCols[0]].sort((a, b) => a.z - b.z)
-      targetNode = firstCol[0]
-    } else {
-      const sx = x1 + (x2 - x1) * ((i + 0.5) / activeCount)
-      targetNode = findNearestNode(sx, (z1 + z2)/2)
-    }
+    // Each drone targets a different entry point along the x-axis of the search region
+    const frac = (i + 0.5) / activeCount
+    const targetX = x1 + (x2 - x1) * frac
+    const targetZ = z1  // enter from the near edge
 
     const startNode = findNearestNode(pad.x, pad.z)
-    let deployPath = astar(startNode, targetNode)
-    
-    // Anchor accurately to pad origin
+    const endNode = findNearestNode(targetX, targetZ)
+    let deployPath = astar(startNode, endNode)
+
+    // Anchor to pad origin
     if (deployPath.length > 0) {
-      if ((deployPath[0].x - pad.x)**2 + (deployPath[0].z - pad.z)**2 > 4) {
+      if ((deployPath[0].x - pad.x) ** 2 + (deployPath[0].z - pad.z) ** 2 > 4) {
         deployPath.unshift({ x: pad.x, z: pad.z })
       }
     } else {
-      deployPath = [{ x: pad.x, z: pad.z }, { x: targetNode.x, z: targetNode.z }]
+      deployPath = [{ x: pad.x, z: pad.z }, { x: targetX, z: targetZ }]
     }
-    
+
+    // Append precise entry point if different from last grid node
+    const last = deployPath[deployPath.length - 1]
+    if ((last.x - targetX) ** 2 + (last.z - targetZ) ** 2 > 9) {
+      deployPath.push({ x: targetX, z: targetZ })
+    }
+
     result[i + 1] = deployPath
   }
   return result
 }
 
 // ═══════════════════════════════════════════
-// SEARCH PATHS: Lawnmower via safe road intersections
+// SEARCH PATHS: Dense area-covering grid sweep
+// Covers the ENTIRE marked region, not just road intersections.
+// Drones fly at SEARCH_ALT (45m) so they pass OVER buildings.
 // ═══════════════════════════════════════════
 export function computeSearchPaths(searchRegion) {
   if (!searchRegion) return {}
   const { x1, z1, x2, z2 } = searchRegion
   const result = {}
-  
+
   const activeCount = getActiveDronesCount(searchRegion)
 
-  const allNodes = ROAD_NODES.filter(n => n.x >= x1 && n.x <= x2 && n.z >= z1 && n.z <= z2)
-  const cols = {}
-  allNodes.forEach(n => { if (!cols[n.gi]) cols[n.gi] = []; cols[n.gi].push(n) })
-  const colKeys = Object.keys(cols).map(Number).sort((a, b) => a - b)
-  const perDrone = Math.max(1, Math.ceil(colKeys.length / activeCount))
+  // Adaptive sweep step — scale to region size, min 8m, max ~12m
+  // For tiny regions this ensures we still generate enough waypoints
+  const regionW = Math.abs(x2 - x1)
+  const regionD = Math.abs(z2 - z1)
+  const sweepStep = Math.min(SPACING * 0.55, Math.max(8, Math.min(regionW, regionD) / 4))
+
+  // Generate columns of x-positions covering the full region
+  const cols = []
+  for (let cx = x1; cx <= x2 + 0.1; cx += sweepStep) {
+    cols.push(Math.min(cx, x2))
+  }
+  // Always ensure at least 2 columns so we have a real back-and-forth path
+  if (cols.length === 0) cols.push(x1, x2)
+  else if (cols[cols.length - 1] < x2 - 1) cols.push(x2)
+
+  // Split columns among active drones
+  const perDrone = Math.max(1, Math.ceil(cols.length / activeCount))
 
   for (let i = 0; i < 5; i++) {
     const pad = BASE_PADS[i]
     if (i >= activeCount) {
-      result[i + 1] = [{ x: pad.x, z: pad.z }, { x: pad.x, z: pad.z }]
-      continue;
+      // Mark inactive drones clearly with null-path so deploy check skips them
+      result[i + 1] = null
+      continue
     }
 
-    const myCols = colKeys.slice(i * perDrone, (i + 1) * perDrone)
-    
-    if (myCols.length < 1) {
-      const sx = x1 + (x2 - x1) * ((i + 0.5) / activeCount)
-      const centerNode = findNearestNode(sx, (z1 + z2)/2)
-      result[i + 1] = [{x: centerNode.x, z: centerNode.z}, {x: centerNode.x, z: centerNode.z}]
-      continue;
+    const myCols = cols.slice(i * perDrone, (i + 1) * perDrone)
+    if (myCols.length === 0) {
+      result[i + 1] = null
+      continue
     }
-    
+
+    // Boustrophedon (lawnmower) sweep: alternate z direction per column
     const wps = []
-    let fwd = true
-    let prevNode = null
-    
-    for (const ck of myCols) {
-      const nodes = cols[ck].sort((a, b) => fwd ? a.z - b.z : b.z - a.z)
-      
-      for (const n of nodes) {
-        if (prevNode) {
-          // Guarantee safe 90-degree corner turns around buildings
-          const pathSegment = astar(prevNode, n)
-          wps.push(...pathSegment.slice(1))
-        } else {
-          wps.push({ x: n.x, z: n.z })
+    let goingDown = true
+
+    for (const cx of myCols) {
+      if (goingDown) {
+        // top-to-bottom
+        for (let cz = z1; cz <= z2 + 0.1; cz += sweepStep) {
+          wps.push({ x: cx, z: Math.min(cz, z2) })
         }
-        prevNode = n
+        if (wps[wps.length - 1].z < z2 - 1) wps.push({ x: cx, z: z2 })
+      } else {
+        // bottom-to-top
+        for (let cz = z2; cz >= z1 - 0.1; cz -= sweepStep) {
+          wps.push({ x: cx, z: Math.max(cz, z1) })
+        }
+        if (wps[wps.length - 1].z > z1 + 1) wps.push({ x: cx, z: z1 })
       }
-      fwd = !fwd
+      goingDown = !goingDown
     }
-    
+
+    // Ensure at least 3 waypoints so loop has real distance
+    if (wps.length < 3) {
+      wps.push({ x: x1, z: z1 }, { x: x2, z: z1 }, { x: x2, z: z2 }, { x: x1, z: z2 })
+    }
+
+    // Loop: reverse path so drones sweep back and forth perpetually
     const rev = [...wps].reverse()
     result[i + 1] = [...wps, ...rev]
   }
@@ -294,7 +325,7 @@ export function computeSearchPaths(searchRegion) {
 }
 
 // ═══════════════════════════════════════════
-// RETURN PATHS: Current position → Base
+// RETURN PATHS: Current position → Base (via road grid, high altitude)
 // ═══════════════════════════════════════════
 export function computeReturnPaths(currentPositions) {
   const result = {}
@@ -327,9 +358,18 @@ export function getDronePosition(drone, timeOffset = 0) {
 
     case 'DEPLOYING': {
       const path = deployPaths[drone.id]
+<<<<<<< HEAD
       const startTime = deployStartTime || now
 
       if (!path) {
+=======
+      const startTime = deployStartTime || (now - 0.1)
+      if (!deployStartTime) {
+        useSimStore.setState({ deployStartTime: startTime })
+      }
+      // Inactive drones (no deploy path) just sit on pad
+      if (!path || path.length < 2) {
+>>>>>>> origin/threejsimplementation
         const pad = BASE_PADS[(drone.id - 1) % 5]
         return { x: pad.x, y: pad.y, z: pad.z }
       }
@@ -341,42 +381,72 @@ export function getDronePosition(drone, timeOffset = 0) {
       }
       const r = posOnPath(path, elapsed, DEPLOY_SPEED)
       if (!r) { const pad = BASE_PADS[(drone.id - 1) % 5]; return { x: pad.x, y: pad.y, z: pad.z } }
-      // Altitude envelope: rise → cruise → descend
-      let alt = 20
-      if (elapsed < 2) alt = 2 + (elapsed / 2) * 18
-      else if (r.progress > 0.9) alt = 20 - ((r.progress - 0.9) / 0.1) * 5
-      return { x: r.x, y: Math.max(2, alt), z: r.z }
+
+      // Altitude profile: rapid climb → cruise at DEPLOY_ALT → gentle descend at end
+      let alt
+      if (elapsed < 2.5) {
+        // Takeoff ramp: 0 → DEPLOY_ALT over 2.5 seconds
+        alt = TAKEOFF_ALT + (elapsed / 2.5) * (DEPLOY_ALT - TAKEOFF_ALT)
+      } else if (r.progress > 0.85) {
+        // Final approach: DEPLOY_ALT → SEARCH_ALT
+        alt = DEPLOY_ALT - ((r.progress - 0.85) / 0.15) * (DEPLOY_ALT - SEARCH_ALT)
+      } else {
+        alt = DEPLOY_ALT
+      }
+      return { x: r.x, y: Math.max(TAKEOFF_ALT, alt), z: r.z }
     }
 
     case 'SEARCHING': {
       const path = searchPaths[drone.id]
-      if (!path || !searchStartTime) {
-        return { x: drone.pos?.[0] || 0, y: 15, z: drone.pos?.[2] || 0 }
+      // Inactive drones (null path) hover at their current position
+      if (!path || path.length < 2 || !searchStartTime) {
+        const pad = BASE_PADS[(drone.id - 1) % 5]
+        return { x: pad.x, y: pad.y, z: pad.z }
       }
       const elapsed = now - searchStartTime
       const r = posOnPath(path, elapsed, SEARCH_SPEED, true)
-      if (!r) return { x: drone.pos?.[0] || 0, y: 15, z: drone.pos?.[2] || 0 }
-      const alt = 15 + Math.sin(elapsed * 0.4 + drone.id * 1.5) * 2
-      return { x: r.x, y: alt, z: r.z }
+      if (!r) return { x: drone.pos?.[0] || 0, y: SEARCH_ALT, z: drone.pos?.[2] || 0 }
+
+      // Altitude: hold at SEARCH_ALT with very gentle sinusoidal variation (±2m)
+      // simulates LiDAR/terrain-following sensor response
+      const alt = SEARCH_ALT + Math.sin(elapsed * 0.3 + drone.id * 1.2) * 2
+      return { x: r.x, y: Math.max(SEARCH_ALT - 3, alt), z: r.z }
     }
 
     case 'ALL_FOUND': {
-      return { x: drone.pos?.[0] || 0, y: drone.pos?.[1] || 15, z: drone.pos?.[2] || 0 }
+      // Hold position at current location, maintain safe altitude
+      const pos = drone.pos
+      return {
+        x: pos?.[0] || 0,
+        y: Math.max(SEARCH_ALT, pos?.[1] || SEARCH_ALT),
+        z: pos?.[2] || 0
+      }
     }
 
     case 'RETURNING': {
       const path = returnPaths[drone.id]
       if (!path || !returnStartTime) {
-        return { x: drone.pos?.[0] || 0, y: drone.pos?.[1] || 15, z: drone.pos?.[2] || 0 }
+        return { x: drone.pos?.[0] || 0, y: drone.pos?.[1] || SEARCH_ALT, z: drone.pos?.[2] || 0 }
       }
-      const delay = (drone.id - 1) * 1.5
+      const delay = (drone.id - 1) * 1.2
       const elapsed = Math.max(0, now - returnStartTime - delay)
-      if (elapsed <= 0) return { x: drone.pos?.[0] || 0, y: drone.pos?.[1] || 15, z: drone.pos?.[2] || 0 }
+      if (elapsed <= 0) return { x: drone.pos?.[0] || 0, y: drone.pos?.[1] || SEARCH_ALT, z: drone.pos?.[2] || 0 }
       const r = posOnPath(path, elapsed, RETURN_SPEED)
-      if (!r) return { x: drone.pos?.[0] || 0, y: drone.pos?.[1] || 15, z: drone.pos?.[2] || 0 }
-      let alt = 20
-      if (r.progress > 0.85) alt = 20 - ((r.progress - 0.85) / 0.15) * 18
-      return { x: r.x, y: Math.max(2, alt), z: r.z }
+      if (!r) return { x: drone.pos?.[0] || 0, y: drone.pos?.[1] || SEARCH_ALT, z: drone.pos?.[2] || 0 }
+
+      // Altitude: stay at DEPLOY_ALT through most of return, descend near base
+      let alt
+      if (elapsed < 2.0) {
+        // Brief climb to return altitude if below it
+        const startY = drone.pos?.[1] || SEARCH_ALT
+        alt = startY + (elapsed / 2.0) * Math.max(0, DEPLOY_ALT - startY)
+      } else if (r.progress > 0.82) {
+        // Final descent to pad
+        alt = DEPLOY_ALT - ((r.progress - 0.82) / 0.18) * (DEPLOY_ALT - 8)
+      } else {
+        alt = DEPLOY_ALT
+      }
+      return { x: r.x, y: Math.max(5, alt), z: r.z }
     }
 
     case 'COMPLETED': {
@@ -410,11 +480,20 @@ export function isDeployComplete() {
   const { deployPaths, deployStartTime, drones } = useSimStore.getState()
   if (!deployStartTime) return false
   const now = performance.now() / 1000
-  return drones.every(d => {
+
+  // Only check drones that have a real deploy path (active drones)
+  // Inactive drones have null or 0-length paths and should be ignored
+  const activeDrones = drones.filter(d => {
     const p = deployPaths[d.id]
-    if (!p || p.length < 2) return true
+    return p && p.length >= 2 && pathDist(p) >= 5
+  })
+
+  // If no drone has a real path, something is wrong — don't advance
+  if (activeDrones.length === 0) return false
+
+  return activeDrones.every(d => {
+    const p = deployPaths[d.id]
     const dist = pathDist(p)
-    if (dist === 0) return true // Skip waiting if resting at base
     const delay = (d.id - 1) * DEPLOY_STAGGER
     return (now - deployStartTime - delay) >= dist / DEPLOY_SPEED
   })
@@ -424,12 +503,19 @@ export function isReturnComplete() {
   const { returnPaths, returnStartTime, drones } = useSimStore.getState()
   if (!returnStartTime) return false
   const now = performance.now() / 1000
-  return drones.every(d => {
+
+  // Only check drones that have real return paths
+  const activeDrones = drones.filter(d => {
     const p = returnPaths[d.id]
-    if (!p || p.length < 2) return true
+    return p && p.length >= 2 && pathDist(p) >= 5
+  })
+
+  if (activeDrones.length === 0) return false
+
+  return activeDrones.every(d => {
+    const p = returnPaths[d.id]
     const dist = pathDist(p)
-    if (dist === 0) return true // Skip waiting if already at base
-    const delay = (d.id - 1) * 1.5
+    const delay = (d.id - 1) * 1.2
     return (now - returnStartTime - delay) >= dist / RETURN_SPEED
   })
 }

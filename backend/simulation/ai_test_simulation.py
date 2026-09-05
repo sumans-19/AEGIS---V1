@@ -2,6 +2,7 @@
 AEGIS AI intelligence demo — run from backend/:
   python simulation/ai_test_simulation.py
 """
+
 import sys
 from pathlib import Path
 
@@ -13,7 +14,6 @@ from simulation.world_state import world, DroneState
 from simulation.decision_engine import evaluate_drone
 from simulation.ai_actions import apply_ai_decision
 from simulation.ai_logging import log_system
-
 
 drones = [
     DroneState(id=1, callsign="FALCON", status="ACTIVE", pos=np.array([0, 0, 20])),
@@ -52,29 +52,31 @@ def run_simulation_step():
         # initialize real drones once
         for i in range(5):
             drone = DroneState(
-                id=i+1,
-                callsign=["FALCON","HAWK","OSPREY","KESTREL","MERLIN"][i],
+                id=i + 1,
+                callsign=["FALCON", "HAWK", "OSPREY", "KESTREL", "MERLIN"][i],
                 status="ACTIVE",
-                pos=np.array([0.0, 0.0, 20.0])
+                pos=np.array([0.0, 0.0, 20.0]),
             )
             world.drones.append(drone)
 
     results = []
 
     for drone in world.drones:
-        drone.update_telemetry()   # real simulation
+        drone.update_telemetry()  # real simulation
 
         decision = evaluate_drone(drone)
 
-        results.append({
-            "id": drone.id,
-            "battery": drone.battery,
-            "signal": drone.signal_strength,
-            "cpu_temp": drone.cpu_temperature,
-            "motor_temp": drone.motor_temperature,
-            "propeller": drone.propeller_health,
-            "status": drone.status,
-            "action": str(decision),
-        })
+        results.append(
+            {
+                "id": drone.id,
+                "battery": drone.battery,
+                "signal": drone.signal_strength,
+                "cpu_temp": drone.cpu_temperature,
+                "motor_temp": drone.motor_temperature,
+                "propeller": drone.propeller_health,
+                "status": drone.status,
+                "action": str(decision),
+            }
+        )
 
     return {"drones": results}

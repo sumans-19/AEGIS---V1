@@ -55,6 +55,17 @@ function ScenarioIcon({ type, color }) {
           <path d="M16,28 Q8,24 12,16 Q16,8 8,4" />
         </svg>
       )
+    case 'target':
+      return (
+        <svg viewBox="0 0 32 32" style={iconStyle} fill="none" stroke={color} strokeWidth="1.5">
+          <circle cx="16" cy="16" r="12" strokeOpacity="0.4" />
+          <circle cx="16" cy="16" r="6" />
+          <line x1="16" y1="2" x2="16" y2="8" />
+          <line x1="16" y1="24" x2="16" y2="30" />
+          <line x1="2" y1="16" x2="8" y2="16" />
+          <line x1="24" y1="16" x2="30" y2="16" />
+        </svg>
+      )
     default:
       return null
   }

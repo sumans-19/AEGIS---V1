@@ -1,394 +1,277 @@
-import { useState, useEffect, useRef } from 'react'
-import { Camera, Maximize2, Radio } from 'lucide-react'
+import { useRef, useMemo, useLayoutEffect } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import * as THREE from 'three'
+import { Camera } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
+import { dronePositionRegistry, droneDirectionRegistry } from '../../hooks/dronePositionRegistry'
 
-// Realistic muted colors
-const GROUND_COLOR = '#1C1C1A'
-const ROAD_COLOR = '#2C2C2C'
-const DUST_COLOR = 'rgba(122, 122, 106, 0.2)'
-const CRACK_COLOR = '#0A0A0A'
-const WALL_SHADES = ['#6B6B6B', '#5A5A5A', '#787878', '#4D4D4D', '#636359', '#555550', '#6E6E64', '#7A7A70']
-const ROOF_SHADES = ['#3A3A3A', '#484848', '#4F4540', '#353535']
-
+// Seeded random for consistent generation
 function seededRandom(seed) {
   let x = Math.sin(seed) * 10000
   return x - Math.floor(x)
 }
 
-export default function DroneView() {
-  const canvasRef = useRef(null)
-  const selectedDroneId = useSimStore(s => s.selectedDrone)
-  const drones = useSimStore(s => s.drones)
-  const backendConnected = useSimStore(s => s.backendConnected)
+// ── Lightweight Instanced Terrain for FPV ──
+function FastTerrain() {
+  const meshRef = useRef()
 
-  const drone = drones.find(d => d.id === selectedDroneId) || drones[0]
-
-  // Generate persistent building layout matching Terrain.jsx
-  const elementsRef = useRef(null)
-  if (!elementsRef.current) {
-    const blds = []
-    const cracks = []
-    const rubble = []
-    
+  // Generate building matrices once (all data computed synchronously)
+  const { count, matrices, colors } = useMemo(() => {
     const gridSize = 12
     const spacing = 22
     const offset = (gridSize * spacing) / 2
 
-    // Cracks
-    for (let c = 0; c < 25; c++) {
-      const sx = (seededRandom(c * 77) - 0.5) * 200
-      const sz = (seededRandom(c * 88) - 0.5) * 200
-      const len = 15 + seededRandom(c * 99) * 40
-      const ang = seededRandom(c * 111) * Math.PI
-      cracks.push({
-        x1: sx, y1: sz,
-        x2: sx + Math.cos(ang) * len, y2: sz + Math.sin(ang) * len,
-        width: 0.3 + seededRandom(c * 55) * 1.0,
-      })
-      if (seededRandom(c * 200) > 0.5) {
-        const bx = sx + Math.cos(ang) * len * 0.5
-        const bz = sz + Math.sin(ang) * len * 0.5
-        const blen = 5 + seededRandom(c * 300) * 15
-        const bang = ang + (seededRandom(c * 400) - 0.5) * 1.5
-        cracks.push({
-          x1: bx, y1: bz,
-          x2: bx + Math.cos(bang) * blen, y2: bz + Math.sin(bang) * blen,
-          width: 0.2 + seededRandom(c * 66) * 0.4,
-        })
-      }
-    }
+    const tempMatrix = new THREE.Matrix4()
+    const tempColor = new THREE.Color()
+
+    const matrices = []
+    const colors = []
+    let idx = 0
 
     for (let gx = 0; gx < gridSize; gx++) {
       for (let gz = 0; gz < gridSize; gz++) {
         const seed = gx * 100 + gz
-        const rand = seededRandom(seed)
         const typeRand = seededRandom(seed + 10)
-        
-        const cx = gx * spacing - offset + spacing / 2 + (seededRandom(seed + 1) - 0.5) * 3
-        const cz = gz * spacing - offset + spacing / 2 + (seededRandom(seed + 2) - 0.5) * 3
 
         if (typeRand >= 0.12 && typeRand < 0.92) {
+          const x = gx * spacing - offset + spacing / 2 + (seededRandom(seed + 1) - 0.5) * 3
+          const z = gz * spacing - offset + spacing / 2 + (seededRandom(seed + 2) - 0.5) * 3
           const damageLevel = seededRandom(seed + 3)
-          
-          if (damageLevel < 0.35) {
-            // Fully collapsed
-            const chunks = 4 + Math.floor(rand * 5)
-            for (let c = 0; c < chunks; c++) {
-              const cw = 2 + rand * 5
-              const cd = 2 + rand * 5
-              blds.push({
-                type: 'rubble',
-                x: cx + (seededRandom(seed + c) - 0.5) * 8,
-                z: cz + (seededRandom(seed + c + 1) - 0.5) * 8,
-                w: cw, h: cd,
-                color: '#585858'
-              })
-            }
-          } else if (damageLevel < 0.6) {
-            // Partially collapsed
-            const w = 7 + rand * 5
-            const d = 7 + rand * 5
-            blds.push({
-              type: 'damaged',
-              x: cx, z: cz,
-              w, h: d,
-              color: WALL_SHADES[Math.floor(seededRandom(seed + 5) * WALL_SHADES.length)],
-              roofColor: ROOF_SHADES[Math.floor(seededRandom(seed + 6) * ROOF_SHADES.length)],
-            })
-            blds.push({
-              type: 'rubble',
-              x: cx + w * 0.7, z: cz + (seededRandom(seed + 8) - 0.5) * 4,
-              w: w * 0.8, h: 1.5,
-              color: '#4A4A4A'
-            })
+
+          if (damageLevel < 0.35) continue // Rubble, skip for fast view
+
+          let w, h, d
+          if (damageLevel < 0.6) {
+            w = 7 + seededRandom(seed) * 5
+            h = 4 + seededRandom(seed * 2) * 8
+            d = 7 + seededRandom(seed * 3) * 5
           } else {
-            // Intact
-            const w = 7 + rand * 6
-            const d = 7 + rand * 6
-            blds.push({
-              type: 'intact',
-              x: cx, z: cz,
-              w, h: d,
-              color: WALL_SHADES[Math.floor(seededRandom(seed + 5) * WALL_SHADES.length)],
-              roofColor: ROOF_SHADES[Math.floor(seededRandom(seed + 6) * ROOF_SHADES.length)],
-            })
+            w = 6 + seededRandom(seed) * 6
+            h = 8 + seededRandom(seed * 2) * 10
+            d = 6 + seededRandom(seed * 3) * 6
           }
-        } else if (typeRand >= 0.92) {
-          // Debris lot
-          for (let r = 0; r < 3; r++) {
-            rubble.push({
-              x: cx + (seededRandom(seed + r * 20) - 0.5) * 10,
-              z: cz + (seededRandom(seed + r * 21) - 0.5) * 10,
-              s: 0.3 + seededRandom(seed + r * 22) * 0.8
-            })
-          }
+
+          tempMatrix.identity()
+          tempMatrix.makeTranslation(x, h / 2, z)
+          const scaleM = new THREE.Matrix4().makeScale(w, h, d)
+          tempMatrix.multiply(scaleM)
+          matrices.push(tempMatrix.clone())
+
+          // Realistic concrete gray shade
+          const shade = 0.28 + seededRandom(seed * 4) * 0.22
+          tempColor.setHSL(0.08, 0.05, shade)
+          colors.push(tempColor.clone())
+
+          idx++
         }
       }
     }
-    elementsRef.current = { blds, cracks, rubble }
-  }
+    return { count: idx, matrices, colors }
+  }, [])
 
-  // Animate the canvas
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    let animId
+  // Apply matrices immediately after mount using useLayoutEffect
+  useLayoutEffect(() => {
+    const mesh = meshRef.current
+    if (!mesh) return
+    for (let i = 0; i < count; i++) {
+      mesh.setMatrixAt(i, matrices[i])
+      mesh.setColorAt(i, colors[i])
+    }
+    mesh.instanceMatrix.needsUpdate = true
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+  }, [count, matrices, colors])
 
-    const draw = () => {
-      const { width, height } = canvas
-      const droneState = useSimStore.getState()
-      const currentDrone = droneState.drones.find(d => d.id === selectedDroneId) || droneState.drones[0]
-      const pos = currentDrone?.pos || [0, 50, 0]
-      const alt = pos[1] || 50
-      
-      // Calculate realistic zoom level. 
-      // Altitude 50 should equal roughly a 1x scale at these coordinates.
-      const scaleFactor = 45 / Math.max(alt, 10) 
+  return (
+    <group>
+      {/* Ground — dirt/concrete */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
+        <planeGeometry args={[600, 600]} />
+        <meshStandardMaterial color="#4a4a40" roughness={1} />
+      </mesh>
 
-      ctx.clearRect(0, 0, width, height)
+      {/* Road grid lines on ground */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <planeGeometry args={[600, 600]} />
+        <meshStandardMaterial color="#2a2a28" roughness={1} transparent opacity={0.5} />
+      </mesh>
 
-      // Ground
-      ctx.fillStyle = GROUND_COLOR
-      ctx.fillRect(0, 0, width, height)
+      {/* Instanced Buildings */}
+      <instancedMesh ref={meshRef} args={[null, null, count]} castShadow receiveShadow>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial roughness={0.85} metalness={0.1} />
+      </instancedMesh>
+    </group>
+  )
+}
 
-      ctx.save()
-      ctx.translate(width / 2, height / 2)
-      // Apply the scale factor
-      ctx.scale(scaleFactor, scaleFactor)
-      
-      // Since world coords are scaled by 15 for the canvas drawing, translate them
-      ctx.translate(-pos[0] * 15, -pos[2] * 15)
+// ── Survivor entities visible in CAM view ──
+function SceneEntities({ selectedDroneId }) {
+  const survivors = useSimStore(s => s.survivors) || []
+  const drones = useSimStore(s => s.drones) || []
 
-      const { blds, cracks, rubble } = elementsRef.current
+  return (
+    <group>
+      {survivors.map(s => s.pos && (
+        <group key={s.id} position={s.pos}>
+          <mesh position={[0, 0.8, 0]}>
+            <capsuleGeometry args={[0.3, 1.2, 8, 16]} />
+            <meshStandardMaterial color={s.alive ? '#d4956a' : '#475569'} />
+          </mesh>
+          {s.alive && (
+            <pointLight color="#ff8c42" intensity={4} distance={10} position={[0, 2, 0]} />
+          )}
+        </group>
+      ))}
 
-      // Cracks
-      ctx.strokeStyle = CRACK_COLOR
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-      cracks.forEach(c => {
-        ctx.lineWidth = c.width * 15
-        ctx.beginPath()
-        ctx.moveTo(c.x1 * 15, c.y1 * 15)
-        ctx.lineTo(c.x2 * 15, c.y2 * 15)
-        ctx.stroke()
-      })
+      {drones.filter(d => d.id !== selectedDroneId).map(d => {
+        const livePos = dronePositionRegistry.get(d.id)
+        const pos = livePos ? [livePos.x, livePos.y, livePos.z] : (d.pos || [0, 0, 0])
+        return (
+          <group key={d.id} position={pos}>
+            <mesh>
+              <boxGeometry args={[1.2, 0.4, 1.2]} />
+              <meshStandardMaterial color="#00e5ff" emissive="#003c45" />
+            </mesh>
+            <pointLight color="#00e5ff" intensity={6} distance={12} />
+          </group>
+        )
+      })}
+    </group>
+  )
+}
 
-      // Roads
-      const gridSize = 12
-      const spacing = 22
-      const offset = (gridSize * spacing) / 2
-      ctx.strokeStyle = ROAD_COLOR
-      ctx.lineWidth = 60 // 4 * 15
-      for (let i = 0; i <= gridSize; i++) {
-        const p = i * spacing - offset
-        ctx.beginPath()
-        ctx.moveTo(p * 15, (-offset - 45) * 15)
-        ctx.lineTo(p * 15, (offset + 45) * 15)
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo((-offset - 45) * 15, p * 15)
-        ctx.lineTo((offset + 45) * 15, p * 15)
-        ctx.stroke()
-      }
-      ctx.strokeStyle = '#4A4A3A'
-      ctx.lineWidth = 3 
-      for (let i = 0; i <= gridSize; i++) {
-        const p = i * spacing - offset
-        ctx.beginPath()
-        ctx.moveTo(p * 15, (-offset - 45) * 15)
-        ctx.lineTo(p * 15, (offset + 45) * 15)
-        ctx.stroke()
-        ctx.beginPath()
-        ctx.moveTo((-offset - 45) * 15, p * 15)
-        ctx.lineTo((offset + 45) * 15, p * 15)
-        ctx.stroke()
-      }
+// ── First-Person Camera — reads from 60fps registry ──
+function FirstPersonCamera({ selectedDroneId }) {
+  const { camera } = useThree()
+  const smoothPos = useRef(new THREE.Vector3())
+  const lookDir = useRef(new THREE.Vector3(0, 0, 1))
+  const initialized = useRef(false)
 
-      // Draw buildings
-      blds.forEach(b => {
-        const bx = b.x * 15
-        const bz = b.z * 15
-        const bw = b.w * 15
-        const bh = b.h * 15
+  useFrame(() => {
+    if (!selectedDroneId) return
 
-        if (b.type === 'rubble') {
-          ctx.fillStyle = b.color
-          ctx.fillRect(bx - bw / 2, bz - bh / 2, bw, bh)
-        } else {
-          // Shadow
-          ctx.fillStyle = 'rgba(0,0,0,0.4)'
-          ctx.fillRect(bx - bw / 2 + 18, bz - bh / 2 + 18, bw, bh)
-          
-          // Wall
-          ctx.fillStyle = b.color
-          ctx.fillRect(bx - bw / 2, bz - bh / 2, bw, bh)
-          
-          if (b.type === 'intact') {
-            // Roof
-            ctx.fillStyle = b.roofColor || '#3A3A3A'
-            ctx.fillRect(bx - bw / 2 + 2, bz - bh / 2 + 2, bw - 4, bh - 4)
-          } else if (b.type === 'damaged') {
-            // Damaged Roof
-            ctx.fillStyle = b.roofColor || '#3A3A3A'
-            ctx.beginPath()
-            ctx.moveTo(bx - bw / 2 + 2, bz - bh / 2 + 2)
-            ctx.lineTo(bx + bw / 2 - 2, bz - bh / 2 + 2)
-            ctx.lineTo(bx + bw / 2 - 2, bz + bh / 4)
-            ctx.lineTo(bx, bz + bh / 2 - 2)
-            ctx.lineTo(bx - bw / 2 + 2, bz + bh / 2 - 2)
-            ctx.fill()
-            
-            // Damage debris
-            ctx.fillStyle = '#2A2A2A'
-            ctx.fillRect(bx + bw / 4, bz + bh / 4, bw / 4, bh / 4)
-          }
-        }
-      })
-
-      // Draw other drones from bird's-eye
-      droneState.drones.forEach(d => {
-        if (d.id === selectedDroneId) return
-        const dp = d.pos || [0, 0, 0]
-        const dx = dp[0] * 15
-        const dz = dp[2] * 15
-        
-        ctx.fillStyle = 'rgba(0,0,0,0.4)'
-        ctx.fillRect(dx - 5, dz - 5, 24, 24)
-        
-        ctx.fillStyle = d.status === 'SCANNING' ? '#00e5ff' : '#aaaaaa'
-        ctx.fillRect(dx - 8, dz - 8, 16, 16)
-        
-        // Scan ring
-        if (d.scan_radius) {
-          ctx.strokeStyle = d.status === 'SCANNING' ? 'rgba(0,229,255,0.7)' : 'rgba(170,170,170,0.4)'
-          ctx.lineWidth = 2
-          ctx.beginPath()
-          ctx.arc(dx, dz, d.scan_radius * 15 * 0.8, 0, Math.PI * 2)
-          ctx.stroke()
-        }
-      })
-
-      ctx.restore()
-
-      // Crosshair center
-      const cx = width / 2
-      const cy = height / 2
-      ctx.strokeStyle = 'rgba(0, 255, 136, 0.7)'
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.moveTo(cx - 25, cy); ctx.lineTo(cx - 10, cy)
-      ctx.moveTo(cx + 10, cy); ctx.lineTo(cx + 25, cy)
-      ctx.moveTo(cx, cy - 25); ctx.lineTo(cx, cy - 10)
-      ctx.moveTo(cx, cy + 10); ctx.lineTo(cx, cy + 25)
-      ctx.stroke()
-      ctx.beginPath()
-      ctx.arc(cx, cy, 35, 0, Math.PI * 2)
-      ctx.strokeStyle = 'rgba(0, 255, 136, 0.3)'
-      ctx.stroke()
-
-      // Compass
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'
-      ctx.fillRect(cx - 40, height - 30, 80, 20)
-      ctx.fillStyle = '#00ff88'
-      ctx.font = '12px JetBrains Mono, monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText(`HDG ${(currentDrone?.heading || 0).toFixed(0)}°`, cx, height - 15)
-
-      ctx.fillStyle = 'rgba(0, 229, 255, 0.5)'
-      ctx.font = '10px JetBrains Mono'
-      ctx.textAlign = 'left'
-      ctx.fillText(`LAT: ${(currentDrone?.pos?.[0] || 0).toFixed(2)}`, 16, height - 55)
-      ctx.fillText(`LNG: ${(currentDrone?.pos?.[2] || 0).toFixed(2)}`, 16, height - 40)
-
-      // Scanlines effect
-      ctx.fillStyle = 'rgba(0,0,0,0.1)'
-      for (let y = 0; y < height; y += 4) {
-        ctx.fillRect(0, y, width, 1)
-      }
-
-      animId = requestAnimationFrame(draw)
+    const livePos = dronePositionRegistry.get(selectedDroneId)
+    if (!livePos) {
+      // Fallback: try Zustand store if registry not populated yet
+      const store = useSimStore.getState()
+      const drone = store.drones.find(d => d.id === selectedDroneId)
+      if (!drone || !drone.pos) return
+      livePos || smoothPos.current.set(...drone.pos)
     }
 
-    animId = requestAnimationFrame(draw)
-    return () => cancelAnimationFrame(animId)
-  }, [selectedDroneId])
+    const targetPos = livePos || smoothPos.current
+
+    // On first frame: snap directly to position (no lerp jerk)
+    if (!initialized.current) {
+      smoothPos.current.copy(targetPos)
+      initialized.current = true
+    } else {
+      // Smooth follow — drone-cam style (not too tight, not too loose)
+      smoothPos.current.lerp(targetPos, 0.15)
+    }
+
+    // Update look direction from live direction registry
+    const liveDir = droneDirectionRegistry.get(selectedDroneId)
+    if (liveDir && liveDir.lengthSq() > 0.001) {
+      lookDir.current.lerp(liveDir, 0.08)
+      lookDir.current.normalize()
+    }
+
+    // Position camera slightly behind and above drone (FPV style)
+    const camOffset = lookDir.current.clone().multiplyScalar(-3)
+    camOffset.y += 1.5
+    const camPos = smoothPos.current.clone().add(camOffset)
+    camera.position.copy(camPos)
+
+    // Look slightly ahead and down (realistic FPV angle)
+    const lookAhead = lookDir.current.clone().multiplyScalar(15)
+    const lookTarget = smoothPos.current.clone().add(lookAhead)
+    lookTarget.y = smoothPos.current.y - 3 // look slightly down
+    camera.lookAt(lookTarget)
+  })
+
+  return null
+}
+
+export default function DroneView() {
+  const selectedDroneId = useSimStore(s => s.selectedDrone)
+  const drones = useSimStore(s => s.drones)
+
+  const drone = drones.find(d => d.id === selectedDroneId) || drones[0]
 
   return (
     <div style={{
-      width: '100%',
-      height: '100%',
-      minHeight: '260px',
-      background: '#151d20',
-      borderRadius: '8px',
-      position: 'relative',
-      overflow: 'hidden',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+      width: '100%', height: '100%',
+      background: '#0a0f0a', position: 'relative',
+      borderRadius: '6px', overflow: 'hidden', border: '1px solid #1c2528',
     }}>
+      <Canvas
+        camera={{ fov: 72, near: 0.1, far: 1000, position: [0, 20, 10] }}
+        gl={{ antialias: false, powerPreference: 'high-performance' }}
+      >
+        {/* Bright daylight lighting for clear visibility */}
+        <ambientLight intensity={0.7} color="#cce8ff" />
+        <directionalLight position={[30, 60, 20]} intensity={1.8} color="#fff5e0" castShadow={false} />
+        <directionalLight position={[-20, 30, -20]} intensity={0.4} color="#c0d8ff" />
+        <fog attach="fog" args={['#2a2a20', 80, 400]} />
+
+        <FastTerrain />
+        <SceneEntities selectedDroneId={selectedDroneId} />
+        <FirstPersonCamera selectedDroneId={selectedDroneId} />
+      </Canvas>
+
+      {/* CSS Scanlines Overlay */}
       <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        padding: '6px 10px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        background: 'rgba(23, 33, 36, 0.85)',
-        backdropFilter: 'blur(8px)',
-        zIndex: 10,
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
+        background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.08) 50%)',
+        backgroundSize: '100% 3px', zIndex: 5
+      }} />
+
+      {/* Vignette */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)',
+        zIndex: 6,
+      }} />
+
+      {/* UI Overlay */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        pointerEvents: 'none', display: 'flex', flexDirection: 'column',
+        justifyContent: 'space-between', padding: '10px', zIndex: 10
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Camera size={13} color="#79B9C1" />
-          <span style={{
-            fontFamily: 'var(--font-primary)',
-            fontSize: '8.5px',
-            fontWeight: 800,
-            color: '#FFFFFF',
-            letterSpacing: '0.08em',
-          }}>
-            LIVE FEED // {drone?.callsign || 'N/A'}
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span className="blink-rec" style={{ width: 6, height: 6, background: '#dc3545', borderRadius: '50%', boxShadow: '0 0 5px #dc3545' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: '#dc3545', fontWeight: 800 }}>REC</span>
+        {/* Top bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Camera size={12} color="#00e5ff" />
+            <span style={{ color: '#fff', fontSize: '9px', fontWeight: 700, letterSpacing: '1px', fontFamily: 'monospace' }}>
+              LIVE FEED // {drone?.callsign || 'UNIT'}
+            </span>
           </div>
-          <Maximize2 size={11} color="#8A9A9E" style={{ cursor: 'pointer' }} />
+          <span style={{ color: '#ff4444', fontSize: '9px', fontWeight: 700 }}>● REC</span>
         </div>
-      </div>
 
-      <canvas
-        ref={canvasRef}
-        width={640}
-        height={480}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(0.1) contrast(1.05)' }}
-      />
-      
-      <div className="hud-corners" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }} />
+        {/* HUD Crosshair */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: '48px', height: '48px', border: '1px solid rgba(0, 229, 255, 0.35)', borderRadius: '50%',
+        }}>
+          <div style={{ position: 'absolute', top: '50%', left: -10, width: 18, height: 1, background: 'rgba(0, 229, 255, 0.7)' }} />
+          <div style={{ position: 'absolute', top: '50%', right: -10, width: 18, height: 1, background: 'rgba(0, 229, 255, 0.7)' }} />
+          <div style={{ position: 'absolute', left: '50%', top: -10, width: 1, height: 18, background: 'rgba(0, 229, 255, 0.7)' }} />
+          <div style={{ position: 'absolute', left: '50%', bottom: -10, width: 1, height: 18, background: 'rgba(0, 229, 255, 0.7)' }} />
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 4, height: 4, borderRadius: '50%', background: 'rgba(0,229,255,0.8)' }} />
+        </div>
 
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: '8px 12px',
-        background: 'linear-gradient(to top, rgba(23, 33, 36, 0.9), transparent)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'baseline',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '8.5px',
-        fontWeight: 700,
-        color: '#79B9C1',
-      }}>
-        <div>UNIT: 0{drone?.id}</div>
-        <div>ALT: {drone?.pos?.[1]?.toFixed(1) || '0.0'}m</div>
-        <div>SPD: {drone?.vel ? Math.sqrt(drone.vel[0] ** 2 + drone.vel[2] ** 2).toFixed(1) : '0.0'}m/s</div>
-        <div>BAT: <span style={{ color: (drone?.battery || 100) < 20 ? '#dc3545' : '#79B9C1' }}>{drone?.battery?.toFixed(0) || '100'}%</span></div>
+        {/* Bottom telemetry bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', color: '#00e5ff', fontFamily: 'monospace', fontSize: '9px' }}>
+          <div>UNIT: {drone?.id} · {drone?.callsign}</div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <span>ALT: {Math.round(drone?.pos?.[1] || 0)}m</span>
+            <span>SPD: {drone?.speed ? Math.round(drone.speed) : 0}m/s</span>
+          </div>
+          <div>BAT: {Math.round(drone?.battery || 100)}%</div>
+        </div>
       </div>
     </div>
   )

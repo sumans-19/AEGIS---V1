@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import DroneModel from './DroneModel';
@@ -8,6 +8,7 @@ import OrbitRings from './OrbitRings';
 import { IconInfo } from '../Common/Icons';
 import './DroneViewport.css';
 
+<<<<<<< HEAD
 // Hotspot placements corresponding to physical components on the drone
 const HOTSPOTS = [
   { id: 'gps',          name: 'GPS MODULE',      position: [ 0.0,  0.60, -0.15] },
@@ -18,6 +19,17 @@ const HOTSPOTS = [
   { id: 'smoke',        name: 'SMOKE SENSOR',    position: [ 0.42, 0.28,  0.38] },
   { id: 'battery',      name: 'BATTERY PACK',    position: [ 0.0,  0.46, -0.48] },
   { id: 'camera',       name: 'FPV CAMERA',      position: [ 0.0, -0.06,  1.04] },
+=======
+const HOTSPOTS = [
+  { id: 'gps',      name: 'GPS MODULE',      position: [ 0.0,  0.88, -0.10] },
+  { id: 'imu',      name: 'IMU SENSOR',      position: [ 0.0,  0.65,  0.0 ] },
+  { id: 'thermal',  name: 'THERMAL CAMERA',  position: [-0.15, -0.22,  0.86] },
+  { id: 'lidar',    name: 'OBSTACLE LIDAR',  position: [ 0.0,  0.80,  0.20] },
+  { id: 'altitude', name: 'ALTITUDE SENSOR', position: [ 0.0, -0.20, -0.15] },
+  { id: 'smoke',    name: 'SMOKE SENSOR',    position: [ 0.45, 0.10,  0.25] },
+  { id: 'battery',  name: 'BATTERY PACK',    position: [ 0.0,  0.20, -0.90] },
+  { id: 'camera',   name: 'FPV CAMERA',      position: [ 0.0,  0.12,  0.95] },
+>>>>>>> origin/threejsimplementation
 ];
 
 // Play/Pause SVG Icons
@@ -36,6 +48,55 @@ function IconPause({ size = 16 }) {
       <rect x="14" y="4" width="4" height="16" />
     </svg>
   );
+}
+
+function CameraAnimator({ selectedSensorId, controlsRef }) {
+  const { camera } = useThree();
+  const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
+  const targetCamPos = useRef(new THREE.Vector3(2.5, 2.0, 3.2));
+  const isActive = useRef(false);
+
+  useEffect(() => {
+    if (selectedSensorId) {
+      const spot = HOTSPOTS.find(h => h.id === selectedSensorId);
+      if (spot) {
+        targetLookAt.current.set(...spot.position);
+        
+        const [sx, sy, sz] = spot.position;
+        const dir = new THREE.Vector3(sx, sy, sz).normalize();
+        if (dir.lengthSq() === 0) dir.set(0, 0, 1);
+        
+        targetCamPos.current.set(
+           sx + dir.x * 1.5,
+           sy + Math.abs(dir.y * 0.5) + 0.8,
+           sz + dir.z * 1.5
+        );
+        
+        if (selectedSensorId === 'gps') targetCamPos.current.set(1.0, 1.2, 1.0);
+        if (selectedSensorId === 'camera') targetCamPos.current.set(0, 0.2, 1.8);
+        if (selectedSensorId === 'battery') targetCamPos.current.set(0, 0.4, -2.0);
+        
+        isActive.current = true;
+      }
+    } else {
+      isActive.current = false;
+    }
+  }, [selectedSensorId]);
+
+  useFrame((_, dt) => {
+    if (isActive.current && controlsRef?.current) {
+      controlsRef.current.target.lerp(targetLookAt.current, dt * 3.0);
+      camera.position.lerp(targetCamPos.current, dt * 3.0);
+      
+      const targetDist = controlsRef.current.target.distanceTo(targetLookAt.current);
+      const camDist = camera.position.distanceTo(targetCamPos.current);
+      if (targetDist < 0.01 && camDist < 0.01) {
+        isActive.current = false;
+      }
+    }
+  });
+  
+  return null;
 }
 
 export default function DroneViewport({
@@ -107,6 +168,7 @@ export default function DroneViewport({
         <directionalLight position={[0, -4, 4]} intensity={0.12} color="#E2F0F2" />
 
         <group position={[0, 0, 0]}>
+<<<<<<< HEAD
           <DroneModel wireframe={wireframe} xray={xrayView} propellersRunning={propellersRunning} />
 
           {showSensorZones && HOTSPOTS.map(spot => {
@@ -124,7 +186,12 @@ export default function DroneViewport({
               />
             );
           })}
+=======
+          <DroneModel wireframe={wireframe} xray={xrayView} propellersRunning={propellersRunning} onSensorClick={onSensorSelect} />
+>>>>>>> origin/threejsimplementation
         </group>
+
+        <CameraAnimator selectedSensorId={selectedSensor?.id} controlsRef={controlsRef} />
 
         {/* Ground Concentric Orbit Rings */}
         <OrbitRings />

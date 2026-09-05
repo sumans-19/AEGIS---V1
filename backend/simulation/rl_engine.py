@@ -1,5 +1,6 @@
 """Reinforcement learning reward calculation for AI drone decisions."""
 
+
 def get_val(obj, key, default):
     if isinstance(obj, dict):
         return obj.get(key, default)
@@ -17,15 +18,15 @@ def calculate_reward(drone, decision):
 
     # Use get_val to safely handle both object and dict drones
     battery = get_val(drone, "battery", 100.0)
-    
+
     signal = get_val(drone, "signal_strength", None)
     if signal is None:
         signal = get_val(drone, "signal", 100.0)
-        
+
     thermal = get_val(drone, "thermal_status", None)
     if thermal is None:
         thermal = get_val(drone, "thermal", True)
-        
+
     obstacle = get_val(drone, "obstacle_distance", None)
     if obstacle is None:
         obstacle = get_val(drone, "obstacle", 10.0)
@@ -68,7 +69,7 @@ def calculate_reward(drone, decision):
     # NORMAL SAFE STATE
     # -----------------------------
     elif action == "CONTINUE_MISSION":
-        reward = 1   # small positive reward
+        reward = 1  # small positive reward
 
     # -----------------------------
     # UNNECESSARY ACTION PENALTY
@@ -76,6 +77,6 @@ def calculate_reward(drone, decision):
     else:
         reward = -1
 
-    drone_id = get_val(drone, "id", "?")
-    print(f"[REWARD] Drone {drone_id} | Action: {action} | Reward: {reward}")
+    get_val(drone, "id", "?")
+    # print(f"[REWARD] Drone {drone_id} | Action: {action} | Reward: {reward}")
     return float(reward)

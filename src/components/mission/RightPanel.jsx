@@ -8,7 +8,12 @@ import RadarView from './RadarView'
 import AreaMap from './AreaMap'
 import SurvivorsLog from './SurvivorsLog'
 import PathfindingView from './PathfindingView'
+<<<<<<< HEAD
 import ObstacleLogPanel from './ObstacleLogPanel'
+=======
+import TelemetryHUD from './TelemetryHUD'
+import SensorLogView from './SensorLogView'
+>>>>>>> origin/threejsimplementation
 
 export default function RightPanel() {
   const selectedDrone = useSimStore(s => s.selectedDrone)
@@ -26,7 +31,11 @@ export default function RightPanel() {
     areamap: AreaMap,
     survivors: SurvivorsLog,
     pathfinding: PathfindingView,
+<<<<<<< HEAD
     obstaclelog: ObstacleLogPanel,
+=======
+    sensors: SensorLogView,
+>>>>>>> origin/threejsimplementation
   }
 
   const ActiveTab = tabContent[activeSidebarTab] || DroneView
@@ -77,31 +86,70 @@ export default function RightPanel() {
                 {drone.callsign}
               </div>
             </div>
-            <button
-              onClick={() => setSelectedDrone(null)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#6C7F84',
-                cursor: 'pointer',
-                padding: '3px 6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.15s ease',
-                borderRadius: '4px',
-              }}
-              onMouseOver={e => {
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)'
-                e.currentTarget.style.color = '#1F282B'
-              }}
-              onMouseOut={e => {
-                e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.color = '#6C7F84'
-              }}
-            >
-              <X size={14} />
-            </button>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch('http://localhost:8000/api/simulate-failure', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ drone_id: drone.id })
+                    })
+                    useSimStore.getState().addNotification(`Injected critical failure on ${drone.callsign}`, 'warning')
+                  } catch (e) {
+                    console.error(e)
+                  }
+                }}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid #ef4444',
+                  color: '#ef4444',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '8px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  letterSpacing: '0.05em',
+                  fontFamily: 'var(--font-primary)',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.background = '#ef4444'
+                  e.currentTarget.style.color = '#fff'
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'
+                  e.currentTarget.style.color = '#ef4444'
+                }}
+              >
+                INJECT FAILURE
+              </button>
+              <button
+                onClick={() => setSelectedDrone(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#6C7F84',
+                  cursor: 'pointer',
+                  padding: '3px 6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease',
+                  borderRadius: '4px',
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)'
+                  e.currentTarget.style.color = '#1F282B'
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.color = '#6C7F84'
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
           </div>
 
           {/* Tabs */}
@@ -111,6 +159,8 @@ export default function RightPanel() {
           <div style={{ flex: 1, overflow: 'auto', padding: '8px 10px' }}>
             <ActiveTab drone={drone} />
           </div>
+
+          <TelemetryHUD drone={drone} />
         </motion.div>
       )}
     </AnimatePresence>

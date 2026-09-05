@@ -1,5 +1,9 @@
 import { useSimStore } from '../../store/useSimStore'
+<<<<<<< HEAD
 import { Camera, Thermometer, Map, Users, Network, Radio, ShieldAlert } from 'lucide-react'
+=======
+import { Camera, Thermometer, Map, Users, Network, Radio, Activity } from 'lucide-react'
+>>>>>>> origin/threejsimplementation
 
 const TABS = [
   { id: 'droneview', label: 'CAM', icon: Camera },
@@ -8,7 +12,11 @@ const TABS = [
   { id: 'areamap', label: 'MAP', icon: Map },
   { id: 'survivors', label: 'LOG', icon: Users },
   { id: 'pathfinding', label: 'A*', icon: Network },
+<<<<<<< HEAD
   { id: 'obstaclelog', label: 'OBS', icon: ShieldAlert },
+=======
+  { id: 'sensors', label: 'SENS', icon: Activity },
+>>>>>>> origin/threejsimplementation
 ]
 
 export default function SidebarTabs() {

@@ -4,6 +4,8 @@ import { Html } from '@react-three/drei'
 import * as THREE from 'three'
 import { useSimStore } from '../../store/useSimStore'
 import { getDronePosition, getDroneAltitude, getDroneSpeed } from '../../hooks/useDroneMovement'
+import { setDronePosition } from '../../hooks/dronePositionRegistry'
+import DetailedDroneModel from '../Viewport3D/DroneModel'
 
 const DRONE_COLORS = [
   '#00e5ff', '#ff6b2b', '#00ff88', '#a855f7', '#ffb300',
@@ -17,11 +19,13 @@ export default function DroneModel({ drone, index }) {
   const crosshairRef = useRef()
   const dropRingsRef = useRef([])
   const dropLinesRef = useRef()
+  const uncertaintyHaloRef = useRef()
 
   const theme = useSimStore(s => s.theme)
   const selectedDrone = useSimStore(s => s.selectedDrone)
   const missionPhase = useSimStore(s => s.missionPhase)
   const isSelected = selectedDrone === drone.id
+  const isFlying = ['DEPLOYING', 'SEARCHING', 'RETURNING', 'ALL_FOUND'].includes(missionPhase)
 
   const trailPositions = useRef([])
   const scanColor = DRONE_COLORS[(drone.id - 1) % DRONE_COLORS.length]
@@ -56,27 +60,77 @@ export default function DroneModel({ drone, index }) {
     return { dropLinesGeom: geom, dropLinesMesh: mesh }
   }, [scanColor])
 
+  // Pre-allocate reusable vectors outside the render loop
+  const _mv = useRef(new THREE.Vector3())
+  const _lastPos = useRef(new THREE.Vector3())
+  const _targetPos = useRef(new THREE.Vector3())
+  const _firstFrame = useRef(true)
+
+  // Lerp factor: higher = snappier, lower = smoother
+  // Previous values (0.04-0.06) were WAY too low \u2014 drone appeared frozen
+  // at 60fps: lerpF=0.04 means only 4% per frame \u2192 half-way in ~17 frames (~0.28s)
+  // New values give smooth but clearly visible movement
+  const getLerpFactor = () => {
+    switch (missionPhase) {
+      case 'DEPLOYING': return 0.12   // smooth cruise to region
+      case 'SEARCHING': return 0.10   // smooth scanning sweep
+      case 'RETURNING': return 0.14   // slightly snappier return
+      default: return 1.0             // instant snap when idle
+    }
+  }
+
+  // Minimum altitude per phase to keep drones above buildings (~33m tallest)
+  const MIN_ALT = {
+    DEPLOYING: 8,
+    SEARCHING: 40,
+    ALL_FOUND: 40,
+    RETURNING: 8,
+  }
+
   useFrame((state) => {
     if (!groupRef.current) return
 
-    // ── Get position from mission-phase-aware system ──
-    const pos = getDronePosition(drone)
+    // ── NATIVELY TRACK BACKEND SIMULATION POSITION ──
+    // The backend AI engine provides the real 3D position [x, y, z] via WebSocket telemetry
+    if (!drone.pos || drone.pos.length < 3) return
+    const targetPos = { x: drone.pos[0], y: drone.pos[1], z: drone.pos[2] }
 
-    // Guard against NaN
-    if (isNaN(pos.x) || isNaN(pos.y) || isNaN(pos.z)) return
+    // Enforce a tiny minimum altitude just to prevent clipping the very bottom of the terrain
+    const safeY = Math.max(targetPos.y, 2)
 
-    groupRef.current.position.set(pos.x, pos.y, pos.z)
+    // ── Lerp to target position for smooth visual motion ──
+    _targetPos.current.set(targetPos.x, safeY, targetPos.z)
+    const lerpF = getLerpFactor()
+    groupRef.current.position.lerp(_targetPos.current, lerpF)
+    const cur = groupRef.current.position
 
-    // ── Banking / heading from movement direction ──
-    const nextPos = getDronePosition(drone, 0.05)
-    const mv = new THREE.Vector3(nextPos.x - pos.x, nextPos.y - pos.y, nextPos.z - pos.z)
-    if (mv.lengthSq() > 0.0001) {
-      const dir = mv.normalize()
-      groupRef.current.rotation.x = dir.z * 0.2
-      groupRef.current.rotation.z = -dir.x * 0.2
-      groupRef.current.rotation.y = Math.atan2(dir.x, dir.z)
+    // ── Smooth banking / heading from actual movement delta ──
+    if (_firstFrame.current) {
+      _lastPos.current.copy(cur)
+      _firstFrame.current = false
+    }
+    _mv.current.set(
+      cur.x - _lastPos.current.x,
+      cur.y - _lastPos.current.y,
+      cur.z - _lastPos.current.z
+    )
+    _lastPos.current.copy(cur)
+
+    if (_mv.current.lengthSq() > 0.00005) {
+      const dir = _mv.current.clone().normalize()
+      const targetBankX = dir.z * 0.28
+      const targetBankZ = -dir.x * 0.28
+      groupRef.current.rotation.x += (targetBankX - groupRef.current.rotation.x) * 0.1
+      groupRef.current.rotation.z += (targetBankZ - groupRef.current.rotation.z) * 0.1
+
+      const targetYaw = Math.atan2(dir.x, dir.z)
+      let diff = targetYaw - groupRef.current.rotation.y
+      while (diff < -Math.PI) diff += Math.PI * 2
+      while (diff > Math.PI) diff -= Math.PI * 2
+      groupRef.current.rotation.y += diff * 0.1
     }
 
+<<<<<<< HEAD
     // ── Store position back (THROTTLED to 1Hz) ──
     // Updating Zustand state in useFrame causes massive re-renders. Throttle to 1Hz.
     const nowMs = performance.now()
@@ -94,9 +148,12 @@ export default function DroneModel({ drone, index }) {
         }
       }
     }
+=======
+    // ── Write live position to registry (for camera views) ──
+    setDronePosition(drone.id, groupRef.current.position, _mv.current.lengthSq() > 0.00005 ? _mv.current : null)
+>>>>>>> origin/threejsimplementation
 
     // ── Rotor animation ──
-    const isFlying = ['DEPLOYING', 'SEARCHING', 'RETURNING', 'ALL_FOUND'].includes(missionPhase)
     const isIdle = ['IDLE', 'SELECT_REGION', 'SEED_SURVIVORS', 'COMPLETED'].includes(missionPhase)
     const rotorSpeed = isFlying ? 1.5 : (isIdle ? 0.05 : 0.3)
     rotorRefs.current.forEach(r => r && (r.rotation.y += rotorSpeed))
@@ -111,12 +168,12 @@ export default function DroneModel({ drone, index }) {
     const scanR = (drone.scan_radius || 15) * 0.4
     if (isFlying) {
       if (crosshairRef.current) {
-        crosshairRef.current.position.set(pos.x, 0.2, pos.z)
+        crosshairRef.current.position.set(cur.x, 0.2, cur.z)
         crosshairRef.current.scale.set(scanR, scanR, 1)
         crosshairRef.current.rotation.z = time * 0.5
       }
       if (scanRingRef.current) {
-        scanRingRef.current.position.set(pos.x, 0.25, pos.z)
+        scanRingRef.current.position.set(cur.x, 0.25, cur.z)
         scanRingRef.current.scale.set(scanR, scanR, 1)
         scanRingRef.current.material.opacity = isSelected ? 0.7 + Math.sin(time * 5) * 0.3 : 0.4
       }
@@ -125,8 +182,8 @@ export default function DroneModel({ drone, index }) {
         if (!ring) return
         const ringCount = 4
         let dropPct = ((time * 0.3) + (i / ringCount)) % 1.0
-        const ringY = pos.y * (1 - dropPct)
-        ring.position.set(pos.x, Math.max(ringY, 0), pos.z)
+        const ringY = cur.y * (1 - dropPct)
+        ring.position.set(cur.x, Math.max(ringY, 0), cur.z)
         const ease = 1 - Math.pow(1 - dropPct, 3)
         const currentR = 0.5 + (scanR - 0.5) * ease
         ring.scale.set(currentR, currentR, 1)
@@ -139,8 +196,8 @@ export default function DroneModel({ drone, index }) {
         const corners = [[-R, -R], [R, -R], [R, R], [-R, R]]
         let idx = 0
         corners.forEach(([dx, dz]) => {
-          arr[idx++] = pos.x; arr[idx++] = pos.y - 1; arr[idx++] = pos.z
-          arr[idx++] = pos.x + dx; arr[idx++] = 0; arr[idx++] = pos.z + dz
+          arr[idx++] = cur.x; arr[idx++] = cur.y - 1; arr[idx++] = cur.z
+          arr[idx++] = cur.x + dx; arr[idx++] = 0; arr[idx++] = cur.z + dz
         })
         dropLinesGeom.attributes.position.needsUpdate = true
         dropLinesMesh.computeLineDistances()
@@ -152,9 +209,21 @@ export default function DroneModel({ drone, index }) {
       dropRingsRef.current.forEach(r => r && r.position.set(0, -100, 0))
     }
 
+    // ── GPS Uncertainty Halo ──
+    if (uncertaintyHaloRef.current) {
+      if (drone.gps_status === false && drone.pos_uncertainty > 0) {
+        const uR = drone.pos_uncertainty
+        uncertaintyHaloRef.current.position.set(cur.x, 0.3, cur.z)
+        uncertaintyHaloRef.current.scale.set(uR, uR, 1)
+        uncertaintyHaloRef.current.material.opacity = 0.2 + Math.sin(time * 6) * 0.1
+      } else {
+        uncertaintyHaloRef.current.position.set(0, -100, 0)
+      }
+    }
+
     // ── Trail ──
     if (isFlying) {
-      trailPositions.current.push([pos.x, pos.y, pos.z])
+      trailPositions.current.push([cur.x, cur.y, cur.z])
       if (trailPositions.current.length > 250) trailPositions.current.shift()
 
       const arr = trailGeometry.attributes.position.array
@@ -174,6 +243,7 @@ export default function DroneModel({ drone, index }) {
   return (
     <group>
       <group ref={groupRef}>
+<<<<<<< HEAD
         <group scale={[droneScale, droneScale, droneScale]}>
           {/* Aerodynamic Lower Chassis */}
           <mesh castShadow scale={[1.2, 0.4, 1.4]} position={[0, 0, 0]}>
@@ -251,6 +321,10 @@ export default function DroneModel({ drone, index }) {
               <meshStandardMaterial color="#000" metalness={1} roughness={0} />
             </mesh>
           </group>
+=======
+        <group scale={[0.6, 0.6, 0.6]}>
+          <DetailedDroneModel propellersRunning={isFlying} />
+>>>>>>> origin/threejsimplementation
         </group>
 
         <pointLight ref={lightRef} color={scanColor} distance={20} intensity={2.5} position={[0, -2, 0]} />
@@ -284,6 +358,12 @@ export default function DroneModel({ drone, index }) {
               <meshBasicMaterial color={scanColor} transparent opacity={0.5} />
             </mesh>
           </group>
+        </mesh>
+        
+        {/* GPS Uncertainty Halo */}
+        <mesh ref={uncertaintyHaloRef} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0, 1, 32]} />
+          <meshBasicMaterial color="#dc3545" transparent opacity={0.3} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} depthWrite={false} />
         </mesh>
       </group>
 

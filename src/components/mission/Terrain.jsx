@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useSimStore } from '../../store/useSimStore'
@@ -278,8 +278,13 @@ function DeadTree({ position, seed = 0 }) {
   )
 }
 
+<<<<<<< HEAD
 // ── Particle Fire Effect (Optimized) ──
 function Fire({ position, intensity = 1, spread = null }) {
+=======
+// ── Particle Fire Effect ──
+function Fire({ position, intensity = 1, spread = null, noLight = false }) {
+>>>>>>> origin/threejsimplementation
   const meshRef = useRef()
   const particleCount = spread ? 24 : 12
   
@@ -319,6 +324,13 @@ function Fire({ position, intensity = 1, spread = null }) {
       meshRef.current.setMatrixAt(i, dummy.matrix)
     })
     meshRef.current.instanceMatrix.needsUpdate = true
+<<<<<<< HEAD
+=======
+
+    if (flickerRef.current && !noLight) {
+      flickerRef.current.intensity = intensity * (3 + Math.sin(t * 15 + position[0] * 3) * 2.0 + Math.cos(t * 22) * 1.5)
+    }
+>>>>>>> origin/threejsimplementation
   })
 
   return (
@@ -332,6 +344,10 @@ function Fire({ position, intensity = 1, spread = null }) {
           depthWrite={false}
         />
       </instancedMesh>
+<<<<<<< HEAD
+=======
+      {!noLight && <pointLight ref={flickerRef} color="#FF5500" intensity={4} distance={spread ? 60 * intensity : 35 * intensity} position={[position[0], position[1] + (spread ? 5 : 3), position[2]]} />}
+>>>>>>> origin/threejsimplementation
     </group>
   )
 }
@@ -426,8 +442,8 @@ function DustParticles({ count = 80, area = [200, 20, 200] }) {
 
   return (
     <instancedMesh ref={meshRef} args={[null, null, count]}>
-      <sphereGeometry args={[0.2, 4, 4]} />
-      <meshBasicMaterial color="#94a3b8" transparent opacity={0.3} />
+      <sphereGeometry args={[0.05, 4, 4]} />
+      <meshBasicMaterial color="#7a8a9a" transparent opacity={0.1} />
     </instancedMesh>
   )
 }
@@ -1281,11 +1297,334 @@ function FloodTerrain() {
   )
 }
 
+// ── Instanced Helper Components for Performance ──
+function InstancedRubble({ data, color }) {
+  const meshRef = useRef()
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  
+  useEffect(() => {
+    if (!meshRef.current) return
+    data.forEach((r, i) => {
+      dummy.position.set(...r.position)
+      dummy.rotation.set(...r.rotation)
+      dummy.scale.setScalar(r.scale)
+      dummy.updateMatrix()
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+    })
+    meshRef.current.instanceMatrix.needsUpdate = true
+  }, [data, dummy])
+
+  return (
+    <instancedMesh ref={meshRef} args={[null, null, data.length]} castShadow receiveShadow>
+      <dodecahedronGeometry args={[1, 0]} />
+      <meshStandardMaterial color={color} roughness={0.95} bumpMap={getProceduralTexture('bump')} bumpScale={0.2} />
+    </instancedMesh>
+  )
+}
+
+function InstancedBuildings({ data, color, isDark }) {
+  const meshRef = useRef()
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  
+  useEffect(() => {
+    if (!meshRef.current) return
+    data.forEach((b, i) => {
+      dummy.position.set(...b.position)
+      dummy.rotation.set(...b.rotation)
+      dummy.scale.set(...b.scale)
+      dummy.updateMatrix()
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+    })
+    meshRef.current.instanceMatrix.needsUpdate = true
+  }, [data, dummy])
+
+  return (
+    <instancedMesh ref={meshRef} args={[null, null, data.length]} castShadow receiveShadow>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial 
+        color={color}
+        map={getBuildingTexture(512, 512, isDark)}
+        roughness={0.9} 
+        metalness={0.2}
+        bumpMap={getProceduralTexture('bump')}
+        bumpScale={0.2}
+      />
+    </instancedMesh>
+  )
+}
+
+function InstancedPuddles({ data }) {
+  const meshRef = useRef()
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  
+  useEffect(() => {
+    if (!meshRef.current) return
+    data.forEach((p, i) => {
+      dummy.position.set(...p.position)
+      dummy.rotation.set(-Math.PI / 2, 0, 0)
+      dummy.scale.setScalar(p.scale)
+      dummy.updateMatrix()
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+    })
+    meshRef.current.instanceMatrix.needsUpdate = true
+  }, [data, dummy])
+
+  return (
+    <instancedMesh ref={meshRef} args={[null, null, data.length]}>
+      <circleGeometry args={[1, 24]} />
+      <meshStandardMaterial color="#111" roughness={0.05} metalness={0.9} transparent opacity={0.8} />
+    </instancedMesh>
+  )
+}
+
+function InstancedCraters({ data }) {
+  const meshRef = useRef()
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  
+  useEffect(() => {
+    if (!meshRef.current) return
+    data.forEach((c, i) => {
+      dummy.position.set(c.x, 0.05, c.z)
+      dummy.rotation.set(-Math.PI / 2, 0, 0)
+      dummy.scale.setScalar(c.r)
+      dummy.updateMatrix()
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+    })
+    meshRef.current.instanceMatrix.needsUpdate = true
+  }, [data, dummy])
+
+  return (
+    <instancedMesh ref={meshRef} args={[null, null, data.length]}>
+      <circleGeometry args={[1, 24]} />
+      <meshBasicMaterial color="#030303" opacity={0.95} transparent />
+    </instancedMesh>
+  )
+}
+
+function InstancedScorches({ data }) {
+  const meshRef = useRef()
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  
+  useEffect(() => {
+    if (!meshRef.current) return
+    data.forEach((s, i) => {
+      dummy.position.set(...s.position)
+      dummy.rotation.set(-Math.PI / 2, 0, 0)
+      dummy.scale.setScalar(s.r)
+      dummy.updateMatrix()
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+    })
+    meshRef.current.instanceMatrix.needsUpdate = true
+  }, [data, dummy])
+
+  return (
+    <instancedMesh ref={meshRef} args={[null, null, data.length]}>
+      <circleGeometry args={[1, 16]} />
+      <meshStandardMaterial color="#050505" roughness={1} transparent opacity={0.75} />
+    </instancedMesh>
+  )
+}
+
+function WarZoneTerrain() {
+  const theme = useSimStore(s => s.theme)
+  const isDark = theme === 'dark'
+
+  const { buildings, destroyedBuildings, nature, craters, puddles, scorches, fires, vehicles, rubble } = useMemo(() => {
+    const buildings = []
+    const destroyedBuildings = []
+    const nature = []
+    const craters = []
+    const puddles = []
+    const scorches = []
+    const fires = []
+    const vehicles = []
+    const rubble = []
+    
+    const gridSize = 18
+    const spacing = 20
+    const offset = (gridSize * spacing) / 2
+
+    // Scorches
+    for (let i = 0; i < 60; i++) {
+      const px = (seededRandom(i * 300) - 0.5) * 500
+      const pz = (seededRandom(i * 301) - 0.5) * 500
+      const r = 15 + seededRandom(i * 302) * 25
+      scorches.push({ position: [px, 0.02, pz], r })
+    }
+
+    // Huge blast craters
+    for (let c = 0; c < 80; c++) {
+      const sx = (seededRandom(c * 77) - 0.5) * 400
+      const sz = (seededRandom(c * 88) - 0.5) * 400
+      const radius = 4 + seededRandom(c * 99) * 15
+      craters.push({ x: sx, z: sz, r: radius })
+      
+      // Ring of rubble around craters
+      for (let r = 0; r < 8; r++) {
+         const angle = seededRandom(c*10 + r) * Math.PI * 2;
+         const dist = radius + seededRandom(c*20 + r) * 8;
+         rubble.push({
+           position: [sx + Math.cos(angle)*dist, 0.5 + seededRandom(c+r)*2, sz + Math.sin(angle)*dist],
+           scale: 0.5 + seededRandom(c*30+r) * 2.5,
+           rotation: [seededRandom(c)*Math.PI, seededRandom(c+1)*Math.PI, seededRandom(c+2)*Math.PI]
+         })
+      }
+      
+      // Fire inside some craters
+      if (seededRandom(c * 50) > 0.6) {
+         fires.push({ position: [sx, 0, sz], intensity: 2 + seededRandom(c)*3, spread: [radius/2, radius/2] })
+      }
+    }
+
+    // Puddles along the central road
+    for(let p = 0; p < 80; p++) {
+       puddles.push({
+          position: [(seededRandom(p*123) - 0.5) * 60, 0.05, (seededRandom(p*321) - 0.5) * 500],
+          scale: 2 + seededRandom(p*456) * 6,
+       })
+    }
+
+    for (let gx = 0; gx < gridSize; gx++) {
+      for (let gz = 0; gz < gridSize; gz++) {
+        const seed = gx * 100 + gz
+        const rand = seededRandom(seed)
+        
+        // Jittered positions
+        const x = gx * spacing - offset + spacing / 2 + (seededRandom(seed + 1) - 0.5) * 15
+        const z = gz * spacing - offset + spacing / 2 + (seededRandom(seed + 2) - 0.5) * 15
+        
+        const distFromCenter = Math.abs(x)
+        
+        if (distFromCenter < 35) {
+           // Central Canyon (Road area) - mostly rubble, vehicles, fires
+           if (rand < 0.6) {
+              rubble.push({
+                 position: [x, 0.5 + seededRandom(seed)*2, z],
+                 scale: 1 + seededRandom(seed+1)*3,
+                 rotation: [Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI]
+              })
+           } else if (rand < 0.8) {
+              vehicles.push({ 
+                 position: [x, 0.2, z], 
+                 rotation: [seededRandom(seed)*Math.PI, seededRandom(seed+1)*Math.PI*2, seededRandom(seed+2)*Math.PI],
+                 seed: seed + 8 
+              })
+           } else {
+              if (seededRandom(seed+5) > 0.5) fires.push({ position: [x, 0, z], intensity: 1 + seededRandom(seed)*2, spread: [2,2] })
+           }
+        } else {
+           // Dense tall buildings on the sides
+           if (rand < 0.85) {
+             const w = 12 + seededRandom(seed + 5) * 10
+             const d = 12 + seededRandom(seed + 6) * 10
+             const height = 40 + seededRandom(seed + 3) * 80
+             const damageLevel = seededRandom(seed + 4)
+             const isDestroyed = damageLevel > 0.15 
+             const buildingRot = (seededRandom(seed + 10) - 0.5) * 0.3 
+             
+             const finalHeight = isDestroyed ? height * (0.3 + damageLevel * 0.7) : height
+             
+             const bData = {
+               position: [x, finalHeight/2, z],
+               scale: [w, finalHeight, d],
+               rotation: [0, buildingRot, 0],
+               damageLevel
+             }
+             buildings.push(bData)
+             if (isDestroyed) destroyedBuildings.push(bData)
+             
+             if (isDestroyed) {
+                // Cascading debris
+                for(let k=0; k<8; k++) {
+                   rubble.push({
+                      position: [x + (seededRandom(seed+k*10)-0.5)*w*2, 0.5 + seededRandom(seed+k)*3, z + (seededRandom(seed+k*11)-0.5)*d*2],
+                      scale: 1 + seededRandom(seed+k)*3,
+                      rotation: [Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI]
+                   })
+                }
+                if (damageLevel > 0.5 && seededRandom(seed + 7) > 0.5) {
+                   fires.push({ position: [x, finalHeight, z], intensity: 2 + seededRandom(seed)*3, spread: [w/2, d/2] })
+                }
+             }
+           } else {
+             nature.push({ position: [x + (seededRandom(seed)-0.5)*5, 0, z + (seededRandom(seed+1)-0.5)*5], seed })
+           }
+        }
+      }
+    }
+    
+    // Sort fires by intensity to keep only the biggest fires emitting pointLights
+    fires.sort((a, b) => b.intensity - a.intensity)
+
+    return { buildings, destroyedBuildings, nature, craters, puddles, scorches, fires, vehicles, rubble }
+  }, [])
+
+  return (
+    <group>
+      <DustParticles count={200} area={[500, 50, 500]} />
+      
+      {/* Muddy/Scorched Earth */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[1000, 1000]} />
+        <meshStandardMaterial
+          color={isDark ? '#0d0d0e' : '#1d1d1e'}
+          roughness={0.9}
+          roughnessMap={getProceduralTexture('dirt')}
+          bumpMap={getProceduralTexture('bump')}
+          bumpScale={0.3}
+        />
+      </mesh>
+
+      {/* Instanced Geometry for High Performance */}
+      {puddles.length > 0 && <InstancedPuddles data={puddles} />}
+      {scorches.length > 0 && <InstancedScorches data={scorches} />}
+      {craters.length > 0 && <InstancedCraters data={craters} />}
+      {buildings.length > 0 && <InstancedBuildings data={buildings} color={isDark ? '#1a1b1c' : '#2a2b2c'} isDark={isDark} />}
+      {rubble.length > 0 && <InstancedRubble data={rubble} color={isDark ? '#1a1a1a' : '#2a2a2a'} />}
+
+      {/* Damage overlays for destroyed buildings (cannot easily instance multiple materials/geometries in a single call) */}
+      {destroyedBuildings.map((b, i) => (
+         <group key={`db-${i}`} position={b.position} rotation={b.rotation}>
+            {b.damageLevel > 0.6 && (
+               <mesh position={[0, b.scale[1]/2 + b.scale[1]*0.1, 0]} castShadow>
+                  <boxGeometry args={[b.scale[0]*0.8, b.scale[1]*0.2, b.scale[2]*0.8]} />
+                  <meshStandardMaterial color="#111" roughness={1} wireframe />
+               </mesh>
+            )}
+            <mesh position={[0, b.scale[1]/2 + 0.05, 0]} rotation={[-Math.PI/2, 0, 0]}>
+               <planeGeometry args={[b.scale[0], b.scale[2]]} />
+               <meshStandardMaterial color="#0a0a0a" roughness={1} />
+            </mesh>
+         </group>
+      ))}
+
+      {/* Trees (Scorched/Dead) */}
+      {nature.map((n, i) => (
+        <DeadTree key={`wt-${i}`} position={n.position} seed={n.seed} />
+      ))}
+
+      {/* Abandoned Vehicles */}
+      {vehicles.map((v, i) => (
+        <AbandonedVehicle key={`wv-${i}`} position={v.position} rotation={v.rotation} seed={v.seed} />
+      ))}
+
+      {/* Fires & Smoke */}
+      {fires.map((f, i) => (
+        <group key={`wf-${i}`}>
+          <Fire position={f.position} intensity={f.intensity} spread={f.spread} noLight={i >= 12} />
+          <Smoke position={f.position} scale={f.intensity * 2.5} />
+        </group>
+      ))}
+    </group>
+  )
+}
+
 export default function Terrain({ scenario }) {
   switch (scenario) {
     case 'earthquake': return <EarthquakeTerrain />
     case 'tsunami': return <TsunamiTerrain />
     case 'flood': return <FloodTerrain />
+    case 'war_zone': return <WarZoneTerrain />
     default: return <EarthquakeTerrain />
   }
 }

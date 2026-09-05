@@ -4,11 +4,11 @@ import { useSimStore } from '../../store/useSimStore'
 import { X } from 'lucide-react'
 
 const INITIAL_DRONES = [
-  { id: 1, name: 'Arjun',   battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
-  { id: 2, name: 'Bhima',   battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
-  { id: 3, name: 'Karna',   battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
-  { id: 4, name: 'Krishna', battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
-  { id: 5, name: 'Ram',     battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
+  { id: 1, name: 'Falcon',   battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
+  { id: 2, name: 'Eagle',   battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
+  { id: 3, name: 'Hawk',   battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
+  { id: 4, name: 'Raven', battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
+  { id: 5, name: 'Owl',     battery: 100, thermal: true, obstacle: 10, signal: 100, cpu: 40 },
 ]
 
 const styles = {
@@ -218,21 +218,21 @@ export default function SimulationPanel({ onClose }) {
     return Number.isFinite(n) ? n : fallback
   }
 
-  // Debounced sync of all slider overrides to backend
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      Promise.all(drones.map((d) => applyOverride(d))).catch((e) => {
-        setError(e.message || 'Override sync failed')
-      })
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [drones])
+  // Manual sync function to apply overrides when a button is clicked
+  const handleApplyOverride = async (drone) => {
+    try {
+      await applyOverride(drone)
+    } catch (e) {
+      setError(e.message || 'Override sync failed')
+    }
+  }
 
   // POST /simulate — calls the AI engine with the current panel values
   const simulateFailure = async (drone) => {
     setLoadingId(drone.id)
     setError(null)
     setSimResult(null)
+    await handleApplyOverride(drone) // Sync overrides before running AI
     try {
       const res = await fetch('http://localhost:8000/simulate', {
         method: 'POST',
@@ -413,15 +413,37 @@ export default function SimulationPanel({ onClose }) {
                   </td>
 
                   <td style={styles.td} onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      id={`sim-btn-${d.id}`}
-                      style={styles.simulateBtn(isLoading)}
-                      disabled={isLoading}
-                      onClick={() => simulateFailure(d)}
-                    >
-                      {isLoading ? '...' : '⚡ RUN AI'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        id={`sim-btn-${d.id}`}
+                        style={styles.simulateBtn(isLoading)}
+                        disabled={isLoading}
+                        onClick={() => simulateFailure(d)}
+                      >
+                        {isLoading ? '...' : '⚡ RUN AI'}
+                      </button>
+                      <button
+                        type="button"
+                        style={{ ...styles.simulateBtn(isLoading), borderColor: '#ef4444', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)' }}
+                        disabled={isLoading}
+                        onClick={async () => {
+                          try {
+                            await handleApplyOverride(d) // Sync overrides before injecting
+                            await fetch('http://localhost:8000/api/simulate-failure', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ drone_id: d.id })
+                            })
+                            useSimStore.getState().addNotification(`Injected critical failure on ${d.name}`, 'warning')
+                          } catch (err) {
+                            console.error(err)
+                          }
+                        }}
+                      >
+                        🔥 INJECT
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )

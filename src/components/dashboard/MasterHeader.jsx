@@ -26,6 +26,7 @@ function WirelessIcon() {
   );
 }
 
+<<<<<<< HEAD
 /* Realistic Glossy Liquid Paint / Water Drips with Specular Highlights & Physics on the Right End */
 function RealisticLiquidDrips() {
   return (
@@ -59,6 +60,8 @@ function RealisticLiquidDrips() {
   );
 }
 
+=======
+>>>>>>> origin/threejsimplementation
 export default function MasterHeader({ activeTab = 'overview' }) {
   const scenario = useSimStore(s => s.scenario);
   const backendConnected = useSimStore(s => s.backendConnected);

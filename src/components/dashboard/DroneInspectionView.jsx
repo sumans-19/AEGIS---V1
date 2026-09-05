@@ -24,6 +24,7 @@ export default function DroneInspectionView() {
   }, []);
 
   const handleViewChange = useCallback((preset) => {
+    selectSensor(null);
     if (controlsRef.current) {
       const controls = controlsRef.current;
       const startPos = controls.object.position.clone();

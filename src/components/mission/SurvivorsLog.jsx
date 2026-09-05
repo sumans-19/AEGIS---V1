@@ -2,12 +2,16 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Users, UserCheck, Timer, MapPin, Heart, ShieldAlert, Target } from 'lucide-react'
 import { useSimStore } from '../../store/useSimStore'
 
-export default function SurvivorsLog() {
-  const survivors = useSimStore(s => s.survivors)
+export default function SurvivorsLog({ drone }) {
+  const allSurvivors = useSimStore(s => s.survivors)
   const drones = useSimStore(s => s.drones)
   const markAsRescued = (id) => {
      // useSimStore.getState().sendCommand('mark_rescued', {id})
   }
+
+  const survivors = drone 
+    ? allSurvivors.filter(s => String(s.detected_by) === String(drone.id) || s.detectedBy === drone.callsign)
+    : allSurvivors
 
   const detected = survivors.filter(s => s.detected)
   const rescued = survivors.filter(s => s.status === 'RESCUED')
@@ -46,7 +50,7 @@ export default function SurvivorsLog() {
       }}>
         <AnimatePresence>
           {detected.map((s, idx) => {
-             const drone = drones.find(d => d.id === s.detected_by)
+             const droneCallsign = s.detectedBy || drones.find(d => d.id === s.detected_by)?.callsign || 'UAV'
              const isRescued = s.status === 'RESCUED'
              
              return (
@@ -97,7 +101,7 @@ export default function SurvivorsLog() {
                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', padding: '2px 0' }}>
                     <DataPair label="TEMP" value={`${s.body_temp?.toFixed(1) || 37.0}°C`} icon={Heart} />
                     <DataPair label="CONF" value={`${s.confidence > 1 ? s.confidence?.toFixed(0) : ((s.confidence || 0) * 100).toFixed(0)}%`} icon={Target} />
-                    <DataPair label="UAV" value={drone?.callsign || 'UAV'} icon={MapPin} />
+                    <DataPair label="UAV" value={droneCallsign} icon={MapPin} />
                     <DataPair label="POS" value={`${(s.real_coords?.[0] ?? s.pos?.[0] ?? 0).toFixed(0)}, ${(s.real_coords?.[1] ?? s.pos?.[2] ?? 0).toFixed(0)}`} icon={MapPin} />
                  </div>
 
