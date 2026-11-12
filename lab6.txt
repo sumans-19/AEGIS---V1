@@ -1,0 +1,177 @@
+
+// ---------------------------------------------------------
+// STEP 1: Select Database
+// ---------------------------------------------------------
+
+db = db.getSiblingDB("perfTestDB");
+
+print("Using Database: " + db.getName());
+
+
+// ---------------------------------------------------------
+// STEP 2: Create Unsharded Collection
+// ---------------------------------------------------------
+
+db.movies_unsharded.drop();
+
+print("Inserting 1,000,000 documents into unsharded collection...");
+
+let batch = [];
+
+for (let i = 0; i < 1000000; i++) {
+
+    batch.push({
+        title: "Movie " + i,
+        genre: (i % 5 === 0) ? "Action" : "Drama",
+        year: 2000 + (i % 20),
+        rating: (i % 100) / 10
+    });
+
+    if (batch.length === 1000) {
+        db.movies_unsharded.insertMany(batch);
+        batch = [];
+    }
+}
+
+if (batch.length > 0) {
+    db.movies_unsharded.insertMany(batch);
+}
+
+print("Unsharded collection insertion completed.");
+
+
+// Create same index for fair comparison
+db.movies_unsharded.createIndex({ year: 1 });
+
+
+// ---------------------------------------------------------
+// STEP 3: Create Sharded Collection
+// ---------------------------------------------------------
+
+sh.enableSharding("perfTestDB");
+
+db.movies_sharded.drop();
+
+print("Sharding collection on year field...");
+
+sh.shardCollection(
+    "perfTestDB.movies_sharded",
+    { year: 1 }
+);
+
+print("Inserting 1,000,000 documents into sharded collection...");
+
+batch = [];
+
+for (let i = 0; i < 1000000; i++) {
+
+    batch.push({
+        title: "Movie " + i,
+        genre: (i % 5 === 0) ? "Action" : "Drama",
+        year: 2000 + (i % 20),
+        rating: (i % 100) / 10
+    });
+
+    if (batch.length === 1000) {
+        db.movies_sharded.insertMany(batch);
+        batch = [];
+    }
+}
+
+if (batch.length > 0) {
+    db.movies_sharded.insertMany(batch);
+}
+
+print("Sharded collection insertion completed.");
+
+
+// ---------------------------------------------------------
+// STEP 4: Equality Query
+// ---------------------------------------------------------
+
+print("\n=== Equality Query: year = 2010 ===");
+
+print("\nUnsharded Collection:");
+
+printjson(
+    db.movies_unsharded
+      .find({ year: 2010 })
+      .explain("executionStats").executionStats
+);
+
+print("\nSharded Collection:");
+
+printjson(
+    db.movies_sharded
+      .find({ year: 2010 })
+      .explain("executionStats").executionStats
+);
+
+
+// ---------------------------------------------------------
+// STEP 5: Range Query
+// ---------------------------------------------------------
+
+print("\n=== Range Query: year between 2010 and 2015 ===");
+
+print("\nUnsharded Collection:");
+
+printjson(
+    db.movies_unsharded
+      .find({ year: { $gte: 2010, $lt: 2015 } })
+      .explain("executionStats").executionStats
+);
+
+print("\nSharded Collection:");
+
+printjson(
+    db.movies_sharded
+      .find({ year: { $gte: 2010, $lt: 2015 } })
+      .explain("executionStats").executionStats
+);
+
+
+// ---------------------------------------------------------
+// STEP 6: Aggregation Query
+// ---------------------------------------------------------
+
+print("\n=== Aggregation: Average Rating by Genre ===");
+
+print("\nUnsharded Collection:");
+
+printjson(
+    db.movies_unsharded.aggregate([
+        { $match: { year: { $gte: 2010, $lt: 2015 } } },
+        {
+            $group: {
+                _id: "$genre",
+                avgRating: { $avg: "$rating" }
+            }
+        }
+    ]).explain("executionStats")
+);
+
+print("\nSharded Collection:");
+
+printjson(
+    db.movies_sharded.aggregate([
+        { $match: { year: { $gte: 2010, $lt: 2015 } } },
+        {
+            $group: {
+                _id: "$genre",
+                avgRating: { $avg: "$rating" }
+            }
+        }
+    ]).explain("executionStats")
+);
+
+
+// ---------------------------------------------------------
+// STEP 7: Verify Sharding
+// ---------------------------------------------------------
+
+print("\n=== SHARDING STATUS ===");
+
+sh.status();
+
+print("\nExperiment 6 Completed!");
